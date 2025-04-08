@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
+import { API_BASE } from '../config/config';
 
 import GEIcon from '../assets/GE.png';
 import RAINIcon from '../assets/RAIN.png';
@@ -70,7 +71,7 @@ function InteractiveMap() {
   const handleLoadData = async (deviceId) => {
     if (dataCache[deviceId]) return;
     try {
-      const res = await axios.get(`http://localhost:3000/api/latest?deviceId=${deviceId}`);
+      const res = await axios.get(`${API_BASE}/api/latest?deviceId=${deviceId}`);
       setDataCache(prev => ({ ...prev, [deviceId]: res.data[deviceId] }));
     } catch (err) {
       console.error('讀取數據失敗', err);

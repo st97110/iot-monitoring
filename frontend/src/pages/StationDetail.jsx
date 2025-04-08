@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE } from '../config/config';
 
 function StationDetail() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ function StationDetail() {
         params.endDate = end;
       }
 
-      const res = await axios.get('http://localhost:3000/api/history', { params });
+      const res = await axios.get('${API_BASE}/api/history', { params });
       setData(res.data);
     } catch (err) {
       console.error('載入資料失敗', err);

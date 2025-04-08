@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { deviceMapping } from '../config/deviceMapping';
 import { DEVICE_TYPES, DEVICE_TYPE_NAMES, DEVICE_TYPE_ORDER } from '../config/constants';
+import { API_BASE } from '../config/config';
 
 function Home() {
   const [latestData, setLatestData] = useState({});
   const [filterType, setFilterType] = useState(DEVICE_TYPES.ALL);
 
   useEffect(() => {
-    axios.get('http://localhost:3000/api/latest')
+    axios.get('${API_BASE}/api/latest')
       .then(res => setLatestData(res.data))
       .catch(err => console.error('取得最新資料失敗:', err));
   }, []);

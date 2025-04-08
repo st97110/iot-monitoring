@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { deviceMapping } from '../config/deviceMapping';
+import { API_BASE } from '../config/config';
 
 function History() {
   const [data, setData] = useState([]);
@@ -24,7 +25,7 @@ function History() {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/api/history', {
+      const res = await axios.get('${API_BASE}/api/history', {
         params: {
           deviceId: deviceId || undefined,
           startDate,

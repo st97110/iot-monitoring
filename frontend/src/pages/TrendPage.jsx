@@ -3,6 +3,7 @@ import axios from 'axios';
 import { deviceMapping } from '../config/deviceMapping';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useSearchParams } from 'react-router-dom';
+import { API_BASE } from '../config/config';
 
 function TrendPage() {
     const [mac, setMac] = useState('');
@@ -41,7 +42,7 @@ function TrendPage() {
         if (!sensor) return;
 
         try {
-        const res = await axios.get('http://localhost:3000/api/history', {
+        const res = await axios.get('${API_BASE}/api/history', {
             params: { deviceId, startDate, endDate }
         });
 
@@ -154,3 +155,4 @@ function TrendPage() {
 }
 
 export default TrendPage;
+``
