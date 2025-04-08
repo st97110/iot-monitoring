@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { API_BASE, DEVICE_TYPES, DEVICE_TYPE_NAMES, DEVICE_TYPE_ORDER, deviceMapping } from '../config/config';
+import { API_BASE, deviceMapping } from '../config/config';
 
 function getRelativeTime(isoString) {
   const time = new Date(isoString);
@@ -14,7 +14,7 @@ function getRelativeTime(isoString) {
 
 function Home() {
   const [latestData, setLatestData] = useState({});
-  const [filterType, setFilterType] = useState(DEVICE_TYPES.ALL);
+  const [filterArea, setFilterArea] = useState('全部');
 
   useEffect(() => {
     axios.get(`${API_BASE}/api/latest`)
@@ -22,29 +22,31 @@ function Home() {
       .catch(err => console.error('取得最新資料失敗:', err));
   }, []);
 
-  const getStatusColor = (egf) => {
-    return egf !== null ? 'text-black' : 'text-gray-400';
-  };
+  const allAreas = ['全部', ...Object.values(deviceMapping).map(a => a.name)];
 
   return (
     <div className="space-y-4">
+      {/* 區域選單 */}
       <div className="flex flex-wrap gap-2">
-        {DEVICE_TYPE_ORDER.map(type => (
+        {allAreas.map(name => (
           <button
-            key={type}
-            onClick={() => setFilterType(type === filterType ? DEVICE_TYPES.ALL : type)} // 篩選按鈕高亮邏輯
+            key={name}
+            onClick={() => setFilterArea(name === filterArea ? '全部' : name)}
             className={`px-3 py-1 rounded-full text-sm border ${
-              type === filterType ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
+              name === filterArea ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
             }`}
           >
-            {DEVICE_TYPE_NAMES[type]}
+            {name}
           </button>
         ))}
       </div>
 
+      {/* 資料區 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {Object.entries(deviceMapping).map(([areaKey, area]) => (
-          <div key={areaKey}>
+        {Object.entries(deviceMapping)
+          .filter(([_, area]) => filterArea === '全部' || area.name === filterArea)
+          .map(([areaKey, area]) => (
+          <div key={areaKey} className="md:col-span-4">
             <h2 className="text-2xl font-bold my-4">{area.name}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {area.devices.map(device => {
@@ -52,8 +54,6 @@ function Home() {
                 if (!data) return null;
 
                 return device.sensors?.map((sensor, idx) => {
-                  if (filterType !== DEVICE_TYPES.ALL && sensor.type !== filterType) return null;
-
                   const channels = sensor.channels.map(channel => {
                     const ch = data.channels?.[channel];
                     const egf = ch?.EgF ?? null;
@@ -63,12 +63,14 @@ function Home() {
                   return (
                     <div key={(device.mac || device.id) + '-' + idx} className="border rounded-xl shadow p-4 bg-white">
                       <h3 className="text-xl font-semibold mb-2">{device.name}</h3>
-                      <p className="text-gray-600 mb-2">
+                      <p className="text-gray-600 mb-1">
                         時間：{new Date(data.timestamp).toLocaleString('zh-TW')}
                       </p>
+                      <p className="text-gray-500 text-sm">
+                        📅 更新於：{getRelativeTime(data.timestamp)}
+                      </p>
 
-                      {/* 原本 channels 的顯示邏輯維持不變 */}
-                      <div className="space-y-2">
+                      <div className="space-y-2 mt-2">
                         <h4 className="font-semibold text-gray-700">{sensor.name}</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           {channels.map(({ channel, egf }) => (

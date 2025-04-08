@@ -21,7 +21,7 @@ export const DEVICE_TYPE_NAMES = {
   [DEVICE_TYPES.TDR]: 'TDR',
 };
 
-// 類型顯示順序（Home 頁分類按鈕可用）
+// 分區顯示順序（Home 頁分類按鈕可用）
 export const DEVICE_TYPE_ORDER = [
   DEVICE_TYPES.ALL,
   DEVICE_TYPES.TI,
@@ -48,8 +48,8 @@ export const deviceMapping = {
         lat: 24.0301,
         lng: 121.16,
         sensors: [
-          { name: 'BT_84.6K A (A軸)', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
-          { name: 'BT_84.6K B (B軸)', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
+          { name: 'BT_84.6K A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
+          { name: 'BT_84.6K B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
         ]
       },
       {
@@ -58,10 +58,10 @@ export const deviceMapping = {
         lat: 24.0302,
         lng: 121.16,
         sensors: [
-          { name: 'BT_84.65K A (A軸)', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 11.388 } },
-          { name: 'BT_84.65K B (B軸)', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 10.317 } },
-          { name: 'BT_84.7K A (A軸)', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
-          { name: 'BT_84.7K B (B軸)', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
+          { name: 'BT_84.65K A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 11.388 } },
+          { name: 'BT_84.65K B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 10.317 } },
+          { name: 'BT_84.7K A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
+          { name: 'BT_84.7K B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
         ]
       },
       { id: 'AH3', name: 'AH3 TDR', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
@@ -101,10 +101,10 @@ export const deviceMapping = {
         lat: 24.075278,
         lng: 121.183611,
         sensors: [
-          { name: '14.25k A (A軸)', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
-          { name: '14.25k B (B軸)', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
-          { name: '14.27k A (A軸)', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
-          { name: '14.27k B (B軸)', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
+          { name: '14.25k 軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
+          { name: '14.25k B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
+          { name: '14.27k A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
+          { name: '14.27k B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
         ]
       },
       {
@@ -113,14 +113,16 @@ export const deviceMapping = {
         lat: 24.076667,
         lng: 121.183889,
         sensors: [
-          { name: 'BT_CH1A (A軸)', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
-          { name: 'BT_CH1B (B軸)', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
+          { name: 'BT_CH1 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
+          { name: 'BT_CH1 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
         ]
       },
-      { id: 'CH1', name: 'CH1 TDR', lat: 24.086667, lng: 121.173689, type: DEVICE_TYPES.TDR },
       { mac: '74FE489299F4', name: 'GE1', lat: 24.089444, lng: 121.173611, sensors: [{ name: 'GE1', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 } }] },
-      { mac: '74FE4890BAFC', name: 'GE2', lat: 24.090833, lng: 121.173889, sensors: [{ name: 'GE2', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
-      { mac: '74FE48941AD9', name: 'GE3', lat: 24.092222, lng: 121.174167, sensors: [{ name: 'GE3', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] }
+      { mac: '74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.174, sensors: [{ name: 'GE2', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
+      { mac: '74FE48941AD9', name: 'GE3', lat: 24.092222, lng: 121.174167, sensors: [{ name: 'GE3', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] },
+      { id: 'CH1', name: 'CH1 TDR', lat: 24.08965, lng: 121.1738, type: DEVICE_TYPES.TDR },
+      { id: 'CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.174, type: DEVICE_TYPES.TDR },
+      { id: 'CH3', name: 'CH3 TDR', lat: 24.086667, lng: 121.173689, type: DEVICE_TYPES.TDR }
     ]
   }
 };

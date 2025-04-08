@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import html2canvas from 'html2canvas';
 import { useSearchParams } from 'react-router-dom';
 import { API_BASE, deviceMapping } from '../config/config';
+
 
 function TrendPage() {
     const [mac, setMac] = useState('');
@@ -68,6 +70,43 @@ function TrendPage() {
         }
     };
 
+    // 匯出 CSV
+    const exportToCSV = () => {
+        if (data.length === 0) return;
+    
+        const headers = ['時間', ...deviceMapping[mac]?.sensors?.[sensorIndex]?.channels || []];
+        const rows = data.map(row =>
+        [row.time, ...headers.slice(1).map(ch => row[ch] ?? '')]
+        );
+    
+        const csvContent = [headers, ...rows]
+        .map(e => e.join(','))
+        .join('\n');
+    
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+    
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `trend_${mac}_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // 匯出 PNG 圖片
+    const exportToPNG = async () => {
+        const chartArea = document.getElementById('chart-container');
+        if (!chartArea) return;
+    
+        const canvas = await html2canvas(chartArea);
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `trend_${mac}_${Date.now()}.png`;
+        link.click();
+    };
+  
+
     const applyRange = (days) => {
         const end = new Date();
         const start = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
@@ -89,10 +128,10 @@ function TrendPage() {
                 <button onClick={() => applyRange(30)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一個月</button>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-4 gap-4">
                 <div>
                     <label className="font-semibold">裝置：</label>
-                    <select value={mac} onChange={e => setMac(e.target.value)} className="w-full border rounded p-2">
+                    <select value={mac} onChange={e => setMac(e.target.value)} className="w-auto border rounded p-2">
                         <option value="">請選擇</option>
                         {allDevices.map(dev => (
                             <option key={dev.mac || dev.id} value={dev.mac || dev.id}>{dev.name}</option>
@@ -103,7 +142,7 @@ function TrendPage() {
                 {mac && currentDevice && (
                     <div>
                         <label className="font-semibold">通道組：</label>
-                        <select value={sensorIndex} onChange={e => setSensorIndex(parseInt(e.target.value))} className="w-full border rounded p-2">
+                        <select value={sensorIndex} onChange={e => setSensorIndex(parseInt(e.target.value))} className="w-auto border rounded p-2">
                             {currentDevice.sensors?.map((s, i) => (
                                 <option key={i} value={i}>{s.name}</option>
                             ))}
@@ -113,61 +152,73 @@ function TrendPage() {
 
                 <div>
                     <label className="font-semibold">開始日期：</label>
-                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border rounded p-2" />
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-auto border rounded p-2" />
                 </div>
                 <div>
                     <label className="font-semibold">結束日期：</label>
-                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full border rounded p-2" />
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-auto border rounded p-2" />
                 </div>
             </div>
-
+            
+            {/*
+                {mac && (
             <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 顯示趨勢
             </button>
+            )}
+            */}
 
             {data.length > 0 && currentDevice?.sensors?.[sensorIndex]?.channels && (
-                <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={data}>
-                        <XAxis
-                            dataKey="time"
-                            tickFormatter={(val) =>
-                                new Date(val).toLocaleString('zh-TW', {
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false,
-                                })
-                            }
-                        />
-                        <YAxis
-                            domain={['auto', 'auto']}
-                            tickFormatter={(value) =>
-                                new Intl.NumberFormat('en-US', {
-                                    maximumFractionDigits: 3,
-                                }).format(value)
-                            }
-                        />
-                        <Tooltip
-                            formatter={(value) =>
-                                new Intl.NumberFormat('en-US', {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 3,
-                                }).format(value)
-                            }
-                        />
-                        <Legend />
-                        {currentDevice.sensors[sensorIndex].channels.map((ch, i) => (
-                            <Line
-                                key={ch}
-                                dataKey={ch}
-                                type="monotone"
-                                stroke={i === 0 ? '#8884d8' : '#82ca9d'}
-                                dot={false}
+                <div id="chart-container">
+                    <ResponsiveContainer width="100%" height={400}>
+                        <LineChart data={data}>
+                            <XAxis
+                                dataKey="time"
+                                tickFormatter={(val) =>
+                                    new Date(val).toLocaleString('zh-TW', {
+                                        month: 'numeric',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false,
+                                    })
+                                }
                             />
-                        ))}
-                    </LineChart>
-                </ResponsiveContainer>
+                            <YAxis
+                                domain={['auto', 'auto']}
+                                tickFormatter={(value) =>
+                                    new Intl.NumberFormat('en-US', {
+                                        maximumFractionDigits: 3,
+                                    }).format(value)
+                                }
+                            />
+                            <Tooltip
+                                formatter={(value) =>
+                                    new Intl.NumberFormat('en-US', {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 3,
+                                    }).format(value)
+                                }
+                            />
+                            <Legend />
+                            {currentDevice.sensors[sensorIndex].channels.map((ch, i) => (
+                                <Line
+                                    key={ch}
+                                    dataKey={ch}
+                                    type="monotone"
+                                    stroke={i === 0 ? '#8884d8' : '#82ca9d'}
+                                    dot={false}
+                                />
+                            ))}
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+            {mac && (
+                <div className="flex gap-2">
+                    <button onClick={exportToCSV} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">匯出 CSV</button>
+                    <button onClick={exportToPNG} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">下載圖表</button>
+                </div>
             )}
         </div>
     );

@@ -53,7 +53,7 @@ function getIconByType(type) {
 
   return new L.Icon({
     iconUrl: url,
-    iconSize: [32, 32],    // 可自行調整大小
+    iconSize: [20, 20],    // 可自行調整大小
     iconAnchor: [16, 32],  // 圖片底部中心
     popupAnchor: [0, -32],
     shadowUrl: null
@@ -94,9 +94,10 @@ function InteractiveMap() {
       />
       {/* 🔍 控制按鈕 */}
       <div className="absolute top-4 left-4 z-[1000] bg-white bg-opacity-90 p-3 rounded shadow">
+        <ZoomToAreaButton label="80k區" center={[24.0178, 121.1285]} zoom={18} />
         <ZoomToAreaButton label="春陽區" center={[24.03, 121.16]} zoom={18} />
-        <ZoomToAreaButton label="梅峰區" center={[24.089, 121.174]} zoom={17} />
         <ZoomToAreaButton label="90k區" center={[24.0255, 121.183611]} zoom={17} />
+        <ZoomToAreaButton label="梅峰區" center={[24.089, 121.174]} zoom={17} />
       </div>
 
       {/* 📍 站點標記列表 */}
