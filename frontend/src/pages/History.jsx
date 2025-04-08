@@ -54,29 +54,28 @@ function History() {
   const applyRange = (days) => {
     const end = new Date();
     const start = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
-  
     const format = (d) => d.toISOString().split('T')[0];
     setStartDate(format(start));
     setEndDate(format(end));
-  
     setOffset(0); // 回到第一頁
   };
-  
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold">歷史資料查詢</h1>
+    <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6 text-sm sm:text-xs">
+      <h1 className="text-xl sm:text-2xl font-bold">歷史資料查詢</h1>
 
-      <div className="flex gap-2 mb-4">
+      {/* 快速選擇 */}
+      <div className="flex flex-wrap gap-2 mb-4">
         <button onClick={() => applyRange(1)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一天</button>
         <button onClick={() => applyRange(7)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一週</button>
         <button onClick={() => applyRange(30)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一個月</button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      {/* 查詢條件 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div>
-          <label className="font-semibold text-sm">裝置</label>
-          <select className="w-full border p-2 rounded text-sm" value={deviceId} onChange={e => setDeviceId(e.target.value)}>
+          <label className="font-semibold">裝置</label>
+          <select className="w-full border px-2 py-1 rounded text-sm" value={deviceId} onChange={e => setDeviceId(e.target.value)}>
             <option value="">全部裝置</option>
             {Object.entries(deviceMapping).map(([areaKey, area]) => (
               <optgroup key={areaKey} label={area.name}>
@@ -88,13 +87,13 @@ function History() {
               </optgroup>
             ))}
           </select>
-
         </div>
         <div>
-          <label className="font-semibold text-sm">開始日期</label>
-          <input type="date"
-            className="w-full border p-2 rounded text-sm"
-            value={startDate} 
+          <label className="font-semibold">開始日期</label>
+          <input
+            type="date"
+            className="w-full border px-2 py-1 rounded text-sm"
+            value={startDate}
             onChange={e => {
               const val = e.target.value;
               setStartDate(val);
@@ -103,10 +102,10 @@ function History() {
           />
         </div>
         <div>
-          <label className="font-semibold text-sm">結束日期</label>
+          <label className="font-semibold">結束日期</label>
           <input
             type="date"
-            className="w-full border p-2 rounded text-sm"
+            className="w-full border px-2 py-1 rounded text-sm"
             value={endDate}
             onChange={e => {
               const val = e.target.value;
@@ -117,68 +116,71 @@ function History() {
         </div>
       </div>
 
-      <table className="w-full text-sm border mt-4">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-2">時間</th>
-            <th className="p-2">站名</th>
-            <th className="p-2">設備名稱</th>
-            <th className="p-2">通道</th>
-            <th className="p-2">原始值</th>
-            <th className="p-2">變化量</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((entry, index) => {
-            const mac = entry.deviceId?.split('_')[1];
-            
-            // 透過新結構找到對應device和sensor
-            let deviceConfig;
-            Object.values(deviceMapping).some(area => {
-              deviceConfig = area.devices.find(device => device.mac === mac || device.id === entry.deviceId);
-              return deviceConfig;
-            });
+      {/* 資料表格 */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border mt-4">
+          <thead className="bg-gray-100 text-left">
+            <tr>
+              <th className="p-2">時間</th>
+              <th className="p-2">站名</th>
+              <th className="p-2">設備名稱</th>
+              <th className="p-2">通道</th>
+              <th className="p-2">原始值</th>
+              <th className="p-2">變化量</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((entry, index) => {
+              const mac = entry.deviceId?.split('_')[1];
 
-            if (!deviceConfig) return null;
-
-            return deviceConfig.sensors?.flatMap((sensor, sIdx) => {
-              return sensor.channels.map(ch => {
-                const chData = entry.channels?.[ch];
-                if (!chData) return null;
-
-                const egf = chData.EgF;
-                const init = sensor.initialValues?.[ch] ?? 0;
-                const delta = egf - init;
-
-                return (
-                  <tr key={`${index}-${ch}`} className="border-b">
-                    <td className="p-2">
-                      {new Date(entry.timestamp).toLocaleString('zh-TW', {
-                        month: 'numeric',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                      })}
-                    </td>
-                    <td className="p-2">{deviceConfig.name}</td>
-                    <td className="p-2">{sensor.name}</td>
-                    <td className="p-2">{ch}</td>
-                    <td className="p-2 text-right">{egf?.toFixed(3)}</td>
-                    <td className="p-2 text-right">{delta?.toFixed(3)}</td>
-                  </tr>
-                );
+              let deviceConfig;
+              Object.values(deviceMapping).some(area => {
+                deviceConfig = area.devices.find(device => device.mac === mac || device.id === entry.deviceId);
+                return deviceConfig;
               });
-            });
-          })}
-        </tbody>
-      </table>
 
+              if (!deviceConfig) return null;
+
+              return deviceConfig.sensors?.flatMap((sensor, sIdx) => {
+                return sensor.channels.map(ch => {
+                  const chData = entry.channels?.[ch];
+                  if (!chData) return null;
+
+                  const egf = chData.EgF;
+                  const init = sensor.initialValues?.[ch] ?? 0;
+                  const delta = egf - init;
+
+                  return (
+                    <tr key={`${index}-${ch}`} className="border-b">
+                      <td className="p-2">
+                        {new Date(entry.timestamp).toLocaleString('zh-TW', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
+                      </td>
+                      <td className="p-2">{deviceConfig.name}</td>
+                      <td className="p-2">{sensor.name}</td>
+                      <td className="p-2">{ch}</td>
+                      <td className="p-2 text-right">{egf?.toFixed(3)}</td>
+                      <td className="p-2 text-right">{delta?.toFixed(3)}</td>
+                    </tr>
+                  );
+                });
+              });
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 分頁控制 */}
       <div className="flex justify-between mt-4">
-        <button onClick={() => handlePageChange(-1)} disabled={offset === 0} className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50">
+        <button onClick={() => handlePageChange(-1)} disabled={offset === 0} className="px-3 py-1 sm:px-4 sm:py-2 bg-gray-300 rounded disabled:opacity-50 text-sm">
           上一頁
         </button>
-        <button onClick={() => handlePageChange(1)} disabled={data.length < limit} className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50">
+        <button onClick={() => handlePageChange(1)} disabled={data.length < limit} className="px-3 py-1 sm:px-4 sm:py-2 bg-gray-300 rounded disabled:opacity-50 text-sm">
           下一頁
         </button>
       </div>

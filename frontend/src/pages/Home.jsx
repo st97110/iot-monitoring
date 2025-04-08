@@ -25,14 +25,14 @@ function Home() {
   const allAreas = ['全部', ...Object.values(deviceMapping).map(a => a.name)];
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-screen-xl mx-auto px-2 sm:px-4 space-y-6">
       {/* 區域選單 */}
       <div className="flex flex-wrap gap-2">
         {allAreas.map(name => (
           <button
             key={name}
             onClick={() => setFilterArea(name === filterArea ? '全部' : name)}
-            className={`px-3 py-1 rounded-full text-sm border ${
+            className={`px-3 py-1 rounded-full text-sm border whitespace-nowrap ${
               name === filterArea ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
             }`}
           >
@@ -42,13 +42,13 @@ function Home() {
       </div>
 
       {/* 資料區 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="space-y-8">
         {Object.entries(deviceMapping)
           .filter(([_, area]) => filterArea === '全部' || area.name === filterArea)
           .map(([areaKey, area]) => (
-          <div key={areaKey} className="md:col-span-4">
-            <h2 className="text-2xl font-bold my-4">{area.name}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div key={areaKey}>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">{area.name}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {area.devices.map(device => {
                 const data = latestData[`WISE-4010LAN_${device.mac}`] || latestData[device.id];
                 if (!data) return null;
@@ -61,20 +61,23 @@ function Home() {
                   });
 
                   return (
-                    <div key={(device.mac || device.id) + '-' + idx} className="border rounded-xl shadow p-4 bg-white">
-                      <h3 className="text-xl font-semibold mb-2">{device.name}</h3>
-                      <p className="text-gray-600 mb-1">
+                    <div
+                      key={(device.mac || device.id) + '-' + idx}
+                      className="border rounded-xl shadow p-4 sm:p-3 md:p-2 bg-white text-sm sm:text-xs md:text-xs"
+                    >
+                      <h3 className="text-lg sm:text-base font-semibold mb-2">{device.name}</h3>
+                      <p className="text-gray-600 mb-1 text-xs sm:text-sm">
                         時間：{new Date(data.timestamp).toLocaleString('zh-TW')}
                       </p>
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-gray-500 text-xs">
                         📅 更新於：{getRelativeTime(data.timestamp)}
                       </p>
 
                       <div className="space-y-2 mt-2">
                         <h4 className="font-semibold text-gray-700">{sensor.name}</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="grid grid-cols-2 gap-2">
                           {channels.map(({ channel, egf }) => (
-                            <div key={channel} className="flex justify-between">
+                            <div key={channel} className="flex justify-between text-xs">
                               <span>{channel} EgF</span>
                               <span className={egf !== null ? 'text-black' : 'text-gray-400'}>
                                 {egf !== null ? egf.toFixed(3) : '無'}
@@ -85,7 +88,10 @@ function Home() {
                       </div>
 
                       <div className="mt-4">
-                        <a href={`/trend?deviceId=${device.mac || device.id}&sensorIndex=${idx}`} className="text-blue-600 underline text-sm">
+                        <a
+                          href={`/trend?deviceId=${device.mac || device.id}&sensorIndex=${idx}`}
+                          className="text-blue-600 underline text-xs sm:text-sm"
+                        >
                           查看趨勢
                         </a>
                       </div>
