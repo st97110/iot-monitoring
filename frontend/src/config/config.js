@@ -1,1 +1,1 @@
-export const API_BASE = "https://monitoring-backend-znmw.onrender.com/";
+export const API_BASE = "https://monitoring-backend-znmw.onrender.com";
