@@ -37,41 +37,41 @@ function TrendPage() {
     const currentDevice = allDevices.find(dev => dev.mac === mac || dev.id === mac);
 
     const handleSearch = async () => {
-        if (!mac) return;
+        if (!mac || !currentDevice) return;
 
-        const deviceId = 'WISE-4010LAN_' + mac;
-        const sensor = deviceMapping[mac]?.sensors?.[sensorIndex];
+        const deviceId = currentDevice.mac ? 'WISE-4010LAN_' + currentDevice.mac : currentDevice.id;
+        const sensor = currentDevice.sensors?.[sensorIndex];
         if (!sensor) return;
 
         try {
-        const res = await axios.get(`${API_BASE}/api/history`, {
-            params: { deviceId, startDate, endDate }
-        });
+            const res = await axios.get(`${API_BASE}/api/history`, {
+                params: { deviceId, startDate, endDate }
+            });
 
-        const raw = res.data;
+            const raw = res.data;
 
-        const processed = raw.map(entry => {
-            const row = { time: entry.timestamp };
-            for (const ch of sensor.channels) {
-            const egf = entry.channels?.[ch]?.EgF;
-            if (egf !== undefined) {
-                const init = sensor.initialValues?.[ch] ?? 0;
-                row[ch] = egf - init;
-            }
-            }
-            return row;
-        });
+            const processed = raw.map(entry => {
+                const row = { time: entry.timestamp };
+                for (const ch of sensor.channels) {
+                    const egf = entry.channels?.[ch]?.EgF;
+                    if (egf !== undefined) {
+                        const init = sensor.initialValues?.[ch] ?? 0;
+                        row[ch] = egf - init;
+                    }
+                }
+                return row;
+            });
 
-        setData(processed);
+            setData(processed);
         } catch (err) {
-        console.error('取得趨勢資料錯誤:', err);
+            console.error('取得趨勢資料錯誤:', err);
         }
     };
 
     const applyRange = (days) => {
         const end = new Date();
         const start = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
-      
+
         const format = (d) => d.toISOString().split('T')[0];
         setStartDate(format(start));
         setEndDate(format(end));
@@ -100,13 +100,13 @@ function TrendPage() {
                     </select>
                 </div>
 
-                {mac && (
+                {mac && currentDevice && (
                     <div>
                         <label className="font-semibold">通道組：</label>
                         <select value={sensorIndex} onChange={e => setSensorIndex(parseInt(e.target.value))} className="w-full border rounded p-2">
-                        {currentDevice.sensors?.map((s, i) => (
-                            <option key={i} value={i}>{s.name}</option>
-                        ))}
+                            {currentDevice.sensors?.map((s, i) => (
+                                <option key={i} value={i}>{s.name}</option>
+                            ))}
                         </select>
                     </div>
                 )}
@@ -125,48 +125,48 @@ function TrendPage() {
                 顯示趨勢
             </button>
 
-            {data.length > 0 && (
+            {data.length > 0 && currentDevice?.sensors?.[sensorIndex]?.channels && (
                 <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={data}>
-                    <XAxis
-                    dataKey="time"
-                    tickFormatter={(val) =>
-                        new Date(val).toLocaleString('zh-TW', {
-                        month: 'numeric',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                        })
-                    }
-                    />
-                    <YAxis
-                    domain={['auto', 'auto']}
-                    tickFormatter={(value) =>
-                        new Intl.NumberFormat('en-US', {
-                        maximumFractionDigits: 3,
-                        }).format(value)
-                    }
-                    />
-                    <Tooltip
-                    formatter={(value) =>
-                        new Intl.NumberFormat('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 3,
-                        }).format(value)
-                    }
-                    />
-                    <Legend />
-                    {currentDevice?.sensors?.[sensorIndex]?.channels.map((ch, i) => (
-                    <Line
-                        key={ch}
-                        dataKey={ch}
-                        type="monotone"
-                        stroke={i === 0 ? '#8884d8' : '#82ca9d'}
-                        dot={false}
-                    />
-                    ))}
-                </LineChart>
+                    <LineChart data={data}>
+                        <XAxis
+                            dataKey="time"
+                            tickFormatter={(val) =>
+                                new Date(val).toLocaleString('zh-TW', {
+                                    month: 'numeric',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false,
+                                })
+                            }
+                        />
+                        <YAxis
+                            domain={['auto', 'auto']}
+                            tickFormatter={(value) =>
+                                new Intl.NumberFormat('en-US', {
+                                    maximumFractionDigits: 3,
+                                }).format(value)
+                            }
+                        />
+                        <Tooltip
+                            formatter={(value) =>
+                                new Intl.NumberFormat('en-US', {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 3,
+                                }).format(value)
+                            }
+                        />
+                        <Legend />
+                        {currentDevice.sensors[sensorIndex].channels.map((ch, i) => (
+                            <Line
+                                key={ch}
+                                dataKey={ch}
+                                type="monotone"
+                                stroke={i === 0 ? '#8884d8' : '#82ca9d'}
+                                dot={false}
+                            />
+                        ))}
+                    </LineChart>
                 </ResponsiveContainer>
             )}
         </div>
@@ -174,4 +174,3 @@ function TrendPage() {
 }
 
 export default TrendPage;
-``
