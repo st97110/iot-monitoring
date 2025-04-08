@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { deviceMapping } from '../config/deviceMapping';
-import { API_BASE } from '../config/config';
+import { API_BASE, deviceMapping } from '../config/config';
 
 function History() {
   const [data, setData] = useState([]);
@@ -14,7 +13,7 @@ function History() {
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  useEffect(() => {
+  useEffect(() => { 
     setStartDate(weekAgo);
     setEndDate(today);
   }, []);
@@ -22,6 +21,12 @@ function History() {
   useEffect(() => {
     fetchData();
   }, [deviceId, startDate, endDate, offset]);
+
+  const syncDates = (start, end, setStartDate, setEndDate) => {
+    if (new Date(start) > new Date(end)) {
+      setEndDate(start);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -46,23 +51,44 @@ function History() {
     setOffset(prev => Math.max(0, prev + direction * limit));
   };
 
+  const applyRange = (days) => {
+    const end = new Date();
+    const start = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
+  
+    const format = (d) => d.toISOString().split('T')[0];
+    setStartDate(format(start));
+    setEndDate(format(end));
+  
+    setOffset(0); // 回到第一頁
+  };
+  
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       <h1 className="text-2xl font-bold">歷史資料查詢</h1>
 
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => applyRange(1)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一天</button>
+        <button onClick={() => applyRange(7)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一週</button>
+        <button onClick={() => applyRange(30)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一個月</button>
+      </div>
+
       <div className="grid md:grid-cols-3 gap-4">
         <div>
           <label className="font-semibold text-sm">裝置</label>
-          <select
-            className="w-full border p-2 rounded text-sm"
-            value={deviceId}
-            onChange={e => setDeviceId(e.target.value)}
-          >
+          <select className="w-full border p-2 rounded text-sm" value={deviceId} onChange={e => setDeviceId(e.target.value)}>
             <option value="">全部裝置</option>
-            {Object.entries(deviceMapping).map(([mac, cfg]) => (
-              <option key={mac} value={`WISE-4010LAN_${mac}`}>{cfg.name}</option>
+            {Object.entries(deviceMapping).map(([areaKey, area]) => (
+              <optgroup key={areaKey} label={area.name}>
+                {area.devices.map(device => (
+                  <option key={device.mac || device.id} value={device.mac ? `WISE-4010LAN_${device.mac}` : device.id}>
+                    {device.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
+
         </div>
         <div>
           <label className="font-semibold text-sm">開始日期</label>
@@ -105,13 +131,21 @@ function History() {
         <tbody>
           {data.map((entry, index) => {
             const mac = entry.deviceId?.split('_')[1];
-            const config = deviceMapping[mac];
-            if (!config) return null;
+            
+            // 透過新結構找到對應device和sensor
+            let deviceConfig;
+            Object.values(deviceMapping).some(area => {
+              deviceConfig = area.devices.find(device => device.mac === mac || device.id === entry.deviceId);
+              return deviceConfig;
+            });
 
-            return config.sensors.flatMap((sensor, sIdx) => {
+            if (!deviceConfig) return null;
+
+            return deviceConfig.sensors?.flatMap((sensor, sIdx) => {
               return sensor.channels.map(ch => {
                 const chData = entry.channels?.[ch];
                 if (!chData) return null;
+
                 const egf = chData.EgF;
                 const init = sensor.initialValues?.[ch] ?? 0;
                 const delta = egf - init;
@@ -127,11 +161,11 @@ function History() {
                         hour12: false,
                       })}
                     </td>
-                    <td className="p-2">{config.name}</td>
+                    <td className="p-2">{deviceConfig.name}</td>
                     <td className="p-2">{sensor.name}</td>
                     <td className="p-2">{ch}</td>
                     <td className="p-2 text-right">{egf?.toFixed(3)}</td>
-                    <td className="p-2 text-right">{(delta)?.toFixed(3)}</td>
+                    <td className="p-2 text-right">{delta?.toFixed(3)}</td>
                   </tr>
                 );
               });

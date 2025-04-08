@@ -178,7 +178,6 @@ const getHistoryData = async (deviceId, startDate, endDate) => {
   }
 };
 
-
 /**
  * 更新設備最新數據緩存
  * @param {string} deviceId - 設備ID
