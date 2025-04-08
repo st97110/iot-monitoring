@@ -1,5 +1,7 @@
-//export const API_BASE = "https://monitoring-backend-znmw.onrender.com";
-export const API_BASE = "http://localhost:3000";
+export const API_BASE =
+  process.env.NODE_ENV === 'production'
+    ? 'https://monitoring-backend-znmw.onrender.com'
+    : 'http://localhost:3000';
 
 // 裝置類型代碼（type）
 export const DEVICE_TYPES = {
