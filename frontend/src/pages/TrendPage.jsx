@@ -42,7 +42,7 @@ function TrendPage() {
         if (!sensor) return;
 
         try {
-        const res = await axios.get('${API_BASE}/api/history', {
+        const res = await axios.get(`${API_BASE}/api/history`, {
             params: { deviceId, startDate, endDate }
         });
 

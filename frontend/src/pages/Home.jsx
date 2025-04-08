@@ -9,7 +9,7 @@ function Home() {
   const [filterType, setFilterType] = useState(DEVICE_TYPES.ALL);
 
   useEffect(() => {
-    axios.get('${API_BASE}/api/latest')
+    axios.get(`${API_BASE}/api/latest`)
       .then(res => setLatestData(res.data))
       .catch(err => console.error('取得最新資料失敗:', err));
   }, []);

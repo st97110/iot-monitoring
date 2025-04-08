@@ -25,7 +25,7 @@ function History() {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('${API_BASE}/api/history', {
+      const res = await axios.get(`${API_BASE}/api/history`, {
         params: {
           deviceId: deviceId || undefined,
           startDate,

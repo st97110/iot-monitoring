@@ -19,7 +19,7 @@ function StationDetail() {
         params.endDate = end;
       }
 
-      const res = await axios.get('${API_BASE}/api/history', { params });
+      const res = await axios.get(`${API_BASE}/api/history`, { params });
       setData(res.data);
     } catch (err) {
       console.error('載入資料失敗', err);
