@@ -9,6 +9,7 @@ function History() {
   const [endDate, setEndDate] = useState('');
   const [limit] = useState(10);
   const [offset, setOffset] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -60,9 +61,77 @@ function History() {
     setOffset(0); // 回到第一頁
   };
 
+  // 過濾裝置選項，用於顯示符合搜尋條件的裝置
+  const filterDeviceOptions = () => {
+    const allDeviceOptions = [];
+
+    Object.entries(deviceMapping).forEach(([areaKey, area]) => {
+      const filteredDevices = area.devices.filter(device => 
+        !searchTerm || 
+        device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (device.mac && device.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+
+      if (filteredDevices.length > 0) {
+        allDeviceOptions.push({
+          areaKey,
+          areaName: area.name,
+          devices: filteredDevices
+        });
+      }
+    });
+
+    return allDeviceOptions;
+  };
+
+  // 過濾表格資料，用於在不重新請求API的情況下過濾顯示資料
+  const filterTableData = () => {
+    if (!searchTerm) return data;
+
+    return data.filter(entry => {
+      const mac = entry.deviceId?.split('_')[1];
+      let deviceConfig;
+      let found = false;
+
+      Object.values(deviceMapping).some(area => {
+        deviceConfig = area.devices.find(device => device.mac === mac || device.id === entry.deviceId);
+        if (deviceConfig) {
+          found = deviceConfig.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                 (deviceConfig.mac && deviceConfig.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                 (deviceConfig.id && deviceConfig.id.toLowerCase().includes(searchTerm.toLowerCase()));
+          return true;
+        }
+        return false;
+      });
+
+      return found;
+    });
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   return (
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6 text-sm sm:text-xs">
       <h1 className="text-xl sm:text-2xl font-bold">歷史資料查詢</h1>
+
+      {/* 搜尋欄位 */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="搜尋裝置名稱..."
+          value={searchTerm}
+          onChange={handleSearch}
+          className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <div className="absolute right-3 top-2">
+          <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
 
       {/* 快速選擇 */}
       <div className="flex flex-wrap gap-2 mb-4">
@@ -77,9 +146,9 @@ function History() {
           <label className="font-semibold">裝置</label>
           <select className="w-full border px-2 py-1 rounded text-sm" value={deviceId} onChange={e => setDeviceId(e.target.value)}>
             <option value="">全部裝置</option>
-            {Object.entries(deviceMapping).map(([areaKey, area]) => (
-              <optgroup key={areaKey} label={area.name}>
-                {area.devices.map(device => (
+            {filterDeviceOptions().map(({areaKey, areaName, devices}) => (
+              <optgroup key={areaKey} label={areaName}>
+                {devices.map(device => (
                   <option key={device.mac || device.id} value={device.mac ? `WISE-4010LAN_${device.mac}` : device.id}>
                     {device.name}
                   </option>
@@ -130,7 +199,7 @@ function History() {
             </tr>
           </thead>
           <tbody>
-            {data.map((entry, index) => {
+            {filterTableData().map((entry, index) => {
               const mac = entry.deviceId?.split('_')[1];
 
               let deviceConfig;

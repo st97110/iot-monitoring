@@ -6,20 +6,21 @@ import { useSearchParams } from 'react-router-dom';
 import { API_BASE, deviceMapping } from '../config/config';
 
 function TrendPage() {
-  const [mac, setMac] = useState('');
+  const [deviceId, setDeviceId] = useState('');
   const [sensorIndex, setSensorIndex] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [data, setData] = useState([]);
+  const [offset, setOffset] = useState(0);
 
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const macParam = searchParams.get('mac');
-    const sensorIndexParm = parseInt(searchParams.get('sensorIndex') || '0');
-    if (macParam) {
-      setMac(macParam);
-      setSensorIndex(sensorIndexParm);
+    const deviceIdParam = searchParams.get('deviceId');
+    const sensorIndexParam = parseInt(searchParams.get('sensorIndex') || '0');
+    if (deviceIdParam) {
+      setDeviceId(deviceIdParam);
+      setSensorIndex(sensorIndexParam);
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -29,24 +30,32 @@ function TrendPage() {
   }, []);
 
   useEffect(() => {
-    if (mac && startDate && endDate) {
+    if (deviceId && startDate && endDate) {
       handleSearch();
     }
-  }, [mac, sensorIndex, startDate, endDate]);
+  }, [deviceId, sensorIndex, startDate, endDate]);
 
-  const allDevices = Object.values(deviceMapping).flatMap(area => area.devices);
-  const currentDevice = allDevices.find(dev => dev.mac === mac || dev.id === mac);
+  // 找到當前設備
+  let currentDevice = null;
+  Object.values(deviceMapping).some(area => {
+    const device = area.devices.find(dev => dev.mac === deviceId || dev.id === deviceId);
+    if (device) {
+      currentDevice = device;
+      return true;
+    }
+    return false;
+  });
 
   const handleSearch = async () => {
-    if (!mac || !currentDevice) return;
+    if (!deviceId || !currentDevice) return;
 
-    const deviceId = currentDevice.mac ? 'WISE-4010LAN_' + currentDevice.mac : currentDevice.id;
+    const actualDeviceId = currentDevice.mac ? `WISE-4010LAN_${currentDevice.mac}` : currentDevice.id;
     const sensor = currentDevice.sensors?.[sensorIndex];
     if (!sensor) return;
 
     try {
       const res = await axios.get(`${API_BASE}/api/history`, {
-        params: { deviceId, startDate, endDate }
+        params: { deviceId: actualDeviceId, startDate, endDate }
       });
 
       const raw = res.data;
@@ -71,9 +80,9 @@ function TrendPage() {
 
   // 匯出 CSV
   const exportToCSV = () => {
-    if (data.length === 0) return;
+    if (data.length === 0 || !currentDevice) return;
 
-    const headers = ['時間', ...deviceMapping[mac]?.sensors?.[sensorIndex]?.channels || []];
+    const headers = ['時間', ...currentDevice.sensors?.[sensorIndex]?.channels || []];
     const rows = data.map(row =>
       [row.time, ...headers.slice(1).map(ch => row[ch] ?? '')]
     );
@@ -87,7 +96,7 @@ function TrendPage() {
 
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `trend_${mac}_${Date.now()}.csv`);
+    link.setAttribute('download', `trend_${deviceId}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -101,7 +110,7 @@ function TrendPage() {
     const canvas = await html2canvas(chartArea);
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
-    link.download = `trend_${mac}_${Date.now()}.png`;
+    link.download = `trend_${deviceId}_${Date.now()}.png`;
     link.click();
   };
 
@@ -111,7 +120,6 @@ function TrendPage() {
     const format = (d) => d.toISOString().split('T')[0];
     setStartDate(format(start));
     setEndDate(format(end));
-
     setOffset(0); // 回到第一頁
   };
 
@@ -119,27 +127,38 @@ function TrendPage() {
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6 text-sm sm:text-xs">
       <h1 className="text-xl sm:text-2xl font-bold">趨勢圖查詢</h1>
 
+      {/* 快速選擇 */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => applyRange(1)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">最近一天</button>
-        <button onClick={() => applyRange(7)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">最近一週</button>
-        <button onClick={() => applyRange(30)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">最近一個月</button>
+        <button onClick={() => applyRange(1)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一天</button>
+        <button onClick={() => applyRange(7)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一週</button>
+        <button onClick={() => applyRange(30)} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">最近一個月</button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div>
-          <label className="font-semibold">裝置：</label>
-          <select value={mac} onChange={e => setMac(e.target.value)} className="w-full border px-2 py-1 rounded">
-            <option value="">請選擇</option>
-            {allDevices.map(dev => (
-              <option key={dev.mac || dev.id} value={dev.mac || dev.id}>{dev.name}</option>
+          <label className="font-semibold">裝置</label>
+          <select className="w-full border px-2 py-1 rounded text-sm" value={deviceId} onChange={e => setDeviceId(e.target.value)}>
+            <option value="">請選擇裝置</option>
+            {Object.entries(deviceMapping).map(([areaKey, area]) => (
+              <optgroup key={areaKey} label={area.name}>
+                {area.devices.map(device => (
+                  <option key={device.mac || device.id} value={device.mac || device.id}>
+                    {device.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
 
-        {mac && currentDevice && (
+        {deviceId && currentDevice && (
           <div>
-            <label className="font-semibold">通道組：</label>
-            <select value={sensorIndex} onChange={e => setSensorIndex(parseInt(e.target.value))} className="w-full border px-2 py-1 rounded">
+            <label className="font-semibold">通道組</label>
+            <select 
+              value={sensorIndex} 
+              onChange={e => setSensorIndex(parseInt(e.target.value))} 
+              className="w-full border px-2 py-1 rounded text-sm"
+            >
               {currentDevice.sensors?.map((s, i) => (
                 <option key={i} value={i}>{s.name}</option>
               ))}
@@ -148,12 +167,22 @@ function TrendPage() {
         )}
 
         <div>
-          <label className="font-semibold">開始日期：</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border px-2 py-1 rounded" />
+          <label className="font-semibold">開始日期</label>
+          <input
+            type="date"
+            className="w-full border px-2 py-1 rounded text-sm"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+          />
         </div>
         <div>
-          <label className="font-semibold">結束日期：</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full border px-2 py-1 rounded" />
+          <label className="font-semibold">結束日期</label>
+          <input
+            type="date"
+            className="w-full border px-2 py-1 rounded text-sm"
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+          />
         </div>
       </div>
 
@@ -181,7 +210,7 @@ function TrendPage() {
                   key={ch}
                   dataKey={ch}
                   type="monotone"
-                  stroke={i === 0 ? '#8884d8' : '#82ca9d'}
+                  stroke={['#8884d8', '#82ca9d', '#ff7300', '#0088aa'][i % 4]}
                   dot={false}
                 />
               ))}
@@ -190,10 +219,10 @@ function TrendPage() {
         </div>
       )}
 
-      {mac && (
+      {deviceId && (
         <div className="flex flex-wrap gap-2">
-          <button onClick={exportToCSV} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">匯出 CSV</button>
-          <button onClick={exportToPNG} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">下載圖表</button>
+          <button onClick={exportToCSV} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">匯出 CSV</button>
+          <button onClick={exportToPNG} className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">下載圖表</button>
         </div>
       )}
     </div>
