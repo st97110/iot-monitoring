@@ -1,0 +1,34 @@
+frontend/package-lock.json
+frontend/node_modules
+
+
+# Environment variables
+backend/.env
+backend/.env.local
+backend/.env.*.local
+
+# Logs
+backend/logs/
+backend/*.log
+backend/npm-debug.log*
+
+# Build
+backend/dist/
+
+# IDE files
+backend/.idea/
+backend/.vscode/
+backend/*.suo
+backend/*.ntvs*
+backend/*.njsproj
+backend/*.sln
+backend/*.sw?
+
+# OS files
+backend/.DS_Store
+backend/Thumbs.db
+
+# Temporary files
+backend/tmp/
+backend/temp/
+

@@ -111,7 +111,7 @@ export const deviceMapping = {
       },
       {
         mac: '00D0C9FAC4F8',
-        name: '14.27k傾斜儀',
+        name: '14甲CH1傾斜儀',
         lat: 24.076667,
         lng: 121.183889,
         sensors: [
