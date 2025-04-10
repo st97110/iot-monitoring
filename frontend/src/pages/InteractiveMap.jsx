@@ -125,7 +125,10 @@ function InteractiveMap() {
               <div className="text-sm">
                 <strong>{station.name}</strong>
                 <br />
-                <button onClick={() => navigate(`/trend?deviceId=${station.deviceId}`)} className="text-blue-600 underline">
+                <button 
+                  onClick={() => navigate(`/trend?deviceId=${station.deviceId}`)} 
+                  className="text-blue-600 underline"
+                >
                   查看詳細
                 </button>
                 <hr className="my-1" />

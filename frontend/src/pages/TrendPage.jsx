@@ -11,54 +11,91 @@ function TrendPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [data, setData] = useState([]);
-  const [offset, setOffset] = useState(0);
-
   const [searchParams] = useSearchParams();
+  const [currentDevice, setCurrentDevice] = useState(null);
 
+  // 初始化日期和參數
   useEffect(() => {
-    const deviceIdParam = searchParams.get('deviceId');
-    const sensorIndexParam = parseInt(searchParams.get('sensorIndex') || '0');
-    if (deviceIdParam) {
-      setDeviceId(deviceIdParam);
-      setSensorIndex(sensorIndexParam);
-    }
-
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     setStartDate(weekAgo);
     setEndDate(today);
-  }, []);
 
+    // 從 URL 查詢參數中提取數據
+    const deviceIdParam = searchParams.get('deviceId');
+    const sensorIndexParam = searchParams.get('sensorIndex');
+    
+    if (deviceIdParam) {
+      // 處理 deviceId
+      setDeviceId(deviceIdParam);
+      
+      // 處理 sensorIndex
+      if (sensorIndexParam) {
+        const indexNum = parseInt(sensorIndexParam, 10);
+        setSensorIndex(isNaN(indexNum) ? 0 : indexNum);
+      }
+      
+      // 尋找當前裝置
+      findCurrentDevice(deviceIdParam);
+    }
+  }, [searchParams]);
+
+  // 找到裝置數據
+  const findCurrentDevice = (id) => {
+    let found = null;
+    // 檢查是否直接匹配裝置 ID 或 mac
+    Object.values(deviceMapping).some(area => {
+      const device = area.devices.find(dev => {
+        if (dev.mac && id === `WISE-4010LAN_${dev.mac}`) {
+          return true;
+        }
+        if (dev.id && id === dev.id) {
+          return true;
+        }
+        if (dev.mac && id === dev.mac) {
+          return true;
+        }
+        return false;
+      });
+      
+      if (device) {
+        found = device;
+        return true;
+      }
+      return false;
+    });
+    
+    setCurrentDevice(found);
+    return found;
+  };
+
+  // 當參數變更時取得資料
   useEffect(() => {
     if (deviceId && startDate && endDate) {
       handleSearch();
     }
-  }, [deviceId, sensorIndex, startDate, endDate]);
-
-  // 找到當前設備
-  let currentDevice = null;
-  Object.values(deviceMapping).some(area => {
-    const device = area.devices.find(dev => dev.mac === deviceId || dev.id === deviceId);
-    if (device) {
-      currentDevice = device;
-      return true;
-    }
-    return false;
-  });
+  }, [deviceId, sensorIndex, startDate, endDate, currentDevice]);
 
   const handleSearch = async () => {
     if (!deviceId || !currentDevice) return;
 
-    const actualDeviceId = currentDevice.mac ? `WISE-4010LAN_${currentDevice.mac}` : currentDevice.id;
-    const sensor = currentDevice.sensors?.[sensorIndex];
-    if (!sensor) return;
-
     try {
+      // 確保正確的 deviceId 格式
+      const actualDeviceId = currentDevice.mac ? 
+        (deviceId.startsWith('WISE-4010LAN_') ? deviceId : `WISE-4010LAN_${currentDevice.mac}`) : 
+        currentDevice.id;
+        
+      const sensor = currentDevice.sensors?.[sensorIndex];
+      if (!sensor) return;
+
+      console.log('查詢資料：', actualDeviceId, startDate, endDate);
+
       const res = await axios.get(`${API_BASE}/api/history`, {
         params: { deviceId: actualDeviceId, startDate, endDate }
       });
 
       const raw = res.data;
+      console.log('獲取資料筆數:', raw.length);
 
       const processed = raw.map(entry => {
         const row = { time: entry.timestamp };
