@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 import { Link } from 'react-router-dom';
 
+// ======== 工具函數：將時間轉成「xx秒/分鐘/小時/天前」字串 ========
 function getRelativeTime(isoString) {
   const time = new Date(isoString);
   const now = new Date();
@@ -13,28 +14,36 @@ function getRelativeTime(isoString) {
   return `${Math.floor(diffSec / 86400)} 天前`;
 }
 
-// 設備類型到顏色的映射
+// ======== 設備類型對應顏色漸層 ========
 const typeColors = {
-  [DEVICE_TYPES.TI]: 'from-blue-500 to-blue-600',
-  [DEVICE_TYPES.WATER]: 'from-cyan-500 to-cyan-600',
-  [DEVICE_TYPES.RAIN]: 'from-indigo-500 to-indigo-600',
-  [DEVICE_TYPES.GE]: 'from-green-500 to-green-600',
-  [DEVICE_TYPES.TDR]: 'from-purple-500 to-purple-600',
+  [DEVICE_TYPES.TI]: 'from-blue-500 to-blue-600',    // 傾斜儀
+  [DEVICE_TYPES.WATER]: 'from-cyan-500 to-cyan-600', // 水位計
+  [DEVICE_TYPES.RAIN]: 'from-indigo-500 to-indigo-600', // 雨量筒
+  [DEVICE_TYPES.GE]: 'from-green-500 to-green-600', // 伸縮計
+  [DEVICE_TYPES.TDR]: 'from-purple-500 to-purple-600', // TDR
 };
 
-// 獲取設備類型顏色
-const getDeviceTypeColor = (device) => {
+// 根據設備 (device) 取對應色
+function getDeviceTypeColor(device) {
   const type = device.sensors?.[0]?.type || device.type;
   return typeColors[type] || 'from-gray-500 to-gray-600';
-};
+}
 
-// 獲取資料狀態顏色
-const getStatusColor = (timestamp) => {
+// 判斷資料時間是否太久，顯示不同狀態顏色
+function getStatusColor(timestamp) {
   const diffHours = (new Date() - new Date(timestamp)) / (1000 * 60 * 60);
-  if (diffHours > 24) return 'text-red-500';
-  if (diffHours > 6) return 'text-yellow-500';
-  return 'text-green-500';
-};
+  if (diffHours > 24) return 'text-red-500';     // 超過 24 小時 => 紅色
+  if (diffHours > 6) return 'text-yellow-500';   // 6~24 小時 => 黃色
+  return 'text-green-500';                      // 6 小時內 => 綠色
+}
+
+// ======== 雨量筒的「額外計算」示例，依需求調整 ========
+// 這裡僅示範：EGF - initial 作為「變化量」，若要累計雨量、時段總和，請自行實作
+function calcRainValue(sensor, egf) {
+  // 例如：egf - initial，表示此段時間的累積雨量
+  const initial = sensor.initialValues?.[sensor.channels[0]] ?? 0;
+  return egf - initial;
+}
 
 function Home() {
   const [latestData, setLatestData] = useState({});
@@ -55,58 +64,42 @@ function Home() {
       });
   }, []);
 
+  // 取得所有區域名稱（第一個是「全部」）
   const allAreas = ['全部', ...Object.values(deviceMapping).map(a => a.name)];
 
-  // 定義搜尋處理函數
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  // 過濾裝置的函數，同時考慮區域過濾和搜尋關鍵字
-  const filterDevices = (areaKey, area) => {
-    // 區域過濾
-    if (filterArea !== '全部' && area.name !== filterArea) {
-      return false;
-    }
-
-    // 如果沒有搜尋關鍵字，返回所有裝置
-    if (!searchTerm.trim()) {
-      return true;
-    }
-
-    // 檢查整個區域是否有任何裝置符合搜尋條件
+  // 篩選：若使用者有選特定區域且輸入關鍵字
+  function filterDevices(areaKey, area) {
+    if (filterArea !== '全部' && area.name !== filterArea) return false;
+    if (!searchTerm.trim()) return true;
     return area.devices.some(device => 
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (device.mac && device.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  };
+  }
 
-  // 過濾單個裝置的函數
-  const filterDevice = (device) => {
-    if (!searchTerm.trim()) {
-      return true;
-    }
+  function filterDevice(device) {
+    if (!searchTerm.trim()) return true;
     return device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (device.mac && device.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()));
-  };
+  }
 
   return (
     <div className="max-w-screen-xl mx-auto px-2 sm:px-4 space-y-6">
-      {/* 頁面標題和描述 */}
+      {/* 頁面標題 */}
       <div className="text-center py-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">監測系統儀表板</h1>
         <p className="text-gray-600 mt-2">即時監控各區域設備狀態和數據</p>
       </div>
 
-      {/* 搜尋欄位 - 改進的設計 */}
+      {/* 搜尋欄位 */}
       <div className="relative">
         <input
           type="text"
           placeholder="搜尋裝置名稱..."
           value={searchTerm}
-          onChange={handleSearch}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full border-2 border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm transition-all duration-200"
         />
         <div className="absolute right-3 top-3">
@@ -116,7 +109,7 @@ function Home() {
         </div>
       </div>
 
-      {/* 區域選單 - 升級設計 */}
+      {/* 區域選單 */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-sm">
         <h3 className="text-sm font-semibold text-gray-600 mb-2">選擇區域：</h3>
         <div className="flex flex-wrap gap-2">
@@ -136,123 +129,142 @@ function Home() {
         </div>
       </div>
 
-      {/* 載入狀態 */}
+      {/* 載入中狀態 */}
       {loading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       )}
 
-      {/* 資料區 */}
+      {/* 資料卡片區域 */}
       <div className="space-y-10">
         {Object.entries(deviceMapping)
           .filter(([areaKey, area]) => filterDevices(areaKey, area))
           .map(([areaKey, area]) => (
-          <div key={areaKey} className="bg-gradient-to-r from-gray-50 to-blue-50 p-5 rounded-xl shadow">
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 flex items-center">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-800">{area.name}</span>
-              <div className="ml-3 h-px flex-grow bg-gradient-to-r from-blue-200 to-transparent"></div>
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {area.devices
-                .filter(device => filterDevice(device))
-                .map(device => {
-                const deviceId = device.mac ? `WISE-4010LAN_${device.mac}` : device.id;
-                const data = latestData[deviceId];
-                
-                if (!data && !loading) return (
-                  <div key={device.mac || device.id} className="border border-gray-200 rounded-xl p-5 bg-white shadow hover:shadow-md transition-shadow">
-                    <h3 className="text-lg font-semibold mb-2 text-gray-700">{device.name}</h3>
-                    <div className="text-gray-400 text-sm">無可用數據</div>
-                  </div>
-                );
+            <div key={areaKey} className="bg-gradient-to-r from-gray-50 to-blue-50 p-5 rounded-xl shadow">
+              <h2 className="text-xl sm:text-2xl font-bold mb-4 flex items-center">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-800">
+                  {area.name}
+                </span>
+                <div className="ml-3 h-px flex-grow bg-gradient-to-r from-blue-200 to-transparent"></div>
+              </h2>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {area.devices
+                  .filter(device => filterDevice(device))
+                  .map(device => {
+                    const deviceId = device.mac ? `WISE-4010LAN_${device.mac}` : device.id;
+                    const data = latestData[deviceId];
 
-                if (!data) return null;
+                    // 若尚未有 data，而且非 loading 狀態，就顯示「無可用數據」
+                    if (!data && !loading) {
+                      return (
+                        <div key={device.name} className="border border-gray-200 rounded-xl p-5 bg-white shadow hover:shadow-md transition-shadow">
+                          <h3 className="text-lg font-semibold mb-2 text-gray-700">{device.name}</h3>
+                          <div className="text-gray-400 text-sm">無可用數據</div>
+                        </div>
+                      );
+                    }
+                    if (!data) return null; // 資料還在載入中
 
-                return device.sensors?.map((sensor, idx) => {
-                  const channels = sensor.channels.map(channel => {
-                    const ch = data.channels?.[channel];
-                    const egf = ch?.EgF ?? null;
-                    const initial = sensor.initialValues?.[channel] ?? 0;
-                    const delta = egf !== null ? (egf - initial).toFixed(3) : null;
-                    return { channel, egf, delta };
-                  });
+                    // ======= 統一卡片樣式 =======
+                    const cardColor = getDeviceTypeColor(device);
+                    // 取得相對時間顏色
+                    const statusClass = getStatusColor(data.timestamp);
 
-                  const statusColor = getStatusColor(data.timestamp);
-                  const gradientColor = getDeviceTypeColor(device);
-
-                  return (
-                    <div
-                      key={(device.mac || device.id) + '-' + idx}
-                      className="rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
-                    >
-                      {/* 卡片頭部 */}
-                      <div className={`bg-gradient-to-r ${gradientColor} text-white p-4`}>
-                        <h3 className="text-lg font-bold">{device.name}</h3>
-                        <p className="text-white text-opacity-80 text-xs mt-1">
-                          {DEVICE_TYPE_NAMES[sensor.type] || '設備'}
-                        </p>
-                      </div>
-                      
-                      {/* 卡片內容 */}
-                      <div className="bg-white p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-xs text-gray-500">
-                            {new Date(data.timestamp).toLocaleString('zh-TW')}
-                          </span>
-                          <span className={`flex items-center ${statusColor}`}>
-                            <span className={`inline-block w-2 h-2 rounded-full ${statusColor.replace('text-', 'bg-')} mr-1`}></span>
-                            {getRelativeTime(data.timestamp)}
-                          </span>
+                    // 全部 sensor 整合到同一張卡片
+                    return (
+                      <div key={device.name} className="rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                        {/* 卡片頭部 - 顏色背景 */}
+                        <div className={`bg-gradient-to-r ${cardColor} text-white p-4`}>
+                          <h3 className="text-lg font-bold">{device.name}</h3>
+                          <p className="text-white text-opacity-80 text-xs mt-1">
+                            {DEVICE_TYPE_NAMES[device.sensors?.[0]?.type || device.type] || '設備'}
+                          </p>
                         </div>
 
-                        <div className="border-t pt-3 mt-2">
-                          <h4 className="font-semibold text-gray-700 mb-2">{sensor.name}</h4>
-                          <div className="space-y-2">
-                            {channels.map(({ channel, egf, delta }) => (
-                              <div key={channel} className="flex justify-between items-center text-sm border-b pb-2">
-                                <span className="text-gray-700 font-medium">{channel}</span>
-                                <div className="flex flex-col items-end">
-                                  <span className="font-semibold">
-                                    {egf !== null ? egf.toFixed(3) : '無數據'}
-                                  </span>
-                                  {delta !== null && (
-                                    <span className={`text-xs ${
-                                      parseFloat(delta) > 0 
-                                        ? 'text-red-500' 
-                                        : parseFloat(delta) < 0 
-                                        ? 'text-green-500' 
-                                        : 'text-gray-500'
-                                    }`}>
-                                      變化: {delta}
-                                    </span>
-                                  )}
+                        {/* 卡片內容 */}
+                        <div className="bg-white p-4">
+                          {/* 時間/狀態 */}
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-xs text-gray-500">
+                              {new Date(data.timestamp).toLocaleString('zh-TW')}
+                            </span>
+                            <span className={`flex items-center ${statusClass}`}>
+                              <span className={`inline-block w-2 h-2 rounded-full ${statusClass.replace('text-', 'bg-')} mr-1`}></span>
+                              {getRelativeTime(data.timestamp)}
+                            </span>
+                          </div>
+
+                          <div className="border-t pt-3 mt-2 space-y-3">
+                            {/* 依序渲染每個 sensor 的數據 */}
+                            {device.sensors?.map((sensor, sIdx) => {
+                              // 用 sensor.name 作為標題
+                              return (
+                                <div key={sIdx} className="border-b pb-2 last:border-b-0">
+                                  <h4 className="font-semibold text-gray-700 mb-1">
+                                    {sensor.name}
+                                  </h4>
+                                  {/* 迭代該 sensor 的所有 channels */}
+                                  {(sensor.channels || []).map((ch, cIdx) => {
+                                    const chData = data.channels?.[ch];
+                                    const egf = chData?.EgF ?? null;
+                                    const initVal = sensor.initialValues?.[ch] ?? 0;
+                                    let deltaVal = null;
+
+                                    // 雨量筒另外計算 => 以 calcRainValue() 為例
+                                    if (sensor.type === DEVICE_TYPES.RAIN) {
+                                      deltaVal = calcRainValue(sensor, egf).toFixed(3);
+                                    } else {
+                                      // 一般計算 = egf - initial
+                                      deltaVal = egf !== null ? (egf - initVal).toFixed(3) : null;
+                                    }
+
+                                    return (
+                                      <div key={ch} className="pl-2 flex justify-between text-sm items-center">
+                                        {/* 若 sensor 有多個 channel，可考慮附加序號： sensor.name (cIdx+1) */}
+                                        <span className="text-gray-600">數值：</span>
+                                        <div className="flex flex-col items-end">
+                                          <span className="font-semibold">
+                                            {egf !== null ? egf.toFixed(3) : '無資料'}
+                                          </span>
+                                          {deltaVal !== null && (
+                                            <span className={`text-xs ${
+                                              parseFloat(deltaVal) > 0 ? 'text-red-500'
+                                              : parseFloat(deltaVal) < 0 ? 'text-green-500'
+                                              : 'text-gray-500'
+                                            }`}>
+                                              變化: {deltaVal}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
+                          </div>
+
+                          {/* 卡片底部：查看趨勢 */}
+                          <div className="mt-4 flex justify-end">
+                            <Link
+                              to={`/trend?deviceId=${deviceId}`}
+                              className="text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition-colors px-4 py-2 rounded-lg text-sm font-medium"
+                            >
+                              查看趨勢
+                            </Link>
                           </div>
                         </div>
-
-                        <div className="mt-4 flex justify-end">
-                          <Link
-                            to={`/trend?deviceId=${device.mac ? `WISE-4010LAN_${device.mac}` : device.id}&sensorIndex=${idx}`}
-                            className="text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition-colors px-4 py-2 rounded-lg text-sm font-medium"
-                          >
-                            查看趨勢
-                          </Link>
-                        </div>
                       </div>
-                    </div>
-                  );
-                });
-              })}
+                    );
+                  })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
-      
-      {/* 無結果顯示 */}
+
+      {/* 若無符合結果 */}
       {!loading && Object.entries(deviceMapping).filter(([areaKey, area]) => filterDevices(areaKey, area)).length === 0 && (
         <div className="text-center py-10">
           <div className="text-gray-400 text-lg">無符合條件的結果</div>
@@ -264,7 +276,7 @@ function Home() {
           </button>
         </div>
       )}
-      
+
       {/* 頁面底部 */}
       <div className="mt-8 py-4 border-t text-center text-sm text-gray-500">
         © {new Date().getFullYear()} 監測系統儀表板

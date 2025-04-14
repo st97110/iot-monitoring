@@ -1,4 +1,3 @@
-// InteractiveMap.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -9,7 +8,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 
-import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES } from '../config/config';
+import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 
 const stations = Object.values(deviceMapping).flatMap(area =>
   area.devices.map(device => ({
@@ -126,7 +125,7 @@ function InteractiveMap() {
           marker.openPopup();
           bringMarkerToFront(station.id);
         }
-      }, 500); // 加入延遲確保地圖移動完成後再開啟彈窗
+      }, 500);
     }
   };
 
@@ -143,17 +142,13 @@ function InteractiveMap() {
     }
   };
 
-  // 創建一個新的組件來訪問地圖實例
   function MapController() {
     const map = useMap();
-    
-    // 使用 useEffect 來設置 mapRef
     useEffect(() => {
       if (map) {
         mapRef.current = map;
       }
     }, [map]);
-    
     return null;
   }
 
@@ -170,7 +165,6 @@ function InteractiveMap() {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* 添加控制器組件來獲取地圖引用 */}
       <MapController />
 
       <div className="absolute top-4 left-4 z-[1000] bg-white bg-opacity-90 p-4 rounded-xl shadow-md">
@@ -227,12 +221,11 @@ function InteractiveMap() {
               icon={getIconByType(st.type, abnormal)}
               ref={(ref) => (markerRefs.current[st.id] = ref)}
               eventHandlers={{
-                click: (e) => {
+                click: () => {
                   handleLoadData(st.deviceId);
                   bringMarkerToFront(st.id);
                 }
               }}
-              
             >
               <Popup className="rounded-lg shadow-lg">
                 <div className="p-3">
@@ -242,9 +235,35 @@ function InteractiveMap() {
                   {latestData?.timestamp ? (
                     <div className="text-sm">
                       <p className="mb-1">時間：{latestData.timestamp}</p>
-                      {Object.entries(latestData.channels || {}).map(([ch, val]) => (
-                        <p key={ch} className="text-gray-700">{ch}: {val.EgF ?? '-'}</p>
-                      ))}
+                      {st.sensors && st.sensors[0]?.type === DEVICE_TYPES.TI ? (
+                        st.sensors.filter(s => s.type === DEVICE_TYPES.TI).slice(0,2).map((sensor, idx) => {
+                          const channel = sensor.channels[0];
+                          const chData = latestData.channels?.[channel];
+                          const egf = chData?.EgF ?? null;
+                          const initial = sensor.initialValues?.[channel] ?? 0;
+                          let sensorLabel = sensor.name.replace(/.*(A軸|B軸)/, '$1');
+                          return (
+                            <p key={idx} className="text-gray-700">
+                              {sensorLabel}: {egf !== null ? egf.toFixed(3) : '-'}
+                            </p>
+                          );
+                        })
+                      ) : (
+                        st.sensors?.map((sensor, idx) => (
+                          <div key={idx} className="space-y-1">
+                            {(sensor.channels || []).map((ch, index) => {
+                              const chData = latestData.channels?.[ch];
+                              // 若有多個通道，加上序號
+                              const label = sensor.channels.length > 1 ? `${sensor.name} (${index + 1})` : sensor.name;
+                              return (
+                                <p key={ch} className="text-gray-700">
+                                  {label}: {chData?.EgF ?? '-'}
+                                </p>
+                              );
+                            })}
+                          </div>
+                        ))
+                      )}
                     </div>
                   ) : (
                     <p className="text-gray-500">載入中或無資料</p>

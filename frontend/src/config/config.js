@@ -1,3 +1,6 @@
+// config/config.js
+
+// API development & production 網址
 export const API_BASE =
   process.env.NODE_ENV === 'production'
     ? 'https://monitoring-backend-znmw.onrender.com'
@@ -46,24 +49,31 @@ export const deviceMapping = {
     devices: [
       {
         mac: '74FE48941ABE',
-        name: '84.6k傾斜儀',
+        name: '84.6k',
         lat: 24.0301,
         lng: 121.16,
         sensors: [
-          { name: 'BT_84.6K A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
-          { name: 'BT_84.6K B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
         ]
       },
       {
         mac: '00D0C9FAD2E3',
-        name: '84.65k傾斜儀',
+        name: '84.65k',
         lat: 24.0302,
         lng: 121.16,
         sensors: [
-          { name: 'BT_84.65K A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 11.388 } },
-          { name: 'BT_84.65K B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 10.317 } },
-          { name: 'BT_84.7K A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
-          { name: 'BT_84.7K B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 11.388 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 10.317 } },
+        ]
+      },{
+        mac: '00D0C9FAD2E3',
+        name: '84.7k',
+        lat: 24.0302,
+        lng: 121.16,
+        sensors: [
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
         ]
       },
       { id: 'AH3', name: 'AH3 TDR', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
@@ -99,14 +109,22 @@ export const deviceMapping = {
     devices: [
       {
         mac: '00D0C9FAD2C9',
-        name: '14.25k傾斜儀',
+        name: '14.25k',
         lat: 24.08995,
         lng: 121.17361,
         sensors: [
-          { name: '14.25k A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
-          { name: '14.25k B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
-          { name: '14.27k A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
-          { name: '14.27k B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
+        ]
+      },
+      {
+        mac: '00D0C9FAD2C9',
+        name: '14.27k',
+        lat: 24.08995,
+        lng: 121.17361,
+        sensors: [
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
         ]
       },
       {
@@ -115,13 +133,13 @@ export const deviceMapping = {
         lat: 24.0898,
         lng: 121.17389,
         sensors: [
-          { name: 'BT_CH1 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
-          { name: 'BT_CH1 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
         ]
       },
-      { mac: '74FE489299F4', name: 'GE1', lat: 24.08945, lng: 121.173611, sensors: [{ name: 'GE1', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 } }] },
-      { mac: '74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.17395, sensors: [{ name: 'GE2', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
-      { mac: '74FE48941AD9', name: 'GE3', lat: 24.089, lng: 121.17405, sensors: [{ name: 'GE3', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] },
+      { mac: '74FE489299F4', name: 'GE1', lat: 24.08945, lng: 121.173611, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 } }] },
+      { mac: '74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.17395, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
+      { mac: '74FE48941AD9', name: 'GE3', lat: 24.089, lng: 121.17405, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] },
       { id: 'CH1', name: 'CH1 TDR', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
       { id: 'CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
       { id: 'CH3', name: 'CH3 TDR', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
