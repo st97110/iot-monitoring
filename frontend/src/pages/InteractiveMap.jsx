@@ -69,11 +69,13 @@ function ZoomToAreaButton({ label, center, zoom }) {
 
 function InteractiveMap() {
   const navigate = useNavigate();
-  const mapRef = useRef(null); // 確保初始化為 null
+  const mapRef = useRef(null);
   const markerRefs = useRef({});
   const [dataCache, setDataCache] = useState({});
   const [visibleLayers, setVisibleLayers] = useState({ TI: true, WATER: true, RAIN: true, GE: true, TDR: true });
   const [searchText, setSearchText] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
 
   const handleLoadData = async (deviceId) => {
     if (dataCache[deviceId]) return;
@@ -89,19 +91,55 @@ function InteractiveMap() {
     stations.forEach(station => handleLoadData(station.deviceId));
   }, []);
 
+  const bringMarkerToFront = (markerId) => {
+    document.querySelectorAll('.leaflet-marker-icon').forEach(el => el.style.zIndex = 'auto');
+    const el = markerRefs.current[markerId]?.getElement?.();
+    if (el) el.style.zIndex = '9999';
+  };
+
   const handleLayerToggle = (type) => {
     setVisibleLayers(prev => ({ ...prev, [type]: !prev[type] }));
   };
 
-  const handleSearch = () => {
-    const match = stations.find(st => st.name.includes(searchText));
-    if (match && mapRef.current) {
-      const map = mapRef.current;
-      map.flyTo([match.lat, match.lng], 18);
+  const handleSearchChange = (value) => {
+    setSearchText(value);
+    const kw = value.trim().toLowerCase();
+    if (kw === '') {
+      setSearchResults([]);
+      setHighlightIndex(-1);
+      return;
+    }
+    const results = stations.filter(st => st.name.toLowerCase().includes(kw) || st.deviceId.toLowerCase().includes(kw));
+    setSearchResults(results.slice(0, 8));
+    setHighlightIndex(0);
+  };
+
+  const handleSearchSelect = (station) => {
+    setSearchText(station.name);
+    setSearchResults([]);
+    setHighlightIndex(-1);
+    if (mapRef.current) {
+      mapRef.current.flyTo([station.lat, station.lng], 18, { animate: false });
       setTimeout(() => {
-        const marker = markerRefs.current[match.id];
-        if (marker) marker.openPopup();
+        const marker = markerRefs.current[station.id];
+        if (marker) {
+          marker.openPopup();
+          bringMarkerToFront(station.id);
+        }
       }, 500); // 加入延遲確保地圖移動完成後再開啟彈窗
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (searchResults.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      setHighlightIndex(prev => (prev + 1) % searchResults.length);
+    } else if (e.key === 'ArrowUp') {
+      setHighlightIndex(prev => (prev - 1 + searchResults.length) % searchResults.length);
+    } else if (e.key === 'Enter') {
+      if (highlightIndex >= 0 && highlightIndex < searchResults.length) {
+        handleSearchSelect(searchResults[highlightIndex]);
+      }
     }
   };
 
@@ -124,7 +162,7 @@ function InteractiveMap() {
       center={[24.03, 121.16]}
       zoom={12}
       scrollWheelZoom={true}
-      whenCreated={mapInstance => mapRef.current = mapInstance}
+      whenCreated={mapInstance => (mapRef.current = mapInstance)}
       className="h-[80vh] w-full rounded-xl shadow-lg overflow-hidden relative"
     >
       <TileLayer
@@ -151,15 +189,28 @@ function InteractiveMap() {
             {DEVICE_TYPE_NAMES[type]} ({type})
           </label>
         ))}
-        <div className="mt-3 flex items-center space-x-2">
+        <div className="mt-3 relative">
           <input
             type="text"
-            placeholder="搜尋裝置"
+            placeholder="搜尋裝置名稱"
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none"
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none"
           />
-          <button onClick={handleSearch} className="px-2 py-1 text-nowrap text-sm bg-blue-600 text-white rounded hover:bg-blue-700">搜尋</button>
+          {searchResults.length > 0 && (
+            <ul className="absolute left-0 w-full mt-1 bg-white border border-gray-200 rounded shadow z-50 max-h-48 overflow-auto text-sm">
+              {searchResults.map((st, index) => (
+                <li
+                  key={st.id}
+                  onClick={() => handleSearchSelect(st)}
+                  className={`px-3 py-1 hover:bg-blue-100 cursor-pointer ${index === highlightIndex ? 'bg-blue-100' : ''}`}
+                >
+                  {st.name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -175,7 +226,13 @@ function InteractiveMap() {
               position={[st.lat, st.lng]}
               icon={getIconByType(st.type, abnormal)}
               ref={(ref) => (markerRefs.current[st.id] = ref)}
-              eventHandlers={{ click: () => handleLoadData(st.deviceId) }}
+              eventHandlers={{
+                click: (e) => {
+                  handleLoadData(st.deviceId);
+                  bringMarkerToFront(st.id);
+                }
+              }}
+              
             >
               <Popup className="rounded-lg shadow-lg">
                 <div className="p-3">

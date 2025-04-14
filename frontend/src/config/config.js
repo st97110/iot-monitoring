@@ -100,8 +100,8 @@ export const deviceMapping = {
       {
         mac: '00D0C9FAD2C9',
         name: '14.25k傾斜儀',
-        lat: 24.075278,
-        lng: 121.183611,
+        lat: 24.08995,
+        lng: 121.17361,
         sensors: [
           { name: '14.25k A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
           { name: '14.25k B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
@@ -112,19 +112,19 @@ export const deviceMapping = {
       {
         mac: '00D0C9FAC4F8',
         name: '14甲CH1傾斜儀',
-        lat: 24.076667,
-        lng: 121.183889,
+        lat: 24.0898,
+        lng: 121.17389,
         sensors: [
           { name: 'BT_CH1 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
           { name: 'BT_CH1 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
         ]
       },
-      { mac: '74FE489299F4', name: 'GE1', lat: 24.089444, lng: 121.173611, sensors: [{ name: 'GE1', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 } }] },
-      { mac: '74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.174, sensors: [{ name: 'GE2', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
-      { mac: '74FE48941AD9', name: 'GE3', lat: 24.092222, lng: 121.174167, sensors: [{ name: 'GE3', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] },
-      { id: 'CH1', name: 'CH1 TDR', lat: 24.08965, lng: 121.1738, type: DEVICE_TYPES.TDR },
-      { id: 'CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.174, type: DEVICE_TYPES.TDR },
-      { id: 'CH3', name: 'CH3 TDR', lat: 24.086667, lng: 121.173689, type: DEVICE_TYPES.TDR }
+      { mac: '74FE489299F4', name: 'GE1', lat: 24.08945, lng: 121.173611, sensors: [{ name: 'GE1', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 } }] },
+      { mac: '74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.17395, sensors: [{ name: 'GE2', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
+      { mac: '74FE48941AD9', name: 'GE3', lat: 24.089, lng: 121.17405, sensors: [{ name: 'GE3', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] },
+      { id: 'CH1', name: 'CH1 TDR', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
+      { id: 'CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
+      { id: 'CH3', name: 'CH3 TDR', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
     ]
   }
 };
