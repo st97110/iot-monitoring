@@ -254,7 +254,7 @@ function TrendPage() {
               {Object.entries(deviceMapping).map(([areaKey, area]) => (
                 <optgroup key={areaKey} label={area.name}>
                   {area.devices.map(device => (
-                    <option key={device.mac || device.id} value={device.mac ? `WISE-4010LAN_${device.mac}` : device.id}>
+                    <option key={device.name} value={device.mac ? `WISE-4010LAN_${device.mac}` : device.id}>
                       {device.name}
                     </option>
                   ))}

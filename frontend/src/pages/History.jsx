@@ -173,7 +173,7 @@ function History() {
               {filterDeviceOptions().map(({areaKey, areaName, devices}) => (
                 <optgroup key={areaKey} label={areaName}>
                   {devices.map(device => (
-                    <option key={device.mac || device.id} value={device.mac ? `WISE-4010LAN_${device.mac}` : device.id}>
+                    <option key={device.name} value={device.mac ? `WISE-4010LAN_${device.mac}` : device.id}>
                       {device.name}
                     </option>
                   ))}

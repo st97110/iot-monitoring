@@ -3,7 +3,7 @@ import axios from 'axios';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 import { Link } from 'react-router-dom';
 
-// ======== 工具函數：將時間轉成「xx秒/分鐘/小時/天前」字串 ========
+// 將 ISO 格式時間轉成相對時間字串（秒/分鐘/小時/天前）
 function getRelativeTime(isoString) {
   const time = new Date(isoString);
   const now = new Date();
@@ -23,26 +23,18 @@ const typeColors = {
   [DEVICE_TYPES.TDR]: 'from-purple-500 to-purple-600', // TDR
 };
 
-// 根據設備 (device) 取對應色
+// 根據設備資訊取得顏色
 function getDeviceTypeColor(device) {
   const type = device.sensors?.[0]?.type || device.type;
   return typeColors[type] || 'from-gray-500 to-gray-600';
 }
 
-// 判斷資料時間是否太久，顯示不同狀態顏色
+// 根據資料更新時間判斷狀態顏色
 function getStatusColor(timestamp) {
   const diffHours = (new Date() - new Date(timestamp)) / (1000 * 60 * 60);
-  if (diffHours > 24) return 'text-red-500';     // 超過 24 小時 => 紅色
-  if (diffHours > 6) return 'text-yellow-500';   // 6~24 小時 => 黃色
-  return 'text-green-500';                      // 6 小時內 => 綠色
-}
-
-// ======== 雨量筒的「額外計算」示例，依需求調整 ========
-// 這裡僅示範：EGF - initial 作為「變化量」，若要累計雨量、時段總和，請自行實作
-function calcRainValue(sensor, egf) {
-  // 例如：egf - initial，表示此段時間的累積雨量
-  const initial = sensor.initialValues?.[sensor.channels[0]] ?? 0;
-  return egf - initial;
+  if (diffHours > 24) return 'text-red-500';
+  if (diffHours > 6) return 'text-yellow-500';
+  return 'text-green-500';
 }
 
 function Home() {
@@ -71,7 +63,7 @@ function Home() {
   function filterDevices(areaKey, area) {
     if (filterArea !== '全部' && area.name !== filterArea) return false;
     if (!searchTerm.trim()) return true;
-    return area.devices.some(device => 
+    return area.devices.some(device =>
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (device.mac && device.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -195,6 +187,12 @@ function Home() {
                               {getRelativeTime(data.timestamp)}
                             </span>
                           </div>
+                          
+                          {data.rainfall10Min !== undefined && (
+                            <div className="mb-3 text-sm text-blue-600 font-semibold">
+                              十分鐘雨量: {data.rainfall10Min.toFixed(1)} mm
+                            </div>
+                          )}
 
                           <div className="border-t pt-3 mt-2 space-y-3">
                             {/* 依序渲染每個 sensor 的數據 */}
@@ -210,15 +208,7 @@ function Home() {
                                     const chData = data.channels?.[ch];
                                     const egf = chData?.EgF ?? null;
                                     const initVal = sensor.initialValues?.[ch] ?? 0;
-                                    let deltaVal = null;
-
-                                    // 雨量筒另外計算 => 以 calcRainValue() 為例
-                                    if (sensor.type === DEVICE_TYPES.RAIN) {
-                                      deltaVal = calcRainValue(sensor, egf).toFixed(3);
-                                    } else {
-                                      // 一般計算 = egf - initial
-                                      deltaVal = egf !== null ? (egf - initVal).toFixed(3) : null;
-                                    }
+                                    let deltaVal = egf !== null ? (egf - initVal).toFixed(3) : null;
 
                                     return (
                                       <div key={ch} className="pl-2 flex justify-between text-sm items-center">
