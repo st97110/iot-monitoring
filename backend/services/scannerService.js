@@ -23,8 +23,9 @@ const scanLatestData = async () => {
     // 獲取所有設備目錄
     const entries = await fs.readdir(DATA_DIR, { withFileTypes: true });
     const deviceDirs = entries
-      .filter(entry => entry.isDirectory() && entry.name.startsWith('WISE-'))
-      .map(entry => entry.name);
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+      .filter(async name => await fs.pathExists(path.join(DATA_DIR, name, 'signal_log')));
     
     logger.info(`找到 ${deviceDirs.length} 個設備`);
     
