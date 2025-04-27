@@ -16,6 +16,7 @@ backend/npm-debug.log*
 backend/dist/
 
 # IDE files
+backend/tsconfig.json
 backend/.idea/
 backend/.vscode/
 backend/*.suo
