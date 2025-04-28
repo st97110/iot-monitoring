@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
+import { queryDeviceListFromInflux } from './influxService';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
 
@@ -13,6 +14,53 @@ export interface DeviceInfo {
   error?: string;
 }
 
+/**
+ * 從 InfluxDB 查詢設備列表
+ */
+export async function getAllDevicesFromDB(source: 'wise' | 'tdr'): Promise<DeviceInfo[]> {
+  try {
+    const wise_ids = await queryDeviceListFromInflux('wise');
+    return wise_ids.map(id => ({
+      id,
+      name: id.split('_')[1] || id,
+      model: id.split('_')[0] || 'Unknown',
+      lastUpdated: null,
+      totalRecords: 0,
+      hasData: true,
+    }));
+  } catch (error: any) {
+    logger.error(`從 InfluxDB 讀取設備列表錯誤: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * 從資料夾推算設備列表
+ */
+export async function getAllDevicesFromFolder(source: 'wise' | 'tdr'): Promise<DeviceInfo[]> {
+  try {
+    const entries = await fs.readdir(config.dataDir, { withFileTypes: true });
+    const devices: DeviceInfo[] = [];
+
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name.startsWith('WISE-')) {
+        devices.push({
+          id: entry.name,
+          name: entry.name.split('_')[1] || entry.name,
+          model: entry.name.split('_')[0] || 'Unknown',
+          lastUpdated: null,
+          totalRecords: 0,
+          hasData: true
+        });
+      }
+    }
+
+    return devices;
+  } catch (error: any) {
+    logger.error(`從資料夾讀取設備列表錯誤: ${error.message}`);
+    return [];
+  }
+}
 
 /**
  * 獲取所有儀器設備列表

@@ -1,5 +1,8 @@
+# Dependencies
 frontend/package-lock.json
 frontend/node_modules
+backend/node_modules/
+backend/package-lock.json
 
 
 # Environment variables
@@ -33,3 +36,7 @@ backend/Thumbs.db
 backend/tmp/
 backend/temp/
 
+tdr_data/
+wise_data/
+wise_backup_data/
+tdr_backup_data/

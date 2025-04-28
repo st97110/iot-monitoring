@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { saveWiseCsv } from '../services/wiseFileService';
+import { saveWiseLogFile } from '../services/wiseFileService';
 import { logger } from '../utils/logger';
 import { config } from '../config/config';
 
@@ -21,7 +21,7 @@ export async function uploadWiseLog(req: Request, res: Response, next: NextFunct
 
     // 組成存檔路徑
     const saveDir = `${config.dataDir}/${macAddress}/${logType}/${date}`;
-    await saveWiseCsv(saveDir, filename, req.body);
+    await saveWiseLogFile(saveDir, filename, req.body);
 
     logger.info(`已儲存 WISE 日誌: ${saveDir}/${filename}`);
     res.json({ success: true });

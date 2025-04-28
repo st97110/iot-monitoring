@@ -20,9 +20,16 @@ export interface InfluxConfig {
   buckets: InfluxBuckets;
 }
 
+export interface FolderPaths {
+  wiseDataDir: string;      // WISE原始資料夾
+  tdrDataDir: string;       // TDR原始資料夾
+  wiseBackupDir: string;    // WISE已寫入DB的備份資料夾
+  tdrBackupDir: string;     // TDR已寫入DB的備份資料夾
+}
+
 export interface Config {
   port: number;
-  dataDir: string;
+  folder: FolderPaths;
   scanInterval: number;
   nodeEnv: string;
   influx: InfluxConfig;
@@ -71,7 +78,12 @@ function getEnvInt(name: string, fallback?: number): number {
 
 export const config: Config = {
   port: getEnvInt('PORT', 3000),
-  dataDir: getEnv('DATA_DIR', path.resolve(__dirname, '../wise_data')),
+  folder: {
+    wiseDataDir: getEnv('WISE_DATA_DIR', path.resolve(__dirname, '../wise_data')),         // 例如：原始 wise_data/
+    tdrDataDir: getEnv('TDR_DATA_DIR', path.resolve(__dirname, '../tdr_data')),             // 例如：原始 tdr_data/
+    wiseBackupDir: getEnv('WISE_BACKUP_DIR', path.resolve(__dirname, '../backup/wise_backup')),    // DB寫入後的 wise備份
+    tdrBackupDir: getEnv('TDR_BACKUP_DIR', path.resolve(__dirname, '../backup/tdr_backup')),        // DB寫入後的 tdr備份
+  },
   scanInterval: getEnvInt('SCAN_INTERVAL', 600),
   nodeEnv: getEnv('NODE_ENV', 'development'),
   influx: {
@@ -92,7 +104,9 @@ export const config: Config = {
 if (config.nodeEnv !== 'production') {
   logger.info(`[Config] 使用環境: ${config.nodeEnv}`);
   logger.info(`[Config] 伺服器 Port: ${config.port}`);
-  logger.info(`[Config] 資料夾位置: ${config.dataDir}`);
+  for (const key in config.folder) {
+    logger.info(`[Config] 資料夾位置: ${key}: ${config.folder[key as keyof FolderPaths]}`);
+  }
   logger.info(`[Config] 掃描間隔: ${config.scanInterval} 秒`);
   logger.info(`[Config] Influx URL: ${config.influx.url}`);
   logger.info(`[Config] Influx Org: ${config.influx.org}`);

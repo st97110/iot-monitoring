@@ -13,30 +13,39 @@ import { moveCsvAfterWrite } from './wiseFileService';
  */
 export async function scanLatestData(): Promise<void> {
   try {
-    logger.info('[掃描] 開始掃描所有設備...');
+    logger.info('[掃描] 開始掃描 WISE 資料夾...');
+    await scanFolder(config.folder.wiseDataDir);
 
-    const exists = await fs.pathExists(config.dataDir);
-    if (!exists) {
-      logger.error(`[掃描] 數據目錄不存在: ${config.dataDir}`);
-      return;
-    }
+    logger.info('[掃描] 開始掃描 TDR 資料夾...');
+    await scanFolder(config.folder.tdrDataDir);
 
-    const entries = await fs.readdir(config.dataDir, { withFileTypes: true });
-    const deviceDirs = entries.filter(entry => entry.isDirectory()).map(entry => entry.name);
-
-    logger.info(`[掃描] 找到 ${deviceDirs.length} 個設備`);
-
-    for (const deviceId of deviceDirs) {
-      try {
-        await scanDeviceAllData(deviceId);
-      } catch (error: any) {
-        logger.error(`[掃描] 設備 ${deviceId} 掃描錯誤: ${error.message}`);
-      }
-    }
-
-    logger.info('[掃描] 設備數據掃描完成');
+    logger.info('[掃描] 所有設備資料掃描完成');
   } catch (error: any) {
     logger.error(`[掃描] 掃描數據錯誤: ${error.message}`);
+  }
+}
+
+/**
+ * 掃描指定資料夾下所有設備
+ */
+async function scanFolder(basePath: string): Promise<void> {
+  const exists = await fs.pathExists(basePath);
+  if (!exists) {
+    logger.warn(`[掃描] 資料夾不存在: ${basePath}`);
+    return;
+  }
+
+  const entries = await fs.readdir(basePath, { withFileTypes: true });
+  const deviceDirs = entries.filter(entry => entry.isDirectory()).map(entry => entry.name);
+
+  logger.info(`[掃描] 資料夾 ${basePath} 找到 ${deviceDirs.length} 個設備`);
+
+  for (const deviceId of deviceDirs) {
+    try {
+      await scanDeviceAllData(basePath, deviceId);
+    } catch (error: any) {
+      logger.error(`[掃描] 設備 ${deviceId} 掃描錯誤: ${error.message}`);
+    }
   }
 }
 
@@ -44,9 +53,9 @@ export async function scanLatestData(): Promise<void> {
  * 掃描特定設備，處理所有還沒搬走的資料
  * @param deviceId 設備ID
  */
-async function scanDeviceAllData(deviceId: string): Promise<void> {
-    const signalLogPath = path.join(config.dataDir, deviceId, 'signal_log');
-    const deviceDir = path.join(config.dataDir, deviceId);
+async function scanDeviceAllData(basePath: string, deviceId: string): Promise<void> {
+    const signalLogPath = path.join(basePath, deviceId, 'signal_log');
+    const deviceDir = path.join(basePath, deviceId);
     
     if (!await fs.pathExists(signalLogPath)) {
       logger.warn(`[掃描] 設備 ${deviceId} 沒有 signal_log 資料夾`);
