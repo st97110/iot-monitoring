@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { DeviceInfo, getAllDevices } from './deviceService';
-import { csvParser } from '../utils/csvParser';
+import { parseCSVFile } from '../utils/csvParser';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
 
@@ -150,7 +150,7 @@ async function readLatestDeviceData(deviceId: string): Promise<any> {
     if (!files.length) throw new Error(`設備 ${deviceId} 最新日期 ${dateDirs[0]} 沒有任何數據文件`);
 
     const latestFile = path.join(latestDateDir, files[0]);
-    const data = await csvParser.parseCSVFile(latestFile);
+    const data = await parseCSVFile(latestFile);
     if (!data.length) throw new Error(`設備 ${deviceId} 的最新數據文件為空`);
 
     latestDataCache.set(deviceId, data[0]);
@@ -188,7 +188,7 @@ export async function getHistoryData(deviceId: string, startDate: string, endDat
         for (const file of files) {
           const filePath = path.join(dirPath, file);
           try {
-            const data = await csvParser.parseCSVFile(filePath);
+            const data = await parseCSVFile(filePath);
             for (const record of data) {
               record.deviceId = id; // 加入來源設備 ID
               allData.push(record);
@@ -234,7 +234,7 @@ export async function findPreviousRecord(deviceId: string, currentTimestamp: str
         
         if (fileTimestamp < currentDateObj) {
           const filePath = path.join(dirPath, filename);
-          const records = await csvParser.parseCSVFile(filePath);
+          const records = await parseCSVFile(filePath);
           if (records.length) return records[0];
         }
       }
