@@ -1,27 +1,38 @@
-const fs = require('fs-extra');
-const path = require('path');
-const { DATA_DIR } = require('../config/config');
-const logger = require('../utils/logger');
+import fs from 'fs-extra';
+import path from 'path';
+import { config } from '../config/config';
+import { logger } from '../utils/logger';
+
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  model: string;
+  lastUpdated: string | null;
+  totalRecords: number;
+  hasData: boolean;
+  error?: string;
+}
+
 
 /**
  * 獲取所有儀器設備列表
- * @returns {Promise<Array>} 設備列表，包含ID和其他信息
+ * @returns 設備列表，包含ID和其他信息
  */
-const getAllDevices = async () => {
+export async function getAllDevices(): Promise<DeviceInfo[]> {
   try {
-    const entries = await fs.readdir(DATA_DIR, { withFileTypes: true });
-    const devices = [];
+    const entries = await fs.readdir(config.dataDir, { withFileTypes: true });
+    const devices: DeviceInfo[] = [];
     
     for (const entry of entries) {
       if (entry.isDirectory() && entry.name.startsWith('WISE-')) {
-        const devicePath = path.join(DATA_DIR, entry.name);
+        const devicePath = path.join(config.dataDir, entry.name);
         const deviceInfo = await getDeviceInfo(entry.name, devicePath);
         devices.push(deviceInfo);
       }
     }
     
     return devices;
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`讀取設備列表錯誤: ${error.message}`);
     throw new Error('無法讀取設備列表');
   }
@@ -29,11 +40,11 @@ const getAllDevices = async () => {
 
 /**
  * 獲取特定設備的詳細信息
- * @param {string} deviceId - 設備ID
- * @param {string} devicePath - 設備目錄路徑
- * @returns {Promise<Object>} 設備詳細信息
+ * @param deviceId - 設備ID
+ * @param devicePath - 設備目錄路徑
+ * @returns 設備詳細信息
  */
-const getDeviceInfo = async (deviceId, devicePath) => {
+export async function getDeviceInfo(deviceId: string, devicePath: string): Promise<DeviceInfo> {
   try {
     const signalLogPath = path.join(devicePath, 'signal_log');
     const hasData = await fs.pathExists(signalLogPath);
@@ -73,12 +84,15 @@ const getDeviceInfo = async (deviceId, devicePath) => {
       totalRecords,
       hasData
     };
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`獲取設備 ${deviceId} 詳情錯誤: ${error.message}`);
     return {
       id: deviceId,
-      name: deviceId.split('_')[1],
-      model: deviceId.split('_')[0],
+      name: deviceId.split('_')[1] || '未知',
+      model: deviceId.split('_')[0] || '未知',
+      lastUpdated: null,
+      totalRecords: 0,
+      hasData: false,
       error: '無法讀取設備詳情'
     };
   }
@@ -86,10 +100,10 @@ const getDeviceInfo = async (deviceId, devicePath) => {
 
 /**
  * 計算設備的數據記錄總數
- * @param {string} signalLogPath - 信號日誌目錄路徑
- * @returns {Promise<number>} 記錄總數估計
+ * @param signalLogPath - 信號日誌目錄路徑
+ * @returns 記錄總數估計
  */
-const countTotalRecords = async (signalLogPath) => {
+async function countTotalRecords(signalLogPath: string): Promise<number> {
   try {
     let total = 0;
     const dateDirs = await fs.readdir(signalLogPath);
@@ -110,13 +124,8 @@ const countTotalRecords = async (signalLogPath) => {
     }
     
     return total;
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`計算記錄數錯誤: ${error.message}`);
     return 0;
   }
-};
-
-module.exports = {
-  getAllDevices,
-  getDeviceInfo
 };

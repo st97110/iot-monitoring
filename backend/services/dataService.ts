@@ -1,23 +1,23 @@
-const fs = require('fs-extra');
-const path = require('path');
-const deviceService = require('./deviceService');
-const csvParser = require('../utils/csvParser');
-const { DATA_DIR } = require('../config/config');
-const logger = require('../utils/logger');
+import fs from 'fs-extra';
+import path from 'path';
+import { deviceService } from './deviceService';
+import { csvParser } from '../utils/csvParser';
+import { config } from '../config/config';
+import { logger } from '../utils/logger';
 
 // 內存緩存，存儲每個設備的最新數據
 const latestDataCache = new Map();
 
 /**
  * 取得所有設備的最新數據或指定設備的最新數據
- * @param {string} deviceId - 可選，設備 ID
- * @returns {Promise<Object|Array>} 最新數據
+ * @param deviceId 可選，設備 ID
+ * @returns 最新數據
  */
-const getLatestData = async (deviceId) => {
+export async function getLatestData(deviceId?: string): Promise<any> {
   try {
     if (deviceId) {
       // 檢查設備目錄是否存在
-      const devicePath = path.join(DATA_DIR, deviceId);
+      const devicePath = path.join(config.dataDir, deviceId);
       const exists = await fs.pathExists(devicePath);
       if (!exists) {
         throw new Error(`設備 ${deviceId} 不存在`);
@@ -55,12 +55,12 @@ const getLatestData = async (deviceId) => {
 
 /**
  * 讀取特定設備的最新數據
- * @param {string} deviceId - 設備 ID
- * @returns {Promise<Object>} 最新數據
+ * @param deviceId 設備 ID
+ * @returns 最新數據
  */
-const readLatestDeviceData = async (deviceId) => {
+async function readLatestDeviceData(deviceId: string): Promise<any> {
   try {
-    const signalLogPath = path.join(DATA_DIR, deviceId, 'signal_log');
+    const signalLogPath = path.join(config.dataDir, deviceId, 'signal_log');
     const exists = await fs.pathExists(signalLogPath);
     if (!exists) {
       throw new Error(`設備 ${deviceId} 的信號日誌目錄不存在`);
@@ -96,18 +96,18 @@ const readLatestDeviceData = async (deviceId) => {
 
 /**
  * 取得特定設備在日期範圍內的歷史數據
- * @param {string} deviceId - 設備 ID
- * @param {string} startDate - 開始日期 (YYYY-MM-DD)
- * @param {string} endDate - 結束日期 (YYYY-MM-DD)
- * @returns {Promise<Array>} 歷史數據列表
+ * @param deviceId 設備 ID
+ * @param startDate 開始日期 (YYYY-MM-DD)
+ * @param endDate 結束日期 (YYYY-MM-DD)
+ * @returns 歷史數據列表
  */
-const getHistoryData = async (deviceId, startDate, endDate) => {
+export async function getHistoryData(deviceId: string, startDate: string, endDate: string): Promise<any[]> {
   try {
     // 若指定 deviceId，僅處理該設備；否則讀取所有設備
     const devices = deviceId ? [{ id: deviceId }] : await deviceService.getAllDevices();
     const allData = [];
     for (const { id } of devices) {
-      const devicePath = path.join(DATA_DIR, id);
+      const devicePath = path.join(config.dataDir, id);
       const exists = await fs.pathExists(devicePath);
       if (!exists) continue;
       const signalLogPath = path.join(devicePath, 'signal_log');
@@ -152,14 +152,14 @@ const getHistoryData = async (deviceId, startDate, endDate) => {
 };
 
 /**
- * 根據設備 ID 與當前記錄 timestamp，尋找該設備在歷史資料中（信號日誌目錄）最新的、且 timestamp 小於當前記錄的那筆數據。
- * @param {string} deviceId - 設備 ID
- * @param {string} currentTimestamp - 當前數據的 timestamp
- * @returns {Promise<Object|undefined>} 符合條件的前一筆記錄，若無則回傳 undefined
+ * 根據設備 ID 與當前記錄 timestamp，尋找歷史資料中最新的、且 timestamp 小於當前記錄的那筆數據。
+ * @param deviceId 設備 ID
+ * @param currentTimestamp 當前數據的 timestamp
+ * @returns 前一筆記錄
  */
-const findPreviousRecord = async (deviceId, currentTimestamp) => {
+export async function findPreviousRecord(deviceId: string, currentTimestamp: string): Promise<any | undefined> {
   try {
-    const signalLogPath = path.join(DATA_DIR, deviceId, 'signal_log');
+    const signalLogPath = path.join(config.dataDir, deviceId, 'signal_log');
     const exists = await fs.pathExists(signalLogPath);
     if (!exists) return undefined;
 
@@ -224,10 +224,10 @@ const findPreviousRecord = async (deviceId, currentTimestamp) => {
 /**
  * 更新最新數據緩存並計算雨量筒的十分鐘雨量
  * 利用 findPreviousRecord 查找前一筆記錄以確定是否真的是首次出現
- * @param {string} deviceId - 設備 ID
- * @param {Object} data - 最新數據
+ * @param deviceId - 設備 ID
+ * @param data - 最新數據
  */
-const updateLatestDataCache = async (deviceId, data) => {
+export async function updateLatestDataCache(deviceId: string, data: any): Promise<void> {
   // 如果 data 存在且 raw 物件中有 "DI_0 Cnt" 欄位，表示為雨量筒數據
   if (data && data.raw && data.raw['DI_0 Cnt'] !== undefined) {
     // 取得原始計數字串並去除空白
@@ -259,19 +259,12 @@ const updateLatestDataCache = async (deviceId, data) => {
 
 /**
  * 清除緩存：若提供 deviceId 則僅清除此設備的緩存，否則清空所有緩存
- * @param {string} deviceId - 選用的設備 ID
+ * @param deviceId - 選用的設備 ID
  */
-const clearCache = (deviceId) => {
+export function clearCache(deviceId?: string): void {
   if (deviceId) {
     latestDataCache.delete(deviceId);
   } else {
     latestDataCache.clear();
   }
-};
-
-module.exports = {
-  getLatestData,
-  getHistoryData,
-  updateLatestDataCache,
-  clearCache
 };

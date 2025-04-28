@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { getLatestData, getHistoryData } from '../controllers/dataController';
 
 const router = Router();
