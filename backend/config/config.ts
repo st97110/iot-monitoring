@@ -1,5 +1,7 @@
-// config/config.ts
+// backend/config/config.ts
 import path from 'path';
+import { logger } from '../utils/logger'; // ⚡️記得要有 logger
+import 'dotenv/config';
 
 export interface InfluxTokens {
   tdr: string;
@@ -22,30 +24,76 @@ export interface Config {
   port: number;
   dataDir: string;
   scanInterval: number;
+  nodeEnv: string;
   influx: InfluxConfig;
 }
 
+
+/**
+ * 取環境變數，若不存在且沒有預設值，就直接 throw
+ */
+function getEnv(name: string, fallback?: string): string {
+  const value = process.env[name];
+
+  if (value !== undefined && value !== '') {
+    return value;
+  }
+
+  if (fallback !== undefined) {
+    logger.warn(`[Config] 環境變數 ${name} 未設定，使用預設值: ${fallback}`);
+    return fallback;
+  }
+
+  throw new Error(`[Config] 缺少必要的環境變數：${name}`);
+}
+
+/**
+ * 取環境變數並轉成數字
+ */
+function getEnvInt(name: string, fallback?: number): number {
+  const value = process.env[name];
+
+  if (value !== undefined && value !== '') {
+    const parsed = parseInt(value, 10);
+    if (isNaN(parsed)) {
+      throw new Error(`[Config] 環境變數 ${name} 必須是數字，但得到: ${value}`);
+    }
+    return parsed;
+  }
+
+  if (fallback !== undefined) {
+    logger.warn(`[Config] 環境變數 ${name} 未設定，使用預設值: ${fallback}`);
+    return fallback;
+  }
+
+  throw new Error(`[Config] 缺少必要的環境變數：${name}`);
+}
+
 export const config: Config = {
-  // 伺服器啟動監聽的 Port
-  port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
-
-  // 原本 DATA_DIR
-  dataDir: process.env.DATA_DIR || path.resolve(__dirname, '../wise_data'),
-
-  // 原本 SCAN_INTERVAL
-  scanInterval: process.env.SCAN_INTERVAL ? parseInt(process.env.SCAN_INTERVAL, 10) : 600,
-
-  // InfluxDB v2 設定
+  port: getEnvInt('PORT', 3000),
+  dataDir: getEnv('DATA_DIR', path.resolve(__dirname, '../wise_data')),
+  scanInterval: getEnvInt('SCAN_INTERVAL', 600),
+  nodeEnv: getEnv('NODE_ENV', 'development'),
   influx: {
-    url: process.env.INFLUX_URL || 'http://localhost:8086',
-    org: process.env.INFLUX_ORG || 'my-org',
+    url: getEnv('INFLUX_URL'),
+    org: getEnv('INFLUX_ORG'),
     tokens: {
-      tdr: process.env.INFLUX_TOKEN_TDR || '',
-      wise: process.env.INFLUX_TOKEN_WISE || '',
+      tdr: getEnv('INFLUX_TOKEN_TDR'),
+      wise: getEnv('INFLUX_TOKEN_WISE'),
     },
     buckets: {
-      tdr: process.env.INFLUX_BUCKET_TDR || '',
-      wise: process.env.INFLUX_BUCKET_WISE || '',
+      tdr: getEnv('INFLUX_BUCKET_TDR'),
+      wise: getEnv('INFLUX_BUCKET_WISE'),
     }
   }
 };
+
+// 啟動時 Log 設定資訊（只在非 production 顯示）
+if (config.nodeEnv !== 'production') {
+  logger.info(`[Config] 使用環境: ${config.nodeEnv}`);
+  logger.info(`[Config] 伺服器 Port: ${config.port}`);
+  logger.info(`[Config] 資料夾位置: ${config.dataDir}`);
+  logger.info(`[Config] 掃描間隔: ${config.scanInterval} 秒`);
+  logger.info(`[Config] Influx URL: ${config.influx.url}`);
+  logger.info(`[Config] Influx Org: ${config.influx.org}`);
+}

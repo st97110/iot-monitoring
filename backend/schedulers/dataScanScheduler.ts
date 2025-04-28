@@ -17,7 +17,7 @@ export function start(): void {
   }
 
   const cronExpression = getCronExpression(config.scanInterval);
-  logger.info(`[排程] 啟動掃描任務，每 ${config.scanInterval} 秒掃描一次，cron 表達式: ${cronExpression}`);
+  logger.info(`[排程] 啟動掃描任務，每 ${config.scanInterval} 秒掃描一次，秒數: ${config.scanInterval}，cron 表達式: ${cronExpression}`);
 
   // 設定排程
   scanTask = cron.schedule(cronExpression, async () => {

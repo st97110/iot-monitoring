@@ -1,91 +1,118 @@
+// backend/services/scannerService.ts
 import fs from 'fs-extra';
 import path from 'path';
 import { config } from '../config/config';
 import { parseCSVFile } from '../utils/csvParser';
 import { updateLatestDataCache } from './dataService';
 import { logger } from '../utils/logger';
+import { parseWiseCsv, convertToInfluxPoints, writeWiseDataToInflux } from './wiseInfluxService';
+import { moveCsvAfterWrite } from './wiseFileService';
 
 /**
- * 掃描所有設備的最新數據
+ * 掃描所有設備的所有未處理資料
  */
 export async function scanLatestData(): Promise<void> {
   try {
-    logger.info('開始掃描設備數據...');
+    logger.info('[掃描] 開始掃描所有設備...');
 
     const exists = await fs.pathExists(config.dataDir);
     if (!exists) {
-      logger.error(`數據目錄 ${config.dataDir} 不存在`);
+      logger.error(`[掃描] 數據目錄不存在: ${config.dataDir}`);
       return;
     }
 
     const entries = await fs.readdir(config.dataDir, { withFileTypes: true });
-    const deviceDirs: string[] = [];
+    const deviceDirs = entries.filter(entry => entry.isDirectory()).map(entry => entry.name);
 
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const signalLogPath = path.join(config.dataDir, entry.name, 'signal_log');
-        if (await fs.pathExists(signalLogPath)) {
-          deviceDirs.push(entry.name);
-        }
-      }
-    }
-
-    logger.info(`找到 ${deviceDirs.length} 個設備`);
+    logger.info(`[掃描] 找到 ${deviceDirs.length} 個設備`);
 
     for (const deviceId of deviceDirs) {
       try {
-        await scanDeviceLatestData(deviceId);
+        await scanDeviceAllData(deviceId);
       } catch (error: any) {
-        logger.error(`掃描設備 ${deviceId} 錯誤: ${error.message}`);
+        logger.error(`[掃描] 設備 ${deviceId} 掃描錯誤: ${error.message}`);
       }
     }
 
-    logger.info('設備數據掃描完成');
+    logger.info('[掃描] 設備數據掃描完成');
   } catch (error: any) {
-    logger.error(`掃描數據錯誤: ${error.message}`);
+    logger.error(`[掃描] 掃描數據錯誤: ${error.message}`);
   }
 }
 
 /**
- * 掃描特定設備的最新數據
+ * 掃描特定設備，處理所有還沒搬走的資料
  * @param deviceId 設備ID
  */
-export async function scanDeviceLatestData(deviceId: string): Promise<void> {
-  try {
+async function scanDeviceAllData(deviceId: string): Promise<void> {
     const signalLogPath = path.join(config.dataDir, deviceId, 'signal_log');
+    const deviceDir = path.join(config.dataDir, deviceId);
+    
     if (!await fs.pathExists(signalLogPath)) {
-      logger.warn(`設備 ${deviceId} 沒有信號日誌目錄`);
+      logger.warn(`[掃描] 設備 ${deviceId} 沒有 signal_log 資料夾`);
       return;
     }
 
     const dateDirs = await fs.readdir(signalLogPath);
     if (dateDirs.length === 0) {
-      logger.warn(`設備 ${deviceId} 沒有任何數據日期目錄`);
+      logger.warn(`[掃描] 設備 ${deviceId} 沒有任何日期目錄`);
       return;
     }
 
-    dateDirs.sort((a, b) => b.localeCompare(a));
-    const latestDateDir = path.join(signalLogPath, dateDirs[0]);
+    dateDirs.sort((a, b) => a.localeCompare(b)); // 日期升冪排序（舊的先處理）
+    
+    for (const dateDirName of dateDirs) {
+      const dateDirPath = path.join(signalLogPath, dateDirName);
 
-    const files = await fs.readdir(latestDateDir);
-    if (files.length === 0) {
-      logger.warn(`設備 ${deviceId} 最新日期 ${dateDirs[0]} 沒有任何數據文件`);
-      return;
-    }
+      if (!(await fs.pathExists(dateDirPath))) continue;
 
-    files.sort((a, b) => b.localeCompare(a));
-    const latestFile = path.join(latestDateDir, files[0]);
+      const files = await fs.readdir(dateDirPath);
+      if (files.length === 0) continue;
 
-    const data = await parseCSVFile(latestFile);
+      const allPoints = [];
+      const processedFiles: string[] = [];
+      
+      // 排序 csv，照時間處理
+      files.sort((a, b) => a.localeCompare(b));
+      
+      for (const filename of files) {
+        const filePath = path.join(dateDirPath, filename);
 
-    if (data.length > 0) {
-      await updateLatestDataCache(deviceId, data[0]);
-      logger.info(`設備 ${deviceId} 最新數據已更新, 時間戳: ${data[0].timestamp}`);
+        // 檢查是不是 CSV，避免處理到亂七八糟的檔案
+        if (!filename.endsWith('.csv')) continue;
+
+        try {
+          const records = await parseWiseCsv(filePath);
+
+          if (records.length > 0) {
+            const points = convertToInfluxPoints(deviceId, records);
+            allPoints.push(...points);
+            processedFiles.push(filePath);
+          } else {
+            logger.warn(`[掃描] 檔案 ${filename} 沒有有效資料, 跳過`);
+          }
+        } catch (error: any) {
+          logger.error(`[掃描] 讀取檔案 ${filename} 錯誤: ${error.message}`);
+        }
+      }
+
+    // 如果有資料，才寫入 InfluxDB
+    if (allPoints.length > 0) {
+      try {
+        await writeWiseDataToInflux(allPoints);
+        logger.info(`[掃描] 設備 ${deviceId} 寫入 ${allPoints.length} 筆資料到 InfluxDB, 時間戳: ${allPoints[0].timestamp}`);
+
+        // 搬走所有成功處理的檔案
+        for (const filePath of processedFiles) {
+          await moveCsvAfterWrite(filePath, deviceDir);
+        }
+
+        logger.info(`[掃描] 設備 ${deviceId} 搬移 ${processedFiles.length} 個檔案至 write/`);
+      } catch (error: any) {
+        logger.error(`[掃描] 寫入 InfluxDB 錯誤: ${error.message}`);
+      }
     } else {
-      logger.warn(`設備 ${deviceId} 最新數據文件為空`);
+      logger.info(`[掃描] 設備 ${deviceId} 日期 ${dateDirName} 沒有需要寫入的資料`);
     }
-  } catch (error: any) {
-    logger.error(`掃描設備 ${deviceId} 最新數據錯誤: ${error.message}`);
-    throw error;
   }
 }
