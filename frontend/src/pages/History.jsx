@@ -234,7 +234,6 @@ function History() {
                 {filterTableData().map((entry, index) => {
                   let deviceConfig;
                   Object.values(deviceMapping).some(area => {
-                    console.log("area", area);
                     deviceConfig = area.devices.find(device => device.id === entry.deviceId);
                     return deviceConfig;
                   });
@@ -245,8 +244,7 @@ function History() {
                     return sensor.channels.map(ch => {
                       const chData = entry.channels?.[ch];
                       if (!chData) return null;
-
-                      const egf = chData.EgF;
+                      const egf = (!chData.Cnt) ? chData.Cnt : chData.EgF; // Cnt 沒有 EgF
                       const init = sensor.initialValues?.[ch] ?? 0;
                       const delta = egf - init;
 

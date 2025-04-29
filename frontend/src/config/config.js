@@ -92,12 +92,12 @@ export const deviceMapping = {
         ]
       },
       {
-        id: 'WISE-4010LAN_00D0C9FD4D44',
+        id: 'WISE-4060LAN_00D0C9FD4D44',
         name: '91.5k雨量筒',
         lat: 24.0267,
         lng: 121.184,
         sensors: [
-          { name: '91.5k雨量筒', channels: ['AI_0'], type: DEVICE_TYPES.RAIN },
+          { name: '91.5k雨量筒', channels: ['DI_0'], type: DEVICE_TYPES.RAIN },
         ]
       },
       { id: 'TDR_T3', name: 'T3 TDR', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
