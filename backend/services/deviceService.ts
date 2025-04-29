@@ -1,6 +1,7 @@
+// backend/services/deviceService.ts
 import fs from 'fs-extra';
 import path from 'path';
-import { queryDeviceListFromInflux } from './influxService';
+import { queryDeviceListFromInflux } from './influxClientService';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
 
@@ -39,19 +40,16 @@ export async function getAllDevicesFromDB(source: 'wise' | 'tdr'): Promise<Devic
  */
 export async function getAllDevicesFromFolder(source: 'wise' | 'tdr'): Promise<DeviceInfo[]> {
   try {
-    const entries = await fs.readdir(config.dataDir, { withFileTypes: true });
+    const baseFolder = source === 'wise' ? config.folder.wiseDataDir : config.folder.tdrDataDir;
+    const entries = await fs.readdir(baseFolder, { withFileTypes: true });
+
     const devices: DeviceInfo[] = [];
 
     for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith('WISE-')) {
-        devices.push({
-          id: entry.name,
-          name: entry.name.split('_')[1] || entry.name,
-          model: entry.name.split('_')[0] || 'Unknown',
-          lastUpdated: null,
-          totalRecords: 0,
-          hasData: true
-        });
+      if (entry.isDirectory() && (entry.name.startsWith('WISE-') || entry.name.startsWith('TDR-'))) {
+        const devicePath = path.join(baseFolder, entry.name);
+        const deviceInfo = await getDeviceInfo(entry.name, devicePath, source);
+        devices.push(deviceInfo);
       }
     }
 
@@ -63,77 +61,50 @@ export async function getAllDevicesFromFolder(source: 'wise' | 'tdr'): Promise<D
 }
 
 /**
- * 獲取所有儀器設備列表
- * @returns 設備列表，包含ID和其他信息
- */
-export async function getAllDevices(): Promise<DeviceInfo[]> {
-  try {
-    const entries = await fs.readdir(config.dataDir, { withFileTypes: true });
-    const devices: DeviceInfo[] = [];
-    
-    for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith('WISE-')) {
-        const devicePath = path.join(config.dataDir, entry.name);
-        const deviceInfo = await getDeviceInfo(entry.name, devicePath);
-        devices.push(deviceInfo);
-      }
-    }
-    
-    return devices;
-  } catch (error: any) {
-    logger.error(`讀取設備列表錯誤: ${error.message}`);
-    throw new Error('無法讀取設備列表');
-  }
-};
-
-/**
  * 獲取特定設備的詳細信息
  * @param deviceId - 設備ID
  * @param devicePath - 設備目錄路徑
  * @returns 設備詳細信息
  */
-export async function getDeviceInfo(deviceId: string, devicePath: string): Promise<DeviceInfo> {
+async function getDeviceInfo(deviceId: string, devicePath: string, source: 'wise' | 'tdr'): Promise<DeviceInfo> {
   try {
-    const signalLogPath = path.join(devicePath, 'signal_log');
-    const hasData = await fs.pathExists(signalLogPath);
-    
-    let lastUpdated = null;
+    const dataPath = source === 'wise'
+      ? path.join(devicePath, 'signal_log')
+      : devicePath; // TDR 直接 device 資料夾
+
+    const hasData = await fs.pathExists(dataPath);
+
+    let lastUpdated: string | null = null;
     let totalRecords = 0;
-    
+
     if (hasData) {
-      // 獲取最新數據時間
-      const dateDirs = await fs.readdir(signalLogPath);
+      const dateDirs = await fs.readdir(dataPath);
       if (dateDirs.length > 0) {
-        // 按日期排序
-        dateDirs.sort((a, b) => b.localeCompare(a));
-        const latestDateDir = path.join(signalLogPath, dateDirs[0]);
-        
-        // 獲取最新文件
+        dateDirs.sort((a, b) => b.localeCompare(a)); // 新到舊排序
+        const latestDateDir = path.join(dataPath, dateDirs[0]);
+
         const files = await fs.readdir(latestDateDir);
         if (files.length > 0) {
           files.sort((a, b) => b.localeCompare(a));
           const latestFile = files[0];
-          const timestamp = latestFile.split('.')[0]; // 假設文件名是時間戳
-          
-          // 更新時間為目錄名+文件名
+          const timestamp = latestFile.split('.')[0]; // 假設檔名是時間戳
+
           lastUpdated = `${dateDirs[0]}T${timestamp}`;
-          
-          // 計算記錄總數
-          totalRecords = await countTotalRecords(signalLogPath);
+          totalRecords = await countTotalRecords(dataPath);
         }
       }
     }
-    
+
     return {
       id: deviceId,
-      name: deviceId.split('_')[1], // 提取MAC地址部分作為名稱
-      model: deviceId.split('_')[0], // 提取模型部分
+      name: deviceId.split('_')[1] || deviceId,
+      model: deviceId.split('_')[0] || 'Unknown',
       lastUpdated,
       totalRecords,
       hasData
     };
   } catch (error: any) {
-    logger.error(`獲取設備 ${deviceId} 詳情錯誤: ${error.message}`);
+    logger.error(`獲取設備 ${deviceId} 詳細資訊錯誤: ${error.message}`);
     return {
       id: deviceId,
       name: deviceId.split('_')[1] || '未知',
@@ -144,7 +115,7 @@ export async function getDeviceInfo(deviceId: string, devicePath: string): Promi
       error: '無法讀取設備詳情'
     };
   }
-};
+}
 
 /**
  * 計算設備的數據記錄總數

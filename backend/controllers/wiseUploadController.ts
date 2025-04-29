@@ -1,8 +1,10 @@
+import path from 'path';
 import { Request, Response, NextFunction } from 'express';
-import { saveWiseLogFile } from '../services/wiseFileService';
+import { saveFile } from '../services/FileService';
 import { logger } from '../utils/logger';
 import { config } from '../config/config';
 
+// WISE 模組上傳日誌，尚未儲存到 DB
 export async function uploadWiseLog(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { macAddress, logType, date, filename } = req.params;
@@ -19,11 +21,11 @@ export async function uploadWiseLog(req: Request, res: Response, next: NextFunct
       return;
     }
 
-    // 組成存檔路徑
-    const saveDir = `${config.dataDir}/${macAddress}/${logType}/${date}`;
-    await saveWiseLogFile(saveDir, filename, req.body);
+     // 存檔路徑：baseDir/deviceFolder/logType/date/filename
+     // 確保目錄存在並儲存檔案
+     await saveFile(config.folder.wiseDataDir, macAddress, date, filename, req.body, logType);
 
-    logger.info(`已儲存 WISE 日誌: ${saveDir}/${filename}`);
+    logger.info(`已儲存 WISE 日誌: ${config.folder.wiseDataDir}/${macAddress}/${logType}/${date}/${filename}`);
     res.json({ success: true });
   } catch (error: any) {
     logger.error(`儲存 WISE 日誌錯誤: ${error.message}`);
