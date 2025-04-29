@@ -2,7 +2,7 @@ import { getHistoryDataFromDB, getHistoryDataFromFolder } from './dataService';
 import { safeGetDevices } from './safeGetDevices';
 import { logger } from '../utils/logger';
 
-export type SourceKey = 'wise' | 'tdr';
+export type SourceKey = 'wise' | 'tdr' | 'both';
 
 /**
  * 優先從 DB 查詢歷史資料，若失敗或無資料，自動 fallback 資料夾
@@ -17,6 +17,15 @@ export async function safeGetHistoryData(
   startDate: string,
   endDate: string
 ): Promise<any[]> {
+  if (source === 'both') {
+    const [wise, tdr] = await Promise.all([
+      safeGetHistoryData('wise', deviceId, startDate, endDate),
+      safeGetHistoryData('tdr', deviceId, startDate, endDate)
+    ]);
+    // 直接串起來；如要去重可再自行處理
+    return [...wise, ...tdr];
+  }
+
   try {
     const dbResult = await getHistoryDataFromDB(source, deviceId, startDate, endDate);
 
@@ -43,6 +52,13 @@ export async function safeGetAllHistoryData(
   startDate: string,
   endDate: string
 ): Promise<any[]> {
+  if (source === 'both') {
+    const [wise, tdr] = await Promise.all([
+      safeGetAllHistoryData('wise', startDate, endDate),
+      safeGetAllHistoryData('tdr', startDate, endDate)
+    ]);
+    return [...wise, ...tdr];
+  }
   try {
     const devices = await safeGetDevices(source);
 
