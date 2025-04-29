@@ -1,12 +1,18 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { DeviceInfo, getAllDevices } from './deviceService';
+import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux } from './influxClientService';
 import { parseCSVFile } from '../utils/csvParser';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
 
+type SourceKey = 'wise' | 'tdr';
+
 // 內存緩存，存儲每個設備的最新數據
 const latestDataCache: Map<string, any> = new Map();
+
+function getBaseFolder(source: SourceKey): string {
+  return source === 'wise' ? config.folder.wiseBackupDir : config.folder.tdrBackupDir;
+}
 
 /** 
  * Helper: 取得目錄下的子目錄或檔案，並排序
@@ -52,15 +58,14 @@ function parseFileTimestamp(filename: string, dateDir: string): Date {
 
   // 如果是 14 碼 YYYYMMDDhhmmss
   if (fileTimePart.length === 14) {
-    const year   = Number(fileTimePart.slice(0, 4));
-    const month  = Number(fileTimePart.slice(4, 6)) - 1; // 月份從 0 開始
-    const day    = Number(fileTimePart.slice(6, 8));
-    const hour   = Number(fileTimePart.slice(8, 10));
-    const minute = Number(fileTimePart.slice(10, 12));
-    const second = Number(fileTimePart.slice(12, 14));
+    const [y, mo, d, h, mi, s] = [
+      fileTimePart.slice(0, 4), fileTimePart.slice(4, 6), fileTimePart.slice(6, 8),
+      fileTimePart.slice(8, 10), fileTimePart.slice(10, 12), fileTimePart.slice(12, 14)
+    ].map(Number);
+    return new Date(Date.UTC(y, mo - 1, d, h, mi, s));
     // Date.UTC(...) 會回傳 UTC 時間的時間戳 (ms)，再用 new Date() 包一層就不會受本地時區影響
-    return new Date(Date.UTC(year, month, day, hour, minute, second));
-  } else {
+  }
+  else {
     // fallback: 如果只有 dateDir + time 部分，也一樣用 UTC
     const [yyyy, MM, dd] = [dateDir.slice(0,4), dateDir.slice(4,6), dateDir.slice(6,8)].map(Number);
     const [hh, mm, ss]   = [
@@ -81,7 +86,6 @@ function parseFileTimestamp(filename: string, dateDir: string): Date {
 function calculateRainfall(currentData: any, previousData: any): void {
   if (currentData?.raw?.['DI_0 Cnt'] !== undefined) {
     const currentCount = parseFloat(currentData.raw['DI_0 Cnt'].trim());
-    
     const prevCount = previousData?.raw?.['DI_0 Cnt'] !== undefined
       ? parseFloat(previousData.raw['DI_0 Cnt'].trim())
       : 0;
@@ -92,72 +96,122 @@ function calculateRainfall(currentData: any, previousData: any): void {
 }
 
 /**
- * 取得所有設備的最新數據或指定設備的最新數據
- * @param deviceId 可選，設備 ID
- * @returns 最新數據
+ * 查詢 InfluxDB 最新資料
+ * @param source 指定資料來源：'wise'、'tdr'
+ * @param deviceId 可選，指定設備 ID
+ * @returns  Equipment ID => Latest Data
+ * @throws  InfluxDB 查詢失敗
  */
-export async function getLatestData(deviceId?: string): Promise<Record<string, any>> {
+export async function getLatestDataFromDB(source: 'wise' | 'tdr', deviceId?: string): Promise<Record<string, any>> {
   try {
     if (deviceId) {
-      // 檢查設備目錄是否存在
-      const devicePath = path.join(config.dataDir, deviceId);
-      if (!await fs.pathExists(devicePath)) throw new Error(`設備 ${deviceId} 不存在`);
-      if (latestDataCache.has(deviceId)) return { [deviceId]: latestDataCache.get(deviceId) };
-      const latestData = await readLatestDeviceData(deviceId);
-      return { [deviceId]: latestData };
+      const data = await queryLatestDataFromInflux(source, deviceId);
+      return { [deviceId]: data };
     }
-    // 取得所有設備的最新數據
-    const devices: DeviceInfo[] = await getAllDevices();
+
+    const deviceIds = await queryDeviceListFromInflux(source);
     const result: Record<string, any> = {};
-    for (const device of devices) {
-      const id = device.id;
-      if (latestDataCache.has(id)) {
-        result[id] = latestDataCache.get(id);
-      } else {
-        try {
-          const latestData = await readLatestDeviceData(id);
-          result[id] = latestData;
-        } catch (error: any) {
-          logger.error(`讀取設備 ${id} 最新數據錯誤: ${error.message}`);
-          result[id] = { error: '無法讀取最新數據' };
-        }
+
+    for (const id of deviceIds) {
+      try {
+        result[id] = await queryLatestDataFromInflux(source, id);
+      } catch (err: any) {
+        result[id] = { error: err.message };
       }
     }
+
     return result;
-  } catch (error: any) {
-    logger.error(`獲取最新數據錯誤: ${error.message}`);
-    throw error;
+  } catch (err: any) {
+    logger.error(`[InfluxDB] 查詢最新資料失敗: ${err.message}`);
+    throw err;
   }
 }
 
 /**
- * 讀取特定設備的最新數據
- * @param deviceId 設備 ID
+ * 取得所有設備的最新數據或指定設備的最新數據
+ * @param deviceId 可選，設備 ID
  * @returns 最新數據
  */
-async function readLatestDeviceData(deviceId: string): Promise<any> {
+export async function getLatestDataFromFolder(source: SourceKey, deviceId?: string): Promise<any> {
+  // TODO: 支援 deviceId 可選，目前僅支援單一設備，待完善
+  // 實作方式為讀取最新日期的資料夾內的所有檔案，比照 getLatestDataFromDB()
+  // try {
+  //   const cacheKey = `${source}:${deviceId}`;
+
+  //   if (latestDataCache.has(cacheKey)) {
+  //     return latestDataCache.get(cacheKey);
+  //   }
+
+  //   const baseDir = getBaseFolder(source);
+  //   let devicePath = baseDir;
+  //   if (deviceId)
+  //     deviceId = path.join(baseDir, deviceId);
+
+  //   if (!await fs.pathExists(devicePath)) {
+  //     throw new Error(`設備 ${deviceId} 不存在`);
+  //   }
+
+  //   const dateDirs = await getSortedEntries(devicePath);
+  //   if (!dateDirs.length) throw new Error(`設備 ${deviceId} 沒有任何資料夾`);
+
+  //   const latestDateDir = path.join(devicePath, dateDirs[0]);
+  //   const files = await getSortedEntries(latestDateDir);
+  //   if (!files.length) throw new Error(`設備 ${deviceId} 最新日期 ${dateDirs[0]} 沒有任何資料`);
+
+  //   const latestFile = path.join(latestDateDir, files[0]);
+  //   const data = await parseCSVFile(latestFile);
+
+  //   if (!data.length) throw new Error(`設備 ${deviceId} 的最新資料檔案為空`);
+
+  //   // 存入快取
+  //   latestDataCache.set(cacheKey, data[0]);
+  //   return data[0];
+  // } catch (error: any) {
+  //   logger.error(`讀取設備 ${deviceId} 最新資料錯誤: ${error.message}`);
+  //   throw error;
+  // }
+}
+
+/**
+ * 從 InfluxDB 查詢歷史資料
+ * @param source 資料來源（wise 或 tdr）
+ * @param deviceId 裝置 ID（可選）
+ * @param startDate 開始日期 (YYYY-MM-DD)
+ * @param endDate 結束日期 (YYYY-MM-DD)
+ */
+export async function getHistoryDataFromDB(
+  source: SourceKey,
+  deviceId?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<Record<string, any>> {
   try {
-    const signalLogPath = path.join(config.dataDir, deviceId, 'signal_log');
-    if (!await fs.pathExists(signalLogPath)) {
-      throw new Error(`設備 ${deviceId} 的信號日誌目錄不存在`);
+    const result: Record<string, any> = {};
+
+    if (!startDate || !endDate) {
+      throw new Error('必須提供 startDate 和 endDate');
     }
 
-    const dateDirs = await getSortedEntries(signalLogPath);
-    if (!dateDirs.length) throw new Error(`設備 ${deviceId} 沒有任何數據`);
+    if (deviceId) {
+      const data = await queryHistoryDataFromInflux(source, deviceId, startDate, endDate);
+      result[deviceId] = data;
+      return result;
+    }
 
-    const latestDateDir = path.join(signalLogPath, dateDirs[0]);
-    const files = await getSortedEntries(latestDateDir);
-    if (!files.length) throw new Error(`設備 ${deviceId} 最新日期 ${dateDirs[0]} 沒有任何數據文件`);
+    const deviceIds = await queryDeviceListFromInflux(source);
+    for (const id of deviceIds) {
+      try {
+        result[id] = await queryHistoryDataFromInflux(source, id, startDate, endDate);
+      } catch (err: any) {
+        logger.warn(`[InfluxDB] 裝置 ${id} 查詢歷史資料錯誤: ${err.message}`);
+        result[id] = { error: err.message };
+      }
+    }
 
-    const latestFile = path.join(latestDateDir, files[0]);
-    const data = await parseCSVFile(latestFile);
-    if (!data.length) throw new Error(`設備 ${deviceId} 的最新數據文件為空`);
-
-    latestDataCache.set(deviceId, data[0]);
-    return data[0];
-  } catch (error: any) {
-    logger.error(`讀取設備 ${deviceId} 最新數據錯誤: ${error.message}`);
-    throw error;
+    return result;
+  } catch (err: any) {
+    logger.error(`[InfluxDB] 查詢歷史資料失敗: ${err.message}`);
+    throw err;
   }
 }
 
@@ -166,43 +220,46 @@ async function readLatestDeviceData(deviceId: string): Promise<any> {
  * @param deviceId 設備 ID
  * @param startDate 開始日期 (YYYY-MM-DD)
  * @param endDate 結束日期 (YYYY-MM-DD)
+ * @param source 資料來源 ('wise' | 'tdr')
  * @returns 歷史數據列表
  */
-export async function getHistoryData(deviceId: string, startDate: string, endDate: string): Promise<any[]> {
+export async function getHistoryDataFromFolder(deviceId: string, startDate: string, endDate: string, source: SourceKey): Promise<any[]> {
   try {
-    const devices = deviceId ? [{ id: deviceId }] : await getAllDevices();
-    const allData: any[] = [];
+    const baseDir = getBaseFolder(source);
+    const devicePath = path.join(baseDir, deviceId);
+    if (!await fs.pathExists(devicePath)) {
+      logger.warn(`設備 ${deviceId} 在 ${baseDir} 不存在`);
+      return [];
+    }
+
     const dateList = formatDateList(startDate, endDate);
+    const existingDirs = await fs.readdir(devicePath);
+    const targetDirs = dateList.filter(d => existingDirs.includes(d));
 
-    for (const { id } of devices) {
-      const signalLogPath = path.join(config.dataDir, id, 'signal_log');
-      if (!await fs.pathExists(signalLogPath)) continue;
+    const allData: any[] = [];
 
-      const existingDirs = await fs.readdir(signalLogPath);
-      const targetDirs = dateList.filter(d => existingDirs.includes(d));
+    for (const dateDir of targetDirs) {
+      const dirPath = path.join(devicePath, dateDir);
+      if (!await fs.pathExists(dirPath)) continue;
 
-      for (const dateDir of targetDirs) {
-        const dirPath = path.join(signalLogPath, dateDir);
-        const files = await getSortedEntries(dirPath, false); // 升序排列
-        
-        for (const file of files) {
-          const filePath = path.join(dirPath, file);
-          try {
-            const data = await parseCSVFile(filePath);
-            for (const record of data) {
-              record.deviceId = id; // 加入來源設備 ID
-              allData.push(record);
-            }
-          } catch (error: any) {
-            logger.error(`讀取 ${filePath} 錯誤: ${error.message}`);
+      const files = await getSortedEntries(dirPath, false); // 升冪
+      for (const file of files) {
+        const filePath = path.join(dirPath, file);
+        try {
+          const records = await parseCSVFile(filePath);
+          for (const record of records) {
+            record.deviceId = deviceId; // 加上 deviceId
+            allData.push(record);
           }
+        } catch (error: any) {
+          logger.error(`讀取 ${filePath} 錯誤: ${error.message}`);
         }
       }
     }
 
     return allData;
   } catch (error: any) {
-    logger.error(`獲取歷史數據錯誤: ${error.message}`);
+    logger.error(`讀取設備 ${deviceId} 歷史數據錯誤: ${error.message}`);
     throw error;
   }
 }
@@ -213,25 +270,31 @@ export async function getHistoryData(deviceId: string, startDate: string, endDat
  * @param currentTimestamp 當前數據的 timestamp
  * @returns 前一筆記錄，若找不到則為 undefined
  */
-export async function findPreviousRecord(deviceId: string, currentTimestamp: string): Promise<any | undefined> {
+export async function findPreviousRecordFromFolder(
+  deviceId: string,
+  currentTimestamp: string,
+  source: SourceKey
+): Promise<any | undefined> {
   try {
-    const signalLogPath = path.join(config.dataDir, deviceId, 'signal_log');
-    if (!await fs.pathExists(signalLogPath)) return undefined;
+    const baseDir = getBaseFolder(source);
+    const devicePath = path.join(baseDir, deviceId);
+    if (!await fs.pathExists(devicePath)) return undefined;
 
-    const dateDirs = await getSortedEntries(signalLogPath);
+    const dateDirs = await getSortedEntries(devicePath, true); // ⬅️ 新的在前，方便 early return
     if (!dateDirs.length) return undefined;
 
     const currentDateObj = new Date(currentTimestamp);
     const currentDateString = currentDateObj.toISOString().slice(0, 10).replace(/-/g, '');
+
     const candidateDirs = dateDirs.filter(d => d <= currentDateString);
 
     for (const dir of candidateDirs) {
-      const dirPath = path.join(signalLogPath, dir);
-      const files = await getSortedEntries(dirPath);
-      
+      const dirPath = path.join(devicePath, dir);
+      if (!await fs.pathExists(dirPath)) continue;
+
+      const files = await getSortedEntries(dirPath, true); // ⬅️ 新的在前
       for (const filename of files) {
         const fileTimestamp = parseFileTimestamp(filename, dir);
-        
         if (fileTimestamp < currentDateObj) {
           const filePath = path.join(dirPath, filename);
           const records = await parseCSVFile(filePath);
@@ -242,14 +305,14 @@ export async function findPreviousRecord(deviceId: string, currentTimestamp: str
 
     return undefined;
   } catch (error: any) {
-    logger.error(`findPreviousRecord error for device ${deviceId}: ${error.message}`);
+    logger.error(`findPreviousRecordFromFolder error (${deviceId}, ${source}): ${error.message}`);
     return undefined;
   }
 }
 
 /**
  * 更新最新數據緩存並計算雨量筒的十分鐘雨量
- * 利用 findPreviousRecord 查找前一筆記錄以確定是否真的是首次出現
+ * 利用 findPreviousRecordFromFolder 查找前一筆記錄以確定是否真的是首次出現
  * @param deviceId 設備 ID
  * @param data 最新數據
  * @returns void
@@ -257,9 +320,9 @@ export async function findPreviousRecord(deviceId: string, currentTimestamp: str
 export async function updateLatestDataCache(deviceId: string, data: any): Promise<void> {
   let prevRecord = latestDataCache.get(deviceId);
   
-  // 若緩存資料不存在或 timestamp 不早於當前記錄，透過 findPreviousRecord 查詢歷史資料
+  // 若緩存資料不存在或 timestamp 不早於當前記錄，透過 findPreviousRecordFromFolder 查詢歷史資料
   if (!prevRecord || new Date(prevRecord.timestamp) >= new Date(data.timestamp)) {
-    prevRecord = await findPreviousRecord(deviceId, data.timestamp);
+    prevRecord = await findPreviousRecordFromFolder(deviceId, data.timestamp, data.source);
   }
   
   // 計算雨量

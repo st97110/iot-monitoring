@@ -20,15 +20,28 @@ export interface DeviceInfo {
  */
 export async function getAllDevicesFromDB(source: 'wise' | 'tdr'): Promise<DeviceInfo[]> {
   try {
-    const wise_ids = await queryDeviceListFromInflux('wise');
-    return wise_ids.map(id => ({
-      id,
-      name: id.split('_')[1] || id,
-      model: id.split('_')[0] || 'Unknown',
-      lastUpdated: null,
-      totalRecords: 0,
-      hasData: true,
-    }));
+    if (source === 'wise') {
+      const wise_ids = await queryDeviceListFromInflux('wise');
+      return wise_ids.map(id => ({
+        id,
+        name: id.split('_')[1] || id,
+        model: id.split('_')[0] || 'WISE',
+        lastUpdated: null,
+        totalRecords: 0,
+        hasData: true,
+      }));
+    } else {
+      const tdr_ids = await queryDeviceListFromInflux('tdr');
+      return tdr_ids.map(id => ({
+        id,
+        name: id.split('_')[1] || id,
+        model: 'TDR',
+        lastUpdated: null,
+        totalRecords: 0,
+        hasData: true,
+      }));
+    }
+    
   } catch (error: any) {
     logger.error(`從 InfluxDB 讀取設備列表錯誤: ${error.message}`);
     return [];
