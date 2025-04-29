@@ -43,6 +43,27 @@ function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // // ======== 取得最新資料（依區域切換） ========
+  // useEffect(() => {
+  //   setLoading(true);
+
+  //   // 若沒有選區域就不要帶 ?area
+  //   const params = new URLSearchParams();
+  //   if (filterArea !== '全部') params.append('area', filterArea);
+  //   const query = params.toString();
+  //   const url = `${API_BASE}/api/latest${query ? `?${query}` : ''}`;
+
+  //   axios
+  //     .get(url, { headers: { 'Cache-Control': 'no-cache' } })
+  //     .then(res => {
+  //       setLatestData(res.data);
+  //       setLoading(false);
+  //     })
+  //     .catch(err => {
+  //       console.error('取得最新資料失敗:', err);
+  //       setLoading(false);
+  //     });
+  // }, [filterArea]); // ← 只有 filterArea 改變才重新抓
   useEffect(() => {
     setLoading(true);
     axios.get(`${API_BASE}/api/latest`)
@@ -65,7 +86,6 @@ function Home() {
     if (!searchTerm.trim()) return true;
     return area.devices.some(device =>
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (device.mac && device.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }
@@ -73,7 +93,6 @@ function Home() {
   function filterDevice(device) {
     if (!searchTerm.trim()) return true;
     return device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (device.mac && device.mac.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()));
   }
 
@@ -145,7 +164,7 @@ function Home() {
                 {area.devices
                   .filter(device => filterDevice(device))
                   .map(device => {
-                    const deviceId = device.mac ? `WISE-4010LAN_${device.mac}` : device.id;
+                    const deviceId = device.id;
                     const data = latestData[deviceId];
 
                     // 若尚未有 data，而且非 loading 狀態，就顯示「無可用數據」

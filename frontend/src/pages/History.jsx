@@ -36,10 +36,11 @@ function History() {
       const res = await axios.get(`${API_BASE}/api/history`, {
         params: {
           deviceId: deviceId || undefined,
+          // area: !deviceId ? '全部' : undefined,
           startDate,
           endDate,
-          limit,
-          offset
+          // limit,
+          // offset
         }
       });
 
@@ -231,16 +232,15 @@ function History() {
               </thead>
               <tbody>
                 {filterTableData().map((entry, index) => {
-                  const mac = entry.deviceId?.split('_')[1];
-
                   let deviceConfig;
                   Object.values(deviceMapping).some(area => {
-                    deviceConfig = area.devices.find(device => device.mac === mac || device.id === entry.deviceId);
+                    console.log("area", area);
+                    deviceConfig = area.devices.find(device => device.id === entry.deviceId);
                     return deviceConfig;
                   });
-
+                  
                   if (!deviceConfig) return null;
-
+                  
                   return deviceConfig.sensors?.flatMap((sensor, sIdx) => {
                     return sensor.channels.map(ch => {
                       const chData = entry.channels?.[ch];

@@ -95,6 +95,17 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
         if (!records.timestamp) {
           records.timestamp = ts;
         }
+        if (!records.raw)   records.raw = {};
+        if (!records.channels) records.channels = {};
+
+        records.raw[field] = value;
+
+        // 只有 AI_x、DI_x 這類才要塞進 channels
+        if (field.match(/^[AD]I_\d+ /)) {
+          const [ch, metric] = field.split(' ');
+          records.channels[ch] = records.channels[ch] || {};
+          records.channels[ch][metric] = value;
+        }
         records.raw = records.raw || {};
         records.raw[field] = value;
       },
@@ -124,6 +135,7 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
       |> sort(columns: ["_time"])
   `;
 
+  /* 1️⃣ 先把所有 row 收進 history 陣列（你原本的程式） */
   const history: any[] = [];
 
   await new Promise<void>((resolve, reject) => {
@@ -142,7 +154,39 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
     });
   });
 
-  return history;
+  /* 2️⃣ 重新 groupBy timestamp，轉成前端需要的 channels/raw 結構 */
+  const grouped: Record<string, any> = {};          // tsStr -> record
+
+  history.forEach(r => {
+    const ts   = r._time as string;                 // ISO 時間字串
+    const fld  = r._field as string;                // 例如 "AI_0 EgF"
+    const val  = r._value;                          // 數值
+
+    if (!grouped[ts]) {
+      grouped[ts] = {
+        deviceId,
+        timestamp: ts,
+        channels: {},
+        raw: {}
+      };
+    }
+
+    /* raw: 原樣存所有 field */
+    grouped[ts].raw[fld] = val;
+
+    /* channels: 只把 AI_x、DI_x 等需要合併的欄位拆進去 */
+    const m = fld.match(/^([AD]I_\d+)\s(\w+)$/);
+    if (m) {
+      const [_, ch, metric] = m;
+      grouped[ts].channels[ch] = grouped[ts].channels[ch] || {};
+      grouped[ts].channels[ch][metric] = val;
+    }
+  });
+
+  /* 3️⃣ 依時間降序回傳陣列 */
+  return Object.values(grouped).sort(
+    (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 }
 
 export { Point };

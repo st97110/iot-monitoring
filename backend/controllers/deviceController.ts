@@ -20,7 +20,9 @@ function parseSource(src?: string): 'wise' | 'tdr' | 'both' {
 export async function getDevices(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const source = parseSource(req.query.source as string | undefined);
-    const devices = await safeGetDevices(source);
+    const area = req.query.area as string | undefined;
+    let devices = await safeGetDevices(source);
+    if (area) devices = devices.filter(d => d.area === area);
     res.json(devices);
   } catch (error: any) {
     logger.error(`取得設備列表錯誤: ${error.message}`);

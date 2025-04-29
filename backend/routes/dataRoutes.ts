@@ -8,6 +8,7 @@ const router = Router();
  * @desc 獲取所有設備的最新數據，或者通過查詢參數獲取特定設備最新數據
  * @query source   (wise | tdr | both, optional; default=both)
  * @query {string} deviceId - 可選，指定設備ID
+ * @query area   (string, optional) 區域名稱；與 deviceId 互斥
  * @returns {Record<string, any>} - 裝置對應的最新數據
  */
 router.get('/latest', getLatestData);

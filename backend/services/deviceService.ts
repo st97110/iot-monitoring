@@ -4,11 +4,13 @@ import path from 'path';
 import { queryDeviceListFromInflux } from './influxClientService';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
+import { getAreaByDeviceId } from '../utils/helper';
 
 export interface DeviceInfo {
   id: string;
   name: string;
   model: string;
+  area?: string;
   lastUpdated: string | null;
   totalRecords: number;
   hasData: boolean;
@@ -26,6 +28,7 @@ export async function getAllDevicesFromDB(source: 'wise' | 'tdr'): Promise<Devic
         id,
         name: id.split('_')[1] || id,
         model: id.split('_')[0] || 'WISE',
+        area: getAreaByDeviceId(id),
         lastUpdated: null,
         totalRecords: 0,
         hasData: true,
@@ -36,6 +39,7 @@ export async function getAllDevicesFromDB(source: 'wise' | 'tdr'): Promise<Devic
         id,
         name: id.split('_')[1] || id,
         model: 'TDR',
+        area: getAreaByDeviceId(id),
         lastUpdated: null,
         totalRecords: 0,
         hasData: true,
