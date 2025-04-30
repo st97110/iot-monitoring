@@ -16,9 +16,9 @@ export async function safeGetDevices(source: SourceKey): Promise<any[]> {
         ]);
     
         // 合併並去重
-        return [...new Map(
-          [...wiseDevices, ...tdrDevices].map(d => [d.id, d])
-        ).values()];
+        return Array.from(
+          new Map([...wiseDevices, ...tdrDevices].map(d => [d.id, d])).values()
+        );
       }
 
     try {

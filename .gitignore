@@ -17,6 +17,7 @@ backend/npm-debug.log*
 
 # Build
 backend/dist/
+frontend/dist/
 
 # IDE files
 backend/tsconfig.json
@@ -40,3 +41,9 @@ tdr_data/
 wise_data/
 wise_backup_data/
 tdr_backup_data/
+
+# docker fiels
+backend/Dockerfile
+backend/*.tar
+backend/*.7z
+backend/*.zip

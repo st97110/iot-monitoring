@@ -61,7 +61,8 @@ async function scanDeviceAllData(basePath: string, deviceId: string, source: 'wi
     const dataPath = (source === 'wise')
         ? path.join(basePath, deviceId, 'signal_log')
         : path.join(basePath, deviceId);
-        let fisrttimestamp = Date.now();
+        
+    let firstTimestamp = Date.now();
         
         if (!await fs.pathExists(dataPath)) {
         logger.warn(`[掃描] 設備 ${deviceId} 找不到資料夾: ${dataPath}`);
@@ -109,7 +110,7 @@ async function scanDeviceAllData(basePath: string, deviceId: string, source: 'wi
 
                     allPoints.push(...points);
                     processedFiles.push(filePath);
-                    fisrttimestamp = Math.min(fisrttimestamp, records[0].timestamp);
+                    firstTimestamp = Math.min(firstTimestamp, records[0].timestamp);
                 } else {
                     logger.warn(`[掃描] 檔案 ${filename} 沒有有效資料, 跳過`);
                 }
@@ -127,7 +128,7 @@ async function scanDeviceAllData(basePath: string, deviceId: string, source: 'wi
             await writeTdrDataToInflux(allPoints);
             }
 
-            logger.info(`[掃描] 設備 ${deviceId} 寫入 ${allPoints.length} 筆資料到 InfluxDB，時間戳為 ${fisrttimestamp}`);
+            logger.info(`[掃描] 設備 ${deviceId} 寫入 ${allPoints.length} 筆資料到 InfluxDB，時間戳為 ${firstTimestamp}`);
 
             for (const filePath of processedFiles) {
                 const backupDir = (source === 'wise') ? config.folder.wiseBackupDir : config.folder.tdrBackupDir;
