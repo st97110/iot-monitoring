@@ -19,3 +19,14 @@ export function getSourceByDeviceId(id: string): SourceKey {
   if (upper.startsWith('TDR_') || upper.startsWith('TDR-')) return 'tdr';
   throw new Error(`[getSourceByDeviceId] 無法判斷 deviceId=${id} 來源（請補規則）`);
 }
+
+/**
+ * Helper：由 deviceId 反查 mapping
+ */
+export function getTypeByDeviceId(id: string) {
+  for (const area of Object.values(deviceMapping)) {
+    const cfg = area.devices.find(d => d.id === id);
+    if (cfg) return cfg;
+  }
+  return undefined;
+}

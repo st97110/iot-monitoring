@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { safeGetLatestData } from '../services/safeGetData';
+import { safeGetLatestData } from '../services/safeGetLatest';
 import { safeGetDevices } from '../services/safeGetDevices';
 import { safeGetHistoryData, safeGetAllHistoryData } from '../services/safeGetHistory';
 import { logger } from '../utils/logger';

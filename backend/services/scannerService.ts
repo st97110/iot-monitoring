@@ -5,7 +5,7 @@ import { config } from '../config/config';
 import { parseCSVFile } from '../utils/csvParser';
 import { updateLatestDataCache } from './dataService';
 import { logger } from '../utils/logger';
-import { parseWiseCsv, convertWiseToInfluxPoints, convertTdrToInfluxPoints, writeWiseDataToInflux, writeTdrDataToInflux } from './influxDataService';
+import { convertWiseToInfluxPoints, convertTdrToInfluxPoints, writeWiseDataToInflux, writeTdrDataToInflux } from './influxDataService';
 import { moveCsvAfterWrite } from './FileService';
 
 /**
@@ -99,7 +99,7 @@ async function scanDeviceAllData(basePath: string, deviceId: string, source: 'wi
             try {
                 let records: any[] = [];
                 if (source === 'wise') {
-                    records = await parseWiseCsv(filePath);
+                    records = await parseCSVFile(filePath);
                 }
         
                 if (records.length > 0) {

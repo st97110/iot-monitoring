@@ -1,5 +1,5 @@
 // services/safeDataService.ts
-import { getLatestDataFromDB, getLatestDataFromFolder } from './dataService';
+import { enrichRainfall, getLatestDataFromDB, getLatestDataFromFolder } from './dataService';
 import { logger } from '../utils/logger';
 
 export type SourceKey = 'wise' | 'tdr' | 'both';
@@ -17,22 +17,22 @@ export async function safeGetLatestData(source: SourceKey, deviceId?: string): P
       safeGetLatestData('tdr', deviceId)
     ]);
     
-    return { ...wiseLatest, ...tdrLatest };
+    const result = { ...wiseLatest, ...tdrLatest };
+    await enrichRainfall(result, '10m');
+    return result;
   }
 
   try {
     const dbResult = await getLatestDataFromDB(source, deviceId);
-
-    if (Object.keys(dbResult).length > 0) {
-      return dbResult;
-    } else {
-      logger.warn(`DB 查詢 ${deviceId ?? '全部設備'} 最新數據結果為空，改從資料夾查詢`);
-      const folderResult = await getLatestDataFromFolder(source, deviceId);
-      return folderResult;
-    }
+    const result   = (Object.keys(dbResult).length > 0)
+                       ? dbResult
+                       : await getLatestDataFromFolder(source, deviceId);
+    await enrichRainfall(result, '10m');
+    return result;
   } catch (error: any) {
-    logger.error(`從 DB 查詢 ${deviceId ?? '全部設備'} 最新數據失敗，嘗試從資料夾讀取: ${error.message}`);
-    const folderResult = await getLatestDataFromFolder(source, deviceId);
-    return folderResult;
+    logger.error(`[safeGetLatestData] DB 查詢 ${deviceId}(${source}) 失敗: ${error.message}，改從資料夾讀取`);
+    const result = await getLatestDataFromFolder(source, deviceId);
+    await enrichRainfall(result, '10m');
+    return result;
   }
 }

@@ -1,11 +1,13 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux } from './influxClientService';
+import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux, queryRainfall } from './influxClientService';
 import { parseCSVFile } from '../utils/csvParser';
-import { config } from '../config/config';
+import { config, DEVICE_TYPES, deviceMapping } from '../config/config';
 import { logger } from '../utils/logger';
 
 type SourceKey = 'wise' | 'tdr';
+
+export type RainDuration = string | number;   // e.g. "30m" | 60 | "6h" | "1d"
 
 // 內存緩存，存儲每個設備的最新數據
 const latestDataCache: Map<string, any> = new Map();
@@ -95,37 +97,7 @@ function calculateRainfall(currentData: any, previousData: any): void {
   }
 }
 
-/**
- * 查詢 InfluxDB 最新資料
- * @param source 指定資料來源：'wise'、'tdr'
- * @param deviceId 可選，指定設備 ID
- * @returns  Equipment ID => Latest Data
- * @throws  InfluxDB 查詢失敗
- */
-export async function getLatestDataFromDB(source: 'wise' | 'tdr', deviceId?: string): Promise<Record<string, any>> {
-  try {
-    if (deviceId) {
-      const data = await queryLatestDataFromInflux(source, deviceId);
-      return { [deviceId]: data };
-    }
 
-    const deviceIds = await queryDeviceListFromInflux(source);
-    const result: Record<string, any> = {};
-
-    for (const id of deviceIds) {
-      try {
-        result[id] = await queryLatestDataFromInflux(source, id);
-      } catch (err: any) {
-        result[id] = { error: err.message };
-      }
-    }
-
-    return result;
-  } catch (err: any) {
-    logger.error(`[InfluxDB] 查詢最新資料失敗: ${err.message}`);
-    throw err;
-  }
-}
 
 /**
  * 取得所有設備的最新數據或指定設備的最新數據
@@ -172,48 +144,7 @@ export async function getLatestDataFromFolder(source: SourceKey, deviceId?: stri
   // }
 }
 
-/**
- * 從 InfluxDB 查詢歷史資料
- * @param source 資料來源（wise 或 tdr）
- * @param deviceId 裝置 ID（可選）
- * @param startDate 開始日期 (YYYY-MM-DD)
- * @param endDate 結束日期 (YYYY-MM-DD)
- */
-export async function getHistoryDataFromDB(
-  source: SourceKey,
-  deviceId?: string,
-  startDate?: string,
-  endDate?: string
-): Promise<Record<string, any>> {
-  try {
-    const result: Record<string, any> = {};
 
-    if (!startDate || !endDate) {
-      throw new Error('必須提供 startDate 和 endDate');
-    }
-
-    if (deviceId) {
-      const data = await queryHistoryDataFromInflux(source, deviceId, startDate, endDate);
-      result[deviceId] = data;
-      return result;
-    }
-
-    const deviceIds = await queryDeviceListFromInflux(source);
-    for (const id of deviceIds) {
-      try {
-        result[id] = await queryHistoryDataFromInflux(source, id, startDate, endDate);
-      } catch (err: any) {
-        logger.warn(`[InfluxDB] 裝置 ${id} 查詢歷史資料錯誤: ${err.message}`);
-        result[id] = { error: err.message };
-      }
-    }
-
-    return result;
-  } catch (err: any) {
-    logger.error(`[InfluxDB] 查詢歷史資料失敗: ${err.message}`);
-    throw err;
-  }
-}
 
 /**
  * 取得特定設備在日期範圍內的歷史數據
@@ -344,3 +275,118 @@ export function clearCache(deviceId?: string): void {
     latestDataCache.clear();
   }
 }
+
+//#region InfluxDB
+
+/**
+ * 查詢 InfluxDB 最新資料
+ * @param source 指定資料來源：'wise'、'tdr'
+ * @param deviceId 可選，指定設備 ID
+ * @returns  Equipment ID => Latest Data
+ * @throws  InfluxDB 查詢失敗
+ */
+export async function getLatestDataFromDB(source: 'wise' | 'tdr', deviceId?: string): Promise<Record<string, any>> {
+  try {
+    if (deviceId) {
+      const data = await queryLatestDataFromInflux(source, deviceId);
+      return { [deviceId]: data };
+    }
+
+    const deviceIds = await queryDeviceListFromInflux(source);
+    const result: Record<string, any> = {};
+
+    for (const id of deviceIds) {
+      try {
+        result[id] = await queryLatestDataFromInflux(source, id);
+      } catch (err: any) {
+        result[id] = { error: err.message };
+      }
+    }
+
+    return result;
+  } catch (err: any) {
+    logger.error(`[InfluxDB] 查詢最新資料失敗: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * 從 InfluxDB 查詢歷史資料
+ * @param source 資料來源（wise 或 tdr）
+ * @param deviceId 裝置 ID（可選）
+ * @param startDate 開始日期 (YYYY-MM-DD)
+ * @param endDate 結束日期 (YYYY-MM-DD)
+ */
+export async function getHistoryDataFromDB(
+  source: SourceKey,
+  deviceId?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<Record<string, any>> {
+  try {
+    const result: Record<string, any> = {};
+
+    if (!startDate || !endDate) {
+      throw new Error('必須提供 startDate 和 endDate');
+    }
+
+    if (deviceId) {
+      const data = await queryHistoryDataFromInflux(source, deviceId, startDate, endDate);
+      result[deviceId] = data;
+      return result;
+    }
+
+    const deviceIds = await queryDeviceListFromInflux(source);
+    for (const id of deviceIds) {
+      try {
+        result[id] = await queryHistoryDataFromInflux(source, id, startDate, endDate);
+      } catch (err: any) {
+        logger.warn(`[InfluxDB] 裝置 ${id} 查詢歷史資料錯誤: ${err.message}`);
+        result[id] = { error: err.message };
+      }
+    }
+
+    return result;
+  } catch (err: any) {
+    logger.error(`[InfluxDB] 查詢歷史資料失敗: ${err.message}`);
+    throw err;
+  }
+}
+
+/** 
+ * Helper: 判斷一個 deviceId 是否為雨量筒
+ * @param id 裝置 ID
+ * @returns boolean */
+function isRainDevice(id: string): boolean {
+  for (const area of Object.values(deviceMapping)) {
+    const dev = area.devices.find(d => d.id === id);
+    if (!dev) continue;
+    if (dev.type === DEVICE_TYPES.RAIN) return true;
+  }
+  return false;
+}
+
+/** 補上 rainfall 指定區間 (例如 30m、6h、24h) */
+export async function enrichRainfall(latest: Record<string, any>, duration?: RainDuration): Promise<void> {
+  for (const id of Object.keys(latest)) {
+    if (!isRainDevice(id)) continue;
+
+    // ── 策略 A：scanner 寫進了 raw.rain10m ──
+    if (duration === '10m' &&
+      latest[id]?.raw?.rain10m !== undefined) {
+      latest[id][`rainfall_${duration}`] = latest[id].raw.rain10m;
+      continue;
+    }
+
+    // ── 策略 B：即時計算 ──
+    try {
+      const rain = await queryRainfall(id, duration);
+      if (rain !== null)
+        latest[id][`rainfall_${duration}`] = rain;
+    } catch (e) {
+      logger.warn(`[RainCalc] ${id} (${duration}) 失敗: ${(e as Error).message}`);
+    }
+  }
+}
+
+//#endregion InfluxDB

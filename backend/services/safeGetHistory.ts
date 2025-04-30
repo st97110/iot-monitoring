@@ -1,4 +1,4 @@
-import { getHistoryDataFromDB, getHistoryDataFromFolder } from './dataService';
+import { enrichRainfall, getHistoryDataFromDB, getHistoryDataFromFolder } from './dataService';
 import { safeGetDevices } from './safeGetDevices';
 import { logger } from '../utils/logger';
 
@@ -22,22 +22,24 @@ export async function safeGetHistoryData(
       safeGetHistoryData('wise', deviceId, startDate, endDate),
       safeGetHistoryData('tdr', deviceId, startDate, endDate)
     ]);
-    // 直接串起來；如要去重可再自行處理
-    return [...wise, ...tdr];
+
+    const result = [...wise, ...tdr];
+    await enrichRainfall(result, '10m');
+    return result;
   }
 
   try {
     const dbResult = await getHistoryDataFromDB(source, deviceId, startDate, endDate);
-
-    if (dbResult[deviceId] && Array.isArray(dbResult[deviceId]) && dbResult[deviceId].length > 0) {
-      return dbResult[deviceId];
-    } else {
-      logger.warn(`[SafeGetHistoryData] DB 查詢 ${deviceId}(${source}) 無資料，改從資料夾讀取`);
-      return await getHistoryDataFromFolder(deviceId, startDate, endDate, source);
-    }
+    const result   = (Object.keys(dbResult[deviceId]).length > 0)
+                           ? dbResult[deviceId]
+                           : await getHistoryDataFromFolder(deviceId, startDate, endDate, source);
+    await enrichRainfall(result, '10m');
+    return result;
   } catch (error: any) {
     logger.error(`[SafeGetHistoryData] DB 查詢 ${deviceId}(${source}) 失敗: ${error.message}，改從資料夾讀取`);
-    return await getHistoryDataFromFolder(deviceId, startDate, endDate, source);
+    const result = await getHistoryDataFromFolder(deviceId, startDate, endDate, source);
+    await enrichRainfall(result, '10m');
+    return result;
   }
 }
 

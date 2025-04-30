@@ -1,13 +1,5 @@
 // services/dataToInfluxService.ts
 import { Point, writePoints } from './influxClientService';
-import { parseCSVFile } from '../utils/csvParser';
-
-/**
- * 解析 WISE CSV 檔案
- */
-export async function parseWiseCsv(filePath: string): Promise<any[]> {
-  return await parseCSVFile(filePath);
-}
 
 /**
  * 解析 TDR JSON 資料

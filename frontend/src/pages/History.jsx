@@ -237,21 +237,21 @@ function History() {
                     deviceConfig = area.devices.find(device => device.id === entry.deviceId);
                     return deviceConfig;
                   });
-                  
                   if (!deviceConfig) return null;
                   
                   return deviceConfig.sensors?.flatMap((sensor, sIdx) => {
                     return sensor.channels.map(ch => {
                       const chData = entry.channels?.[ch];
                       if (!chData) return null;
-                      const egf = (!chData.Cnt) ? chData.Cnt : chData.EgF; // Cnt 沒有 EgF
+                      const egf = (chData.Cnt) ? Number(chData.Cnt) : Number(chData.EgF); // 雨量筒用Cnt
                       const init = sensor.initialValues?.[ch] ?? 0;
                       const delta = egf - init;
-
+                      console.log(egf, init, delta);
                       return (
                         <tr key={`${index}-${ch}`} className="border-b hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
                             {new Date(entry.timestamp).toLocaleString('zh-TW', {
+                              timeZone: 'Asia/Taipei',
                               month: 'numeric',
                               day: 'numeric',
                               hour: '2-digit',

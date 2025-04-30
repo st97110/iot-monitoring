@@ -22,22 +22,22 @@ function formatCsvData(data: Record<string, string>): {
     const channelPrefix = 'AI_';
 
     Object.keys(data).forEach((key) => {
-      if (key.includes(channelPrefix)) {
+      /* 1️⃣ 既有 AI_* 邏輯 */
+      if (key.startsWith('AI_')) {
         const [channel, metric] = key.split(' ');
-
-        if (!channels[channel]) {
-          channels[channel] = {};
-        }
-
+        channels[channel] ??= {};
         channels[channel][metric] = parseFloat(data[key]);
+      }
+  
+      /* 2️⃣ 新增：DI_* Cnt (雨量筒) */
+      if (key.startsWith('DI_') && key.endsWith('Cnt')) {
+        const channel = key.split(' ')[0];      // DI_0
+        channels[channel] ??= {};
+        channels[channel].Cnt = parseFloat(data[key]);
       }
     });
 
-    return {
-      timestamp,
-      channels,
-      raw: data,
-    };
+    return { timestamp, channels, raw: data };
   } catch (error: any) {
     logger.error(`格式化 CSV 數據錯誤: ${error.message}`);
     return { error: '數據格式化錯誤', raw: data };

@@ -128,7 +128,7 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
   const queryApi = client.getQueryApi(config.influx.org);
   const bucket = config.influx.buckets[key];
 
-  const flux = `
+  const fluxQuery = `
     from(bucket: "${bucket}")
       |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
       |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
@@ -139,7 +139,7 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
   const history: any[] = [];
 
   await new Promise<void>((resolve, reject) => {
-    queryApi.queryRows(flux, {
+    queryApi.queryRows(fluxQuery, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
         history.push(o);
@@ -153,6 +153,8 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
       }
     });
   });
+
+  console.log('queryHistoryDataFromInflux', history);
 
   /* 2️⃣ 重新 groupBy timestamp，轉成前端需要的 channels/raw 結構 */
   const grouped: Record<string, any> = {};          // tsStr -> record
@@ -187,6 +189,67 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
   return Object.values(grouped).sort(
     (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
+}
+
+/**
+ * 取得最近一段時間的雨量 (mm)
+ * @param deviceId  WISE-4060 裝置 ID
+ * @param duration  區間長度；可給：
+ *                  • 字串："30m" | "60m" | "6h" | "24h"…
+ *                  • 數字：代表「分鐘」
+ * @returns         累積雨量 (mm)，若期間無資料則回 null
+ *
+ * 範例：
+ *   queryRainfall("WISE-4060LAN_...", "30m")
+ *   queryRainfall("WISE-4060LAN_...", 1440)   // 1 天
+ */
+export async function queryRainfall(
+  deviceId: string,
+  duration: string | number = 10 // 預設為 10 分鐘
+): Promise<number | null> {
+
+  // ⇢ 1-a 轉成字串（Influx 支援 1h2m 格式；我們只用 m/h/d）
+  const durStr =
+    typeof duration === 'number'
+      ? `${duration}m`
+      : duration.trim();
+
+  // ⇢ 1-b 基本容錯：空值／格式錯誤直接丟 Error
+  if (!/^\d+[smhd]$/.test(durStr))
+    throw new Error(`duration 格式不合法: ${duration}`);
+
+  const client = getClient('wise');
+  const bucket = config.influx.buckets.wise;
+
+  const flux = `
+    import "experimental"
+
+    from(bucket: "${bucket}")
+      |> range(start: -${durStr})
+      |> filter(fn:(r) =>
+           r._measurement == "wise_raw" and
+           r.device       == "${deviceId}" and
+           r._field       == "DI_0 Cnt")
+      |> sort(columns:["_time"])
+      |> difference(nonNegative:true)
+      |> map(fn:(r)=> ({ r with _value: float(v:r._value) / 2.0 }))
+      |> sum(column:"_value")         // ← 把這段區間所有 ΔCnt/2 加總
+  `;
+
+  let rain: number | null = null;
+
+  await new Promise<void>((res, rej) => {
+    client.getQueryApi(config.influx.org).queryRows(flux, {
+      next: (row, meta) => {
+        rain = meta.toObject(row)._value as number;
+      },
+      error: (e) => rej(e),
+      complete: res
+    });
+  });
+
+  // 若無資料則保持 null
+  return rain;
 }
 
 export { Point };
