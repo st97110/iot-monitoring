@@ -1,0 +1,923 @@
+2025-04-06 12:14:00 [ERROR]: uncaughtException: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (E:\做工\monitoring-backend\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (E:\做工\monitoring-backend\server.js:10:20)
+    at Module._compile (node:internal/modules/cjs/loader:1256:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1310:10)
+    at Module.load (node:internal/modules/cjs/loader:1119:32)
+    at Module._load (node:internal/modules/cjs/loader:960:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)
+2025-04-07 10:25:02 [ERROR]: uncaughtException: Missing catch or finally after try
+E:\做工\monitoring-backend\controllers\dataController.js:40
+  };
+  ^
+
+SyntaxError: Missing catch or finally after try
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module._compile (node:internal/modules/cjs/loader:1528:20)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-backend\routes\dataRoutes.js:2:24)
+2025-04-07 10:25:10 [ERROR]: uncaughtException: Missing catch or finally after try
+E:\做工\monitoring-backend\controllers\dataController.js:40
+  };
+  ^
+
+SyntaxError: Missing catch or finally after try
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module._compile (node:internal/modules/cjs/loader:1528:20)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-backend\routes\dataRoutes.js:2:24)
+2025-04-07 10:25:14 [ERROR]: uncaughtException: Missing catch or finally after try
+E:\做工\monitoring-backend\controllers\dataController.js:40
+  }
+  ^
+
+SyntaxError: Missing catch or finally after try
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module._compile (node:internal/modules/cjs/loader:1528:20)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-backend\routes\dataRoutes.js:2:24)
+2025-04-14 17:22:58 [ERROR]: uncaughtException: prevRecord is not defined
+ReferenceError: prevRecord is not defined
+    at Object.updateLatestDataCache (E:\做工\monitoring-deploy\backend\services\dataService.js:159:5)
+    at scanDeviceLatestData (E:\做工\monitoring-deploy\backend\services\scannerService.js:88:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Object.scanLatestData (E:\做工\monitoring-deploy\backend\services\scannerService.js:34:9)
+2025-04-14 17:24:04 [ERROR]: uncaughtException: prevData is not defined
+ReferenceError: prevData is not defined
+    at Object.updateLatestDataCache (E:\做工\monitoring-deploy\backend\services\dataService.js:173:5)
+    at scanDeviceLatestData (E:\做工\monitoring-deploy\backend\services\scannerService.js:88:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Object.scanLatestData (E:\做工\monitoring-deploy\backend\services\scannerService.js:34:9)
+2025-04-27 20:19:48 [ERROR]: uncaughtException: Cannot find module './routes/tdrRoutes'
+Require stack:
+- E:\做工\monitoring-deploy\backend\app.js
+- E:\做工\monitoring-deploy\backend\server.js
+Error: Cannot find module './routes/tdrRoutes'
+Require stack:
+- E:\做工\monitoring-deploy\backend\app.js
+- E:\做工\monitoring-deploy\backend\server.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\app.js:8:25)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-27 21:02:07 [ERROR]: uncaughtException: Cannot find module '../services/tdrService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\routes\tdrRoutes.js
+- E:\做工\monitoring-deploy\backend\app.js
+- E:\做工\monitoring-deploy\backend\server.js
+Error: Cannot find module '../services/tdrService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\routes\tdrRoutes.js
+- E:\做工\monitoring-deploy\backend\app.js
+- E:\做工\monitoring-deploy\backend\server.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\routes\tdrRoutes.js:4:29)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-27 21:05:37 [ERROR]: uncaughtException: Cannot find module '../services/tdrService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\routes\tdrRoutes.js
+- E:\做工\monitoring-deploy\backend\app.js
+- E:\做工\monitoring-deploy\backend\server.js
+Error: Cannot find module '../services/tdrService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\routes\tdrRoutes.js
+- E:\做工\monitoring-deploy\backend\app.js
+- E:\做工\monitoring-deploy\backend\server.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\routes\tdrRoutes.js:4:29)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-28 17:31:59 [ERROR]: uncaughtException: startDataScanScheduler is not defined
+ReferenceError: startDataScanScheduler is not defined
+    at Server.<anonymous> (E:\做工\monitoring-deploy\backend\server.ts:12:3)
+    at Object.onceWrapper (node:events:632:28)
+    at Server.emit (node:events:530:35)
+    at emitListeningNT (node:net:1980:10)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)
+2025-04-28 20:40:09 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/wiseFileService.ts(59,1): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/wiseFileService.ts(59,1): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\wiseFileService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-39149050081104453.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-39149050081104453.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-39149050081104453.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 21:04:12 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(9,1): error TS1005: 'from' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(9,1): error TS1005: 'from' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-39149050081104453.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-39149050081104453.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-39149050081104453.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 21:30:51 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：INFLUX_URL
+Error: [Config] 缺少必要的環境變數：INFLUX_URL
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:44:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:74:10)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-6189088112667926.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-6189088112667926.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-6189088112667926.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-28 21:32:29 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：INFLUX_URL
+Error: [Config] 缺少必要的環境變數：INFLUX_URL
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:44:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:74:10)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-6189088112667926.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-6189088112667926.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-6189088112667926.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-28 21:32:44 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：INFLUX_URL
+Error: [Config] 缺少必要的環境變數：INFLUX_URL
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:44:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:74:10)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-28 21:36:48 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：INFLUX_URL
+Error: [Config] 缺少必要的環境變數：INFLUX_URL
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:44:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:74:10)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-28 21:40:38 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：INFLUX_URL
+Error: [Config] 缺少必要的環境變數：INFLUX_URL
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:44:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:74:10)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-28 22:06:33 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(101,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(101,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:09:41 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(96,5): error TS1005: 'try' expected.
+services/scannerService.ts(100,2): error TS1472: 'catch' or 'finally' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(96,5): error TS1005: 'try' expected.
+services/scannerService.ts(100,2): error TS1472: 'catch' or 'finally' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:10:18 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(95,5): error TS1005: 'try' expected.
+services/scannerService.ts(99,2): error TS1472: 'catch' or 'finally' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(95,5): error TS1005: 'try' expected.
+services/scannerService.ts(99,2): error TS1472: 'catch' or 'finally' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:10:39 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(98,5): error TS1005: 'try' expected.
+services/scannerService.ts(102,2): error TS1472: 'catch' or 'finally' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(98,5): error TS1005: 'try' expected.
+services/scannerService.ts(102,2): error TS1472: 'catch' or 'finally' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:11:01 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(99,5): error TS1005: 'try' expected.
+services/scannerService.ts(103,2): error TS1472: 'catch' or 'finally' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(99,5): error TS1005: 'try' expected.
+services/scannerService.ts(103,2): error TS1472: 'catch' or 'finally' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:11:26 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(99,5): error TS1005: 'try' expected.
+services/scannerService.ts(103,2): error TS1472: 'catch' or 'finally' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(99,5): error TS1005: 'try' expected.
+services/scannerService.ts(103,2): error TS1472: 'catch' or 'finally' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:11:55 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(100,5): error TS1005: 'try' expected.
+services/scannerService.ts(104,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(100,5): error TS1005: 'try' expected.
+services/scannerService.ts(104,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:12:33 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(101,5): error TS1005: 'try' expected.
+services/scannerService.ts(105,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(101,5): error TS1005: 'try' expected.
+services/scannerService.ts(105,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:12:52 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(102,5): error TS1005: 'try' expected.
+services/scannerService.ts(106,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(102,5): error TS1005: 'try' expected.
+services/scannerService.ts(106,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:13:29 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(107,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(107,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:13:41 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(115,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(115,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:13:50 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:14:15 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(114,5): error TS1005: 'try' expected.
+services/scannerService.ts(118,2): error TS1472: 'catch' or 'finally' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(114,5): error TS1005: 'try' expected.
+services/scannerService.ts(118,2): error TS1472: 'catch' or 'finally' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:15:14 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,7): error TS1128: Declaration or statement expected.
+services/scannerService.ts(119,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,7): error TS1128: Declaration or statement expected.
+services/scannerService.ts(119,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:15:35 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(113,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(113,7): error TS1005: 'try' expected.
+services/scannerService.ts(117,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(113,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(113,7): error TS1005: 'try' expected.
+services/scannerService.ts(117,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:15:40 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(112,7): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(112,7): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:15:57 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(112,7): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(112,7): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:16:02 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(112,7): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(112,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(112,7): error TS1005: 'try' expected.
+services/scannerService.ts(116,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-28 22:16:13 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(114,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(114,7): error TS1005: 'try' expected.
+services/scannerService.ts(118,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/scannerService.ts(114,5): error TS1472: 'catch' or 'finally' expected.
+services/scannerService.ts(114,7): error TS1005: 'try' expected.
+services/scannerService.ts(118,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-29 00:42:41 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:42:59 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:43:09 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:43:12 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:43:14 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:44:51 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:44:51 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 00:44:56 [ERROR]: uncaughtException: [Config] 缺少必要的環境變數：wise_data
+Error: [Config] 缺少必要的環境變數：wise_data
+    at getEnv (E:\做工\monitoring-deploy\backend\config\config.ts:54:9)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\config\config.ts:82:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+2025-04-29 10:26:00 [ERROR]: uncaughtException: Missing initializer in const declaration
+E:\做工\monitoring-deploy\backend\services\scannerService.ts:57
+    const fisrttimestamp;
+          ^^^^^^^^^^^^^^
+
+SyntaxError: Missing initializer in const declaration
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1528:20)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-29 10:29:35 [ERROR]: uncaughtException: Identifier 'filename' has already been declared
+E:\做工\monitoring-deploy\backend\services\wiseFileService.ts:37
+    const filename = path_1.default.basename(originalPath);
+          ^
+
+SyntaxError: Identifier 'filename' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1528:20)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-29 10:29:53 [ERROR]: uncaughtException: Identifier 'filename' has already been declared
+E:\做工\monitoring-deploy\backend\services\wiseFileService.ts:37
+    const filename = path_1.default.basename(originalPath);
+          ^
+
+SyntaxError: Identifier 'filename' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1528:20)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-29 11:29:11 [ERROR]: uncaughtException: Cannot find module './wiseInfluxService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\services\scannerService.ts
+- E:\做工\monitoring-deploy\backend\schedulers\dataScanScheduler.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+Error: Cannot find module './wiseInfluxService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\services\scannerService.ts
+- E:\做工\monitoring-deploy\backend\schedulers\dataScanScheduler.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\scannerService.ts:8:1)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+2025-04-29 11:30:30 [ERROR]: uncaughtException: Cannot find module '../services/tdrService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\controllers\tdrController.ts
+- E:\做工\monitoring-deploy\backend\routes\tdrRoutes.ts
+- E:\做工\monitoring-deploy\backend\app.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+Error: Cannot find module '../services/tdrService'
+Require stack:
+- E:\做工\monitoring-deploy\backend\controllers\tdrController.ts
+- E:\做工\monitoring-deploy\backend\routes\tdrRoutes.ts
+- E:\做工\monitoring-deploy\backend\app.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\controllers\tdrController.ts:2:1)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+2025-04-29 14:41:20 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/dataService.ts(73,1): error TS1128: Declaration or statement expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/dataService.ts(73,1): error TS1128: Declaration or statement expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\dataService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-29 15:12:47 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/dataService.ts(144,1): error TS1472: 'catch' or 'finally' expected.
+services/dataService.ts(289,2): error TS1005: '}' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/dataService.ts(144,1): error TS1472: 'catch' or 'finally' expected.
+services/dataService.ts(289,2): error TS1005: '}' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\dataService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-29 22:03:23 [ERROR]: uncaughtException: Cannot find module '../utils/areaHelper'
+Require stack:
+- E:\做工\monitoring-deploy\backend\services\deviceService.ts
+- E:\做工\monitoring-deploy\backend\services\safeGetDevices.ts
+- E:\做工\monitoring-deploy\backend\controllers\deviceController.ts
+- E:\做工\monitoring-deploy\backend\routes\deviceRoutes.ts
+- E:\做工\monitoring-deploy\backend\app.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+Error: Cannot find module '../utils/areaHelper'
+Require stack:
+- E:\做工\monitoring-deploy\backend\services\deviceService.ts
+- E:\做工\monitoring-deploy\backend\services\safeGetDevices.ts
+- E:\做工\monitoring-deploy\backend\controllers\deviceController.ts
+- E:\做工\monitoring-deploy\backend\routes\deviceRoutes.ts
+- E:\做工\monitoring-deploy\backend\app.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\deviceService.ts:7:1)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-3714306592609278.js:69:33)
+2025-04-30 09:44:17 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+utils/helper.ts(23,1): error TS1128: Declaration or statement expected.
+
+Error: ⨯ Unable to compile TypeScript:
+utils/helper.ts(23,1): error TS1128: Declaration or statement expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\utils\helper.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-30 11:07:30 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/safeGetData.ts(20,18): error TS1005: ',' expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/safeGetData.ts(20,18): error TS1005: ',' expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\safeGetData.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-30 11:37:46 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/dataService.ts(377,18): error TS1003: Identifier expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/dataService.ts(377,18): error TS1003: Identifier expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\dataService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-30 11:38:49 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/dataService.ts(377,18): error TS1003: Identifier expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/dataService.ts(377,18): error TS1003: Identifier expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\dataService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-30 11:39:01 [ERROR]: uncaughtException: ⨯ Unable to compile TypeScript:
+services/dataService.ts(377,18): error TS1003: Identifier expected.
+
+Error: ⨯ Unable to compile TypeScript:
+services/dataService.ts(377,18): error TS1003: Identifier expected.
+
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\services\dataService.ts:1:7)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:114:20)
+    at require.extensions.<computed> (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:71:20)
+    at Object.nodeDevHook [as .ts] (E:\做工\monitoring-deploy\backend\node_modules\ts-node-dev\lib\hook.js:63:13)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+2025-04-30 18:08:59 [ERROR]: uncaughtException: Cannot find module '../services/safeGetData'
+Require stack:
+- E:\做工\monitoring-deploy\backend\controllers\dataController.ts
+- E:\做工\monitoring-deploy\backend\routes\dataRoutes.ts
+- E:\做工\monitoring-deploy\backend\app.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+Error: Cannot find module '../services/safeGetData'
+Require stack:
+- E:\做工\monitoring-deploy\backend\controllers\dataController.ts
+- E:\做工\monitoring-deploy\backend\routes\dataRoutes.ts
+- E:\做工\monitoring-deploy\backend\app.ts
+- E:\做工\monitoring-deploy\backend\server.ts
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+    at Function._load (node:internal/modules/cjs/loader:1055:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (E:\做工\monitoring-deploy\backend\controllers\dataController.ts:2:1)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (E:\做工\monitoring-deploy\backend\node_modules\source-map-support\source-map-support.js:521:25)
+    at Module.m._compile (C:\Users\ASUSUS~1\AppData\Local\Temp\ts-node-dev-hook-7828005223816268.js:69:33)
