@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { API_BASE, deviceMapping } from '../config/config';
+import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
 import { mAtoDepth } from '../utils/sensor';
 
 function History() {
