@@ -3,7 +3,7 @@
 // API development & production 網址
 export const API_BASE =
   process.env.NODE_ENV === 'production'
-    ? 'https://monitoring-backend-znmw.onrender.com'
+    ? 'https://api.lianyougeo.com'
     : 'http://localhost:3000';
 
 // 裝置類型代碼（type）
