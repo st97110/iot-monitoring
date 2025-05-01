@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE, deviceMapping } from '../config/config';
+import { mAtoDepth } from '../utils/sensor';
 
 function History() {
   const [data, setData] = useState([]);
@@ -246,7 +247,13 @@ function History() {
                       const egf = (chData.Cnt) ? Number(chData.Cnt) : Number(chData.EgF); // 雨量筒用Cnt
                       const init = sensor.initialValues?.[ch] ?? 0;
                       const delta = egf - init;
-                      console.log(egf, init, delta);
+
+                      const isWater = sensor.type === DEVICE_TYPES.WATER;
+                      const raw = egf;
+                      const display = isWater
+                        ? `${mAtoDepth(raw, sensor.wellDepth).toFixed(2)} m`
+                        : raw?.toFixed(3);
+
                       return (
                         <tr key={`${index}-${ch}`} className="border-b hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
@@ -262,7 +269,7 @@ function History() {
                           <td className="px-4 py-3">{deviceConfig.name}</td>
                           <td className="px-4 py-3">{sensor.name}</td>
                           <td className="px-4 py-3">{ch}</td>
-                          <td className="px-4 py-3 text-right font-medium">{egf?.toFixed(3)}</td>
+                          <td className="px-4 py-3 text-right font-medium">{display}</td>
                           <td className={`px-4 py-3 text-right font-medium ${getStatusColor(delta)}`}>
                             {delta?.toFixed(3)}
                           </td>

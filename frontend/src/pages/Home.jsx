@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 import { Link } from 'react-router-dom';
+import { mAtoDepth } from '../utils/sensor';
 
 // 將 ISO 格式時間轉成相對時間字串（秒/分鐘/小時/天前）
 function getRelativeTime(isoString) {
@@ -229,21 +230,38 @@ function Home() {
                                     const initVal = sensor.initialValues?.[ch] ?? 0;
                                     let deltaVal = egf !== null ? (egf - initVal).toFixed(3) : null;
 
+                                    console.log("sensor", sensor, "chData", chData, "egf", egf, "initVal", initVal, "deltaVal", deltaVal);
+                                    let display, deltaDisplay, isNormal = true;
+                                    
+                                    
+                                    if (sensor.type === DEVICE_TYPES.WATER && egf != null) {
+                                      console.log(sensor.wellDepth);
+                                      const egfWaterHeight = mAtoDepth(egf, sensor.wellDepth);
+                                      display = `${egfWaterHeight.toFixed(1)} m`;
+                                      
+                                      const initialWaterHeight = mAtoDepth(initVal, sensor.wellDepth);
+                                      deltaDisplay = `${(egfWaterHeight - initialWaterHeight).toFixed(1)} m`;
+                                      console.log("display", display, "deltaDisplay", deltaDisplay);
+                                    } else {
+                                      display = egf != null ? egf.toFixed(3) : '無資料';
+                                      deltaDisplay = deltaDisplay != null ? deltaDisplay : deltaVal != null ? deltaVal : '無資料';
+                                    }
+                                    
+
                                     return (
                                       <div key={ch} className="pl-2 flex justify-between text-sm items-center">
                                         {/* 若 sensor 有多個 channel，可考慮附加序號： sensor.name (cIdx+1) */}
                                         <span className="text-gray-600">數值：</span>
                                         <div className="flex flex-col items-end">
                                           <span className="font-semibold">
-                                            {egf !== null ? egf.toFixed(3) : '無資料'}
+                                            {display}
                                           </span>
-                                          {deltaVal !== null && (
+                                          {deltaDisplay !== '無資料' && (
                                             <span className={`text-xs ${
-                                              parseFloat(deltaVal) > 0 ? 'text-red-500'
-                                              : parseFloat(deltaVal) < 0 ? 'text-green-500'
-                                              : 'text-gray-500'
+                                              !isNormal ? 'text-red-500'
+                                              : 'text-green-500'
                                             }`}>
-                                              變化: {deltaVal}
+                                              變化: {deltaDisplay}
                                             </span>
                                           )}
                                         </div>

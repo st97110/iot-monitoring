@@ -88,7 +88,7 @@ export const deviceMapping = {
         lat: 24.025278,
         lng: 121.18385,
         sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER },
+          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, initialValues: { AI_0: 14 }, wellDepth: 50 },
         ]
       },
       {

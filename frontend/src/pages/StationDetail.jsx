@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { API_BASE } from '../config/config';
+import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
+import { mAtoDepth } from '../utils/sensor';
 
 function StationDetail() {
   const { id } = useParams();
@@ -41,6 +42,11 @@ function StationDetail() {
     return 'text-green-600';
   };
 
+  const sensorConfigs = React.useMemo(() => {
+    const allDevices = Object.values(deviceMapping).flatMap(area => area.devices);
+    return allDevices.find(d => (d.mac || d.id) === id)?.sensors || [];
+  }, [id]);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">站點：{id}</h1>
@@ -59,12 +65,26 @@ function StationDetail() {
             <div key={idx} className="border p-4 rounded bg-white shadow">
               <h3 className="font-semibold text-gray-800 mb-2">時間：{entry.timestamp}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                {Object.entries(entry.channels || {}).map(([channel, val]) => (
+              {Object.entries(entry.channels || {}).map(([channel, val]) => {
+                const sensor = sensorConfigs.find(s => s.channels.includes(channel));
+                const egf = val.EgF;
+                let display;
+                if (sensor?.type === DEVICE_TYPES.WATER && egf != null) {
+                  const wellDepth = sensor.wellDepth;
+                  display = `${mAtoDepth(egf, wellDepth).toFixed(2)} m`;
+                } else {
+                  display = egf != null ? egf.toFixed(3) : '無';
+                }
+                return (
                   <div key={channel} className="flex justify-between">
-                    <span>{channel} EgF</span>
-                    <span className={getStatusColor(val.EgF)}>{val.EgF ?? '無'}</span>
+                    <span>
+                      {channel}
+                      {sensor?.type === DEVICE_TYPES.WATER ? ' 水深' : ' EgF'}
+                    </span>
+                    <span className={getStatusColor(egf)}>{display}</span>
                   </div>
-                ))}
+                );
+              })}
               </div>
             </div>
           ))}

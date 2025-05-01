@@ -2,9 +2,9 @@
   "name": "monitoring-frontend",
   "version": "0.0.1",
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "start": "npx serve -s dist",
+    "dev": "vite"
   },
   "dependencies": {
     "axios": "^1.6.0",

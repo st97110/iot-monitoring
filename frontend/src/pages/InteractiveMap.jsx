@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
+import { mAtoDepth } from '../utils/sensor';
 
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 
@@ -251,13 +252,21 @@ function InteractiveMap() {
                       ) : (
                         st.sensors?.map((sensor, idx) => (
                           <div key={idx} className="space-y-1">
-                            {(sensor.channels || []).map((ch, index) => {
+                            {(sensor.channels).map((ch, index) => {
                               const chData = latestData.channels?.[ch];
+                              const raw = chData?.EgF;
                               // 若有多個通道，加上序號
                               const label = sensor.channels.length > 1 ? `${sensor.name} (${index + 1})` : sensor.name;
+                              let display;
+                              if (sensor.type === DEVICE_TYPES.WATER && raw != null) {
+                                const wellDepth = sensor.wellDepth ?? 50;
+                                display = `${mAtoDepth(raw, wellDepth).toFixed(2)} m`;
+                              } else {
+                                display = raw != null ? raw.toFixed(3) : '-';
+                              }
                               return (
                                 <p key={ch} className="text-gray-700">
-                                  {label}: {chData?.EgF ?? '-'}
+                                  {label}: {display}
                                 </p>
                               );
                             })}

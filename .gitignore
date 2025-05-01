@@ -10,8 +10,9 @@ backend/.env.local
 backend/.env.*.local
 
 # Logs
-backend/logs/
 backend/*.log
+backend/logs/
+backend/src/logs/
 backend/npm-debug.log*
 
 # Build
