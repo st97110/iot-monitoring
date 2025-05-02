@@ -1,5 +1,7 @@
 // services/dataToInfluxService.ts
 import { Point, writePoints } from './influxClientService';
+import { DEVICE_TYPES, deviceMapping } from '../config/config';
+import { toPEgF } from '../utils/helper';
 
 /**
  * 解析 TDR JSON 資料
@@ -22,18 +24,17 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
   for (const record of records) {
       if (!record.timestamp || !record.raw) continue;
 
-      const ts = new Date(record.timestamp);
-      const tsNs = ts.getTime() * 1e6;
+      const tsNs = new Date(record.timestamp).getTime() * 1e6;
+      const fields = toPEgF(deviceId, record.raw);   // ✨ 取得工程值
   
+      if (Object.keys(fields).length === 0) continue;  // 無有效欄位
+      
       const point = new Point('wise_raw')
           .tag('device', deviceId)
           .timestamp(tsNs);
-  
-      for (const [field, value] of Object.entries(record.raw)) {
-          const floatVal = parseFloat(value as string);
-          if (!isNaN(floatVal)) {
-          point.floatField(field, floatVal);
-          }
+
+      for (const [field, value] of Object.entries(fields)) {
+        point.floatField(field, value);
       }
   
       points.push(point);

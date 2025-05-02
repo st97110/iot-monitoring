@@ -112,17 +112,38 @@ if (config.nodeEnv !== 'production') {
   logger.info(`[Config] Influx Org: ${config.influx.org}`);
 }
 
-// 裝置類型代碼（type）
-export const DEVICE_TYPES = {
-  ALL: '',
-  TI: 'TI',         // 傾斜儀（TIltmeter）
-  WATER: 'WATER',   // 水位計
-  RAIN: 'RAIN',     // 雨量筒
-  GE: 'GE',         // 伸縮計
-  TDR: 'TDR',       // TDR
-};
+export interface Sensor {
+  name          : string;
+  channels      : string[];
+  initialValues?: Record<string, number>;
+  wellDepth?    : number;
+  fsDeg?        : number;
+  geRange?      : number;
+}
 
-export const deviceMapping = {
+export interface Device {
+  id     : string;
+  name   : string;
+  area?  : string;
+  type   : DEVICE_TYPES;
+  sensors?: Sensor[];
+}
+
+
+// 裝置類型代碼（type）
+export enum DEVICE_TYPES {
+  ALL = '',
+  TI = 'TI',         // 傾斜儀（TIltmeter）
+  WATER = 'WATER',   // 水位計
+  RAIN = 'RAIN',     // 雨量筒
+  GE = 'GE',         // 伸縮計
+  TDR = 'TDR',       // TDR
+}
+
+export const deviceMapping: Record<
+  string,
+  { name: string; devices: Device[]; }
+> = {
   '80k區': {
     name: '80k區',
     devices: [
@@ -174,7 +195,7 @@ export const deviceMapping = {
         area: '90k區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER },
+          { name: '地下水位計W2', channels: ['AI_0'], initialValues: { AI_0: 14 } },
         ]
       },
       {
