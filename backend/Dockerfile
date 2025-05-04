@@ -4,7 +4,7 @@ WORKDIR /app
 
 # 安裝依賴
 COPY package.json tsconfig.json ./
-RUN npm install --production
+RUN npm install
 
 # 複製原始碼（現在都集中在 src/）
 COPY src ./src
