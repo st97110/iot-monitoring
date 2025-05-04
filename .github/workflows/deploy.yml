@@ -1,4 +1,4 @@
-name: CI/CD to CT
+name: CI/CD – Build & Deploy to CT
 
 on:
   push:
@@ -9,23 +9,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 先把原始碼拉下來
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build & push Docker image
+      # 2. 切到 backend 資料夾，build image
+      - name: Build Docker image
         run: |
-          docker build -t your.registry.com/monitoring-backend:latest .
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login your.registry.com \
-            -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
-          docker push your.registry.com/monitoring-backend:latest
+          cd monitoring-deploy/backend
+          docker build -t monitoring-backend:latest .
 
-      - name: SSH deploy to CT
-        uses: appleboy/ssh-action@v0.1.6
+      # 3. 把 image 存成 tar
+      - name: Save image to TAR
+        run: |
+          docker save monitoring-backend:latest -o backend.tar
+
+      # 4. SCP 送到 CT
+      - name: Copy TAR to CT
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.CT_HOST }}
-          username: root
+          username: ${{ secrets.CT_USER }}       # 通常是 root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: "backend.tar"
+          target: "/root/monitoring/backend.tar"
+
+      # 5. SSH 到 CT 上做部署（load、rm、docker compose up）
+      - name: Deploy on CT
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.CT_HOST }}
+          username: ${{ secrets.CT_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
+            # 切到目錄
             cd /root/monitoring
-            docker compose pull
+
+            # 將新 image 載入
+            docker load -i backend.tar
+
+            # 刪掉舊 container（有就停掉，沒有也別報錯）
+            docker rm -f monitoring-backend-1 || true
+
+            # 重啟服務
             docker compose up -d
