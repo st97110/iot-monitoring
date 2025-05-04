@@ -3,8 +3,8 @@ FROM node:20-bookworm AS build
 WORKDIR /app
 
 # 安裝依賴
-COPY package*.json tsconfig.json ./
-RUN npm ci
+COPY package.json tsconfig.json ./
+RUN npm install --production
 
 # 複製原始碼（現在都集中在 src/）
 COPY src ./src
