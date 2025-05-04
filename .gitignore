@@ -20,7 +20,6 @@ backend/dist/
 frontend/dist/
 
 # IDE files
-backend/tsconfig.json
 backend/.idea/
 backend/.vscode/
 backend/*.suo
