@@ -154,8 +154,6 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
     });
   });
 
-  console.log('queryHistoryDataFromInflux', history);
-
   /* 2️⃣ 重新 groupBy timestamp，轉成前端需要的 channels/raw 結構 */
   const grouped: Record<string, any> = {};          // tsStr -> record
 

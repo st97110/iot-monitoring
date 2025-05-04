@@ -74,7 +74,7 @@ function rawToPEgF(ctx: SensorCtx): number {
 }
 
 /**
- * 將 raw EgF / Cnt 轉成 PEgF 與 display
+ * 將 raw EgF / Cnt 轉成 PEgF 與 delta PEgF
  * @param deviceId  例如 'WISE-4010LAN_74FE489299CB'
  * @param raw       CSV 解析後的物件
  */
@@ -105,7 +105,7 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
       // ① 真實值欄位：AI_0 PEgF
       const peField = `${ch} PEgF`;                      // 例：AI_0 PEgF
       result[peField] = pe;
-      // ② 展示值欄位：Display（真實值‑初始值）──僅 TI / GE 有意義
+      // ② 展示值欄位：Delta（真實值‑初始值）──僅 TI / GE 有意義
       if (
         (device.type === DEVICE_TYPES.TI || device.type === DEVICE_TYPES.GE) &&
         sensor.initialValues?.[ch] != null
@@ -122,6 +122,5 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
       }
     }
   }
-  console.log(result);
   return result;   // 只回傳要寫進 Influx 的欄位
 }

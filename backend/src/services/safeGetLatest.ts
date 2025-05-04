@@ -16,8 +16,6 @@ export async function safeGetLatestData(source: SourceKey, deviceId?: string): P
       safeGetLatestData('wise', deviceId),
       safeGetLatestData('tdr', deviceId)
     ]);
-    console.log("合併wise", wiseLatest);
-    console.log("合併tdr", tdrLatest);
     const result = { ...wiseLatest, ...tdrLatest };
     await enrichRainfall(result, '10m');
     return result;

@@ -32,8 +32,6 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
           .tag('device', deviceId)
           .timestamp(tsNs);
 
-      console.log('getSensorsByDeviceId(deviceId)', getSensorsByDeviceId(deviceId));
-
       for (const [field, value] of Object.entries(record.raw)) {
         const floatVal = parseFloat(value as string);
         for (const sensor of getSensorsByDeviceId(deviceId) ?? []) {

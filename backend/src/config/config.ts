@@ -244,9 +244,9 @@ export const deviceMapping: Record<
           { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 12.974 } },
         ]
       },
-      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 9.97 } }] },
-      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 18.155 } }] },
-      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 4.82 } }] },
+      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 9.97 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 18.155 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 4.82 }, geRange: 500 }] },
       { id: 'TDR_CH1', name: 'CH1 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_CH2', name: 'CH2 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_CH3', name: 'CH3 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR }
