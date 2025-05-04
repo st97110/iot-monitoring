@@ -1,0 +1,31 @@
+name: CI/CD to CT
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build & push Docker image
+        run: |
+          docker build -t your.registry.com/monitoring-backend:latest .
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login your.registry.com \
+            -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          docker push your.registry.com/monitoring-backend:latest
+
+      - name: SSH deploy to CT
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.CT_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/monitoring
+            docker compose pull
+            docker compose up -d
