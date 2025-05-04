@@ -44,7 +44,6 @@ wise_backup_data/
 tdr_backup_data/
 
 # Docker fiels
-backend/Dockerfile
 backend/.dockerignore
 backend/*.tar
 backend/*.7z
