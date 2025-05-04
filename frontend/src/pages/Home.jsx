@@ -97,6 +97,40 @@ function Home() {
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()));
   }
 
+  function isNormalData(chData, sensor) {
+    if (sensor.type === DEVICE_TYPES.RAIN && chData.Cnt < 10) return true;          // 雨量筒小於 10 顯示為正常
+    else if (sensor.type === DEVICE_TYPES.GE && Math.abs(chData.Delta) < 30) return true;       // 伸縮計小於 30 顯示為正常
+    else if (sensor.type === DEVICE_TYPES.TI && Math.abs(chData.Delta) < 5 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
+    else if (sensor.type === DEVICE_TYPES.WATER && chData.pEgf < -15) return true; // 水位儀小於 5 度顯示為正常
+    return false;
+  }
+
+  /** 依感測器類型回傳要顯示的文字與單位 */
+  function formatValue(sensor, chData, allData) {
+    switch (sensor.type) {
+      case DEVICE_TYPES.WATER: {                       // 水位計：PEgF → m
+        const v = chData?.PEgF;
+        return v != null ? `${v.toFixed(2)} m` : '無資料';
+      }
+      case DEVICE_TYPES.RAIN: {                        // 雨量筒：10‑min 雨量 → mm
+        const v = allData.rainfall10Min;
+        return v != null ? `${v.toFixed(1)} mm` : '無資料';
+      }
+      case DEVICE_TYPES.GE: {                          // 伸縮計：Display → mm
+        const d = chData?.Display ?? chData?.Delta;
+        return d != null ? `${d.toFixed(2)} mm` : '無資料';
+      }
+      case DEVICE_TYPES.TI: {                          // 傾斜儀：Display → ″
+        const d = chData?.Display ?? chData?.Delta;
+        return d != null ? `${d.toFixed(1)} "` : '無資料';
+      }
+      default: {                                       // 其它顯 raw EgF
+        const v = chData?.EgF;
+        return v != null ? v.toFixed(3) : '無資料';
+      }
+    }
+  }
+
   return (
     <div className="max-w-screen-xl mx-auto px-2 sm:px-4 space-y-6">
       {/* 頁面標題 */}
@@ -225,48 +259,29 @@ function Home() {
                                   </h4>
                                   {/* 迭代該 sensor 的所有 channels */}
                                   {(sensor.channels || []).map((ch, cIdx) => {
+                                    
+                                    // for (const dataKey in device) {
+                                    //   console.log("dataKey", dataKey, device[dataKey]);
+                                    // }
+
                                     const chData = data.channels?.[ch];
-                                    const egf = chData?.EgF ?? null;
-                                    const initVal = sensor.initialValues?.[ch] ?? 0;
-                                    let deltaVal = egf !== null ? (egf - initVal).toFixed(3) : null;
+                                    const pEgF = formatValue(sensor, chData, data);
 
-                                    console.log("sensor", sensor, "chData", chData, "egf", egf, "initVal", initVal, "deltaVal", deltaVal);
-                                    let display, deltaDisplay, isNormal = true;
-                                    
-                                    
-                                    if (sensor.type === DEVICE_TYPES.WATER && egf != null) {
-                                      console.log(sensor.wellDepth);
-                                      const egfWaterHeight = mAtoDepth(egf, sensor.wellDepth);
-                                      display = `${egfWaterHeight.toFixed(1)} m`;
-                                      
-                                      const initialWaterHeight = mAtoDepth(initVal, sensor.wellDepth);
-                                      deltaDisplay = `${(egfWaterHeight - initialWaterHeight).toFixed(1)} m`;
-                                      console.log("display", display, "deltaDisplay", deltaDisplay);
-                                    } else {
-                                      display = egf != null ? egf.toFixed(3) : '無資料';
-                                      deltaDisplay = deltaDisplay != null ? deltaDisplay : deltaVal != null ? deltaVal : '無資料';
-                                    }
-                                    
-
+                                    console.log("sensor", sensor, "chData", chData, "PEgF", pEgF);
                                     return (
                                       <div key={ch} className="pl-2 flex justify-between text-sm items-center">
-                                        {/* 若 sensor 有多個 channel，可考慮附加序號： sensor.name (cIdx+1) */}
-                                        <span className="text-gray-600">數值：</span>
-                                        <div className="flex flex-col items-end">
-                                          <span className="font-semibold">
-                                            {display}
-                                          </span>
-                                          {deltaDisplay !== '無資料' && (
-                                            <span className={`text-xs ${
-                                              !isNormal ? 'text-red-500'
-                                              : 'text-green-500'
-                                            }`}>
-                                              變化: {deltaDisplay}
-                                            </span>
-                                          )}
-                                        </div>
+                                        <span className="text-gray-600">
+                                          數值：
+                                        </span>
+                                    
+                                        {/* ===== 數值與單位 ===== */}
+                                        <span className={`text-xs font-semibold ${
+                                          isNormalData(chData, sensor) ? 'text-green-500' : 'text-red-500'
+                                        }`}>
+                                          {formatValue(sensor, chData, data)}
+                                        </span>
                                       </div>
-                                    );
+                                    );                                    
                                   })}
                                 </div>
                               );

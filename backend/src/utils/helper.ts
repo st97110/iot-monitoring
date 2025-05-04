@@ -1,5 +1,5 @@
 // backend/utils/areaHelper.ts
-import { DEVICE_TYPES, deviceMapping, Device } from '../config/config';
+import { DEVICE_TYPES, deviceMapping, Device, Sensor } from '../config/config';
 
 /** 由 deviceId 反查區域名稱（找不到回傳 undefined） */
 export function getAreaByDeviceId(deviceId: string): string | undefined {
@@ -21,12 +21,13 @@ export function getSourceByDeviceId(id: string): SourceKey {
 }
 
 /**
- * Helper：由 deviceId 反查裝置類型（找不到回傳 undefined）
+ * Helper：由 deviceId 反查 channel 設定
  */
-export function getTypeByDeviceId(id: string) {
+export function getSensorsByDeviceId(id: string): Sensor[] | undefined {
   for (const area of Object.values(deviceMapping)) {
-    const cfg = area.devices.find(d => d.id === id);
-    if (cfg) return cfg;
+    for (const device of area.devices) {
+      if (device.id === id) return device.sensors;
+    }
   }
   return undefined;
 }
@@ -55,7 +56,7 @@ function rawToPEgF(ctx: SensorCtx): number {
   switch (type) {
     case DEVICE_TYPES.WATER: {             // mA → m
       const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
-      return ratio * (ctx.wellDepth ?? 50);
+      return ratio * (ctx.wellDepth ?? -50);
     }
     case DEVICE_TYPES.TI: {                // mA → arc‑sec
       const fs  = ctx.fsDeg ?? 15;                      // ±FS°
@@ -101,11 +102,10 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
         geRange   : sensor.geRange,
       });
 
-      // ① 工程值欄位：AI_0 PEgF
-      const peField = `${ch} PEgF`;
+      // ① 真實值欄位：AI_0 PEgF
+      const peField = `${ch} PEgF`;                      // 例：AI_0 PEgF
       result[peField] = pe;
-
-      // ② display（工程值‑初始值）──僅 TI / GE 有意義
+      // ② 展示值欄位：Display（真實值‑初始值）──僅 TI / GE 有意義
       if (
         (device.type === DEVICE_TYPES.TI || device.type === DEVICE_TYPES.GE) &&
         sensor.initialValues?.[ch] != null
@@ -118,10 +118,10 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
           fsDeg   : sensor.fsDeg,
           geRange : sensor.geRange,
         });
-        result[`${ch} display`] = pe - initPE;               // 例：AI_0 display
+        result[`${ch} Delta`] = pe - initPE;               // 例：AI_0 Delta
       }
     }
   }
-
+  console.log(result);
   return result;   // 只回傳要寫進 Influx 的欄位
 }

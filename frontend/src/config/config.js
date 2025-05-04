@@ -88,7 +88,7 @@ export const deviceMapping = {
         lat: 24.025278,
         lng: 121.18385,
         sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, initialValues: { AI_0: 14 }, wellDepth: 50 },
+          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
         ]
       },
       {
@@ -137,9 +137,9 @@ export const deviceMapping = {
           { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
         ]
       },
-      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', lat: 24.08945, lng: 121.173611, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 } }] },
-      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.17395, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 } }] },
-      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', lat: 24.089, lng: 121.17405, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 } }] },
+      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', lat: 24.08945, lng: 121.173611, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.17395, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', lat: 24.0890, lng: 121.174050, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 }, geRange: 500 }] },
       { id: 'TDR_CH1', name: 'CH1 TDR', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
       { id: 'TDR_CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
       { id: 'TDR_CH3', name: 'CH3 TDR', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }

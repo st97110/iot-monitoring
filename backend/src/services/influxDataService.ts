@@ -1,7 +1,7 @@
 // services/dataToInfluxService.ts
 import { Point, writePoints } from './influxClientService';
 import { DEVICE_TYPES, deviceMapping } from '../config/config';
-import { toPEgF } from '../utils/helper';
+import { toPEgF, getSensorsByDeviceId } from '../utils/helper';
 
 /**
  * 解析 TDR JSON 資料
@@ -25,19 +25,32 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
       if (!record.timestamp || !record.raw) continue;
 
       const tsNs = new Date(record.timestamp).getTime() * 1e6;
-      const fields = toPEgF(deviceId, record.raw);   // ✨ 取得工程值
-  
+      const fields = toPEgF(deviceId, record.raw);   // ✨ 取得 PEgF delta 值
       if (Object.keys(fields).length === 0) continue;  // 無有效欄位
       
       const point = new Point('wise_raw')
           .tag('device', deviceId)
           .timestamp(tsNs);
 
-      for (const [field, value] of Object.entries(fields)) {
+      console.log('getSensorsByDeviceId(deviceId)', getSensorsByDeviceId(deviceId));
+
+      for (const [field, value] of Object.entries(record.raw)) {
+        const floatVal = parseFloat(value as string);
+        for (const sensor of getSensorsByDeviceId(deviceId) ?? []) {
+          for (const ch of sensor.channels) {
+            if (!isNaN(floatVal) && field.startsWith(`${ch} `)) {
+              point.floatField(field, floatVal);
+            }
+          }
+        }
+      }
+
+      for (const [field, value] of Object.entries(fields)) { // 加入PEgF delta 欄位
         point.floatField(field, value);
       }
-  
+
       points.push(point);
+      console.log('deviceId', deviceId, 'point', point);
   }
 
   return points;
