@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux, queryRainfall } from './influxClientService';
-import { parseCSVFile } from '../utils/csvParser';
+import { parseWiseCSVFile } from '../utils/parser';
 import { config, DEVICE_TYPES, deviceMapping } from '../config/config';
 import { logger } from '../utils/logger';
 
@@ -177,7 +177,7 @@ export async function getHistoryDataFromFolder(deviceId: string, startDate: stri
       for (const file of files) {
         const filePath = path.join(dirPath, file);
         try {
-          const records = await parseCSVFile(filePath);
+          const records = await parseWiseCSVFile(filePath);
           for (const record of records) {
             record.deviceId = deviceId; // 加上 deviceId
             allData.push(record);
@@ -228,7 +228,7 @@ export async function findPreviousRecordFromFolder(
         const fileTimestamp = parseFileTimestamp(filename, dir);
         if (fileTimestamp < currentDateObj) {
           const filePath = path.join(dirPath, filename);
-          const records = await parseCSVFile(filePath);
+          const records = await parseWiseCSVFile(filePath);
           if (records.length) return records[0];
         }
       }

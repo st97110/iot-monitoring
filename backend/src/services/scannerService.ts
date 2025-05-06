@@ -2,11 +2,11 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { config } from '../config/config';
-import { parseCSVFile } from '../utils/csvParser';
-import { updateLatestDataCache } from './dataService';
+import { parseWiseCSVFile, parseTdrJSONFile  } from '../utils/parser';
+// import { updateLatestDataCache } from './dataService';
 import { logger } from '../utils/logger';
 import { convertWiseToInfluxPoints, convertTdrToInfluxPoints, writeWiseDataToInflux, writeTdrDataToInflux } from './influxDataService';
-import { moveCsvAfterWrite } from './FileService';
+import { moveFileAfterWrite } from './FileService';
 
 /**
  * 掃描所有設備的所有未處理資料
@@ -52,111 +52,153 @@ async function scanFolder(basePath: string, source: 'wise' | 'tdr'): Promise<voi
 }
 
 /**
- * 掃描特定設備，處理所有還沒搬走的資料
- * @param basePath 根目錄
+ * 掃描特定設備的資料。
+ * WISE 資料結構: <basePath>/<deviceId>/signal_log/<dateDirName>/<file.csv>
+ * TDR 資料結構: <basePath>/<deviceId>/<dataDirName>/<file.json>
+ *
+ * @param rootPathForSource 來源的根目錄 (e.g., config.folder.wiseDataDir or config.folder.tdrDataDir)
  * @param deviceId 裝置ID
- * @param source 資料來源 wise / tdr
+ * @param source 資料來源 'wise' 或 'tdr'
  */
-async function scanDeviceAllData(basePath: string, deviceId: string, source: 'wise' | 'tdr'): Promise<void> {
-    const dataPath = (source === 'wise')
-        ? path.join(basePath, deviceId, 'signal_log')
-        : path.join(basePath, deviceId);
-        
-    let firstTimestamp = Date.now();
-        
-        if (!await fs.pathExists(dataPath)) {
-        logger.warn(`[掃描] 設備 ${deviceId} 找不到資料夾: ${dataPath}`);
+async function scanDeviceAllData(rootPathForSource: string, deviceId: string, source: 'wise' | 'tdr'): Promise<void> {
+    // WISE 特有的子目錄是 'signal_log'
+    // TDR 檔案直接在 <deviceId>/<dateDirName> 下 (相對於 tdrDataDir)
+    const deviceSpecificRootPath = (source === 'wise')
+        ? path.join(rootPathForSource, deviceId, 'signal_log')
+        : path.join(rootPathForSource, deviceId);
+
+    if (!await fs.pathExists(deviceSpecificRootPath)) {
+        logger.warn(`[掃描] 設備 ${deviceId} (來源: ${source}) 找不到特定資料路徑: ${deviceSpecificRootPath}`);
         return;
-        }
-    
-        const dateDirs = await fs.readdir(dataPath);
-        if (dateDirs.length === 0) {
-            logger.warn(`[掃描] 設備 ${deviceId} 沒有任何日期目錄`);
-            return;
-        }
+    }
+
+    const dateDirEntries = await fs.readdir(deviceSpecificRootPath, { withFileTypes: true });
+    const dateDirs = dateDirEntries
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name);
+
+    if (dateDirs.length === 0) {
+        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 在 ${deviceSpecificRootPath} 沒有找到日期目錄。`);
+        return;
+    }
 
     dateDirs.sort((a, b) => a.localeCompare(b)); // 日期升冪排序（舊的先處理）
     
     for (const dateDirName of dateDirs) {
-        const dateDirPath = path.join(dataPath, dateDirName);
+        const currentDataPath = path.join(deviceSpecificRootPath, dateDirName); // 這是包含資料檔案的目錄
 
-        if (!(await fs.pathExists(dateDirPath))) continue;
+        const files = (await fs.readdir(currentDataPath)).filter(filename =>
+            (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
+            (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
+        );
 
-        const files = await fs.readdir(dateDirPath);
-        if (files.length === 0) continue;
-
-        const allPoints = [];
-        const processedFiles: string[] = [];
-      
-        // 排序 csv，照時間處理
-        files.sort((a, b) => a.localeCompare(b));
-        
-        for (const filename of files) {
-            const filePath = path.join(dateDirPath, filename);
-
-            // 檢查是不是 CSV，避免處理到亂七八糟的檔案
-            if (!filename.endsWith('.csv')) continue;
-
-            try {
-                let records: any[] = [];
-                if (source === 'wise') {
-                    records = await parseCSVFile(filePath);
-                }
-        
-                if (records.length > 0) {
-                    const points = (source === 'wise')
-                    ? convertWiseToInfluxPoints(deviceId, records)
-                    : convertTdrToInfluxPoints(deviceId, records);
-
-                    allPoints.push(...points);
-                    processedFiles.push(filePath);
-                    firstTimestamp = Math.min(firstTimestamp, records[0].timestamp);
-                } else {
-                    logger.warn(`[掃描] 檔案 ${filename} 沒有有效資料, 跳過`);
-                }
-            } catch (error: any) {
-            logger.error(`[掃描] 讀取檔案 ${filename} 錯誤: ${error.message}`);
-            }
+        if (files.length > 0) {
+            await processFilesBatch(currentDataPath, deviceId, source, files, dateDirName);
+        } else {
+            logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 在日期目錄 ${dateDirName} (${currentDataPath}) 沒有找到對應的資料檔案。`);
         }
+    }
+}
 
-    // 如果有資料，才寫入 InfluxDB
+async function processFilesBatch(
+    currentDataPath: string,
+    deviceId: string,
+    source: 'wise' | 'tdr',
+    files: string[],
+    dateDirName: string // 現在對於 WISE 和 TDR 都是日期目錄名
+) {
+    const allPoints: any[] = [];
+    const processedFilePaths: string[] = [];
+    let batchFirstTimestampMs: number | null = null;
+
+    files.sort((a, b) => a.localeCompare(b));
+
+    for (const filename of files) {
+        const filePath = path.join(currentDataPath, filename);
+        try {
+            if (source === 'wise') {
+                const wiseRecords = await parseWiseCSVFile(filePath);
+                const validRecords = wiseRecords.filter(r => !r.hasOwnProperty('error') && r.timestamp);
+
+                if (validRecords.length > 0) {
+                    const wisePoints = convertWiseToInfluxPoints(deviceId, validRecords);
+                    if (wisePoints.length > 0) {
+                        allPoints.push(...wisePoints);
+                        processedFilePaths.push(filePath);
+                        for (const record of validRecords) { // 從有效記錄中獲取時間戳
+                            const recordTs = new Date(record.timestamp).getTime();
+                            if (!isNaN(recordTs)) {
+                                batchFirstTimestampMs = (batchFirstTimestampMs === null) ? recordTs : Math.min(batchFirstTimestampMs, recordTs);
+                            }
+                        }
+                    }
+                } else if (wiseRecords.length > 0) {
+                    logger.warn(`[掃描] WISE 檔案 ${filename} 所有 ${wiseRecords.length} 條記錄均無效或缺少時間戳。`);
+                } else {
+                    logger.warn(`[掃描] WISE 檔案 ${filename} 解析後沒有有效資料或解析失敗, 跳過。`);
+                }
+
+            } else if (source === 'tdr') {
+                const tdrPayloadArray = await parseTdrJSONFile(filePath);
+
+                if (tdrPayloadArray.length > 0) {
+                    const tdrPayload = tdrPayloadArray[0];
+                    if (tdrPayload.data && tdrPayload.data.length > 0) {
+                        const tdrPoints = convertTdrToInfluxPoints(deviceId, tdrPayload);
+                        if (tdrPoints.length > 0) {
+                            allPoints.push(...tdrPoints);
+                            processedFilePaths.push(filePath);
+                            const payloadTs = new Date(tdrPayload.timestamp).getTime();
+                            if (!isNaN(payloadTs)) {
+                                batchFirstTimestampMs = (batchFirstTimestampMs === null) ? payloadTs : Math.min(batchFirstTimestampMs, payloadTs);
+                            }
+                        }
+                    } else {
+                         logger.warn(`[掃描] TDR 檔案 ${filename} (時間戳: ${tdrPayload.timestamp}) data 陣列為空, 跳過。`);
+                    }
+                } else {
+                    logger.warn(`[掃描] TDR 檔案 ${filename} 解析失敗或結構無效, 跳過。`);
+                }
+            }
+        } catch (error: any) {
+            logger.error(`[掃描] 處理檔案 ${filename} (源: ${source}) 內部發生錯誤: ${error.message}`, error);
+        }
+    }
+
     if (allPoints.length > 0) {
         try {
             if (source === 'wise') {
-            await writeWiseDataToInflux(allPoints);
+                await writeWiseDataToInflux(allPoints);
             } else {
-            await writeTdrDataToInflux(allPoints);
+                await writeTdrDataToInflux(allPoints);
             }
 
-            logger.info(`[掃描] 設備 ${deviceId} 寫入 ${allPoints.length} 筆資料到 InfluxDB，時間戳為 ${firstTimestamp}`);
+            const displayTimestamp = batchFirstTimestampMs ? new Date(batchFirstTimestampMs).toISOString() : "未知";
+            logger.info(`[掃描] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 成功寫入 ${allPoints.length} 筆資料到 InfluxDB。批次最早時間戳約為 ${displayTimestamp}`);
 
-            for (const filePath of processedFiles) {
+            for (const filePath of processedFilePaths) {
                 const backupDir = (source === 'wise') ? config.folder.wiseBackupDir : config.folder.tdrBackupDir;
-                // 🔥 根據 filePath 自動判斷 logType
-                let logType: string | undefined = undefined;
+                let logType: string | undefined = undefined; // WISE 特有
+
                 if (source === 'wise') {
                     if (filePath.includes('/signal_log/') || filePath.includes('\\signal_log\\')) {
-                    logType = 'signal_log';
-                    } else if (filePath.includes('/system_log/') || filePath.includes('\\system_log\\')) {
-                    logType = 'system_log';
+                        logType = 'signal_log';
                     }
                 }
-            
-                await moveCsvAfterWrite(
+                // 對於 TDR，logType 為 undefined，dateDirName 已經是正確的日期目錄名
+                await moveFileAfterWrite( // 考慮重命名
                     filePath,
                     deviceId,
-                    dateDirName,
+                    dateDirName, // 現在 dateDirName 對於 TDR 也是日期目錄
                     backupDir,
                     logType
                 );
             }
-
-                logger.info(`[掃描] 設備 ${deviceId} 搬移 ${processedFiles.length} 個檔案至備份資料夾`);
+            logger.info(`[掃描] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 成功搬移 ${processedFilePaths.length} 個檔案至備份資料夾。`);
         } catch (error: any) {
-                logger.error(`[掃描] 寫入 InfluxDB 錯誤: ${error.message}`);
+            logger.error(`[掃描] 寫入 InfluxDB 或搬移檔案時出錯 (設備 ${deviceId}, 源: ${source}, 日期: ${dateDirName}): ${error.message}`, error);
         }
-        } else {
-            logger.info(`[掃描] 設備 ${deviceId} 日期 ${dateDirName} 沒有需要寫入的資料`);
-        }
+    } else if (files.length > 0) {
+        logger.info(`[掃描] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 在路徑 ${currentDataPath} 的 ${files.length} 個檔案中沒有產生可寫入的資料點。`);
     }
 }

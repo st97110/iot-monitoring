@@ -39,7 +39,7 @@ export async function saveFile(
  * @param backupBaseDir 備份根目錄 (wiseBackupDir or tdrBackupDir)
  * @param logType 可選：signal_log 或 system_log（僅 WISE 有）
  */
-export async function moveCsvAfterWrite(
+export async function moveFileAfterWrite(
   originalPath: string,
   deviceFolderName: string,
   dateFolderName: string,
@@ -51,6 +51,7 @@ export async function moveCsvAfterWrite(
   segments.push(deviceFolderName, dateFolderName);
 
   const backupDir = path.join(...segments);
+  fs.ensureDirSync(path.dirname(backupDir));  // 確保上一層目錄
   await fs.ensureDir(backupDir);
 
   const filename = path.basename(originalPath);
