@@ -98,10 +98,10 @@ function Home() {
   }
 
   function isNormalData(chData, sensor) {
-    if (sensor.type === DEVICE_TYPES.RAIN && chData.Cnt < 10) return true;          // 雨量筒小於 10 顯示為正常
-    else if (sensor.type === DEVICE_TYPES.GE && Math.abs(chData.Delta) < 30) return true;       // 伸縮計小於 30 顯示為正常
-    else if (sensor.type === DEVICE_TYPES.TI && Math.abs(chData.Delta) < 5 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
-    else if (sensor.type === DEVICE_TYPES.WATER && chData.pEgf < -15) return true; // 水位儀小於 5 度顯示為正常
+    if (sensor.type === DEVICE_TYPES.RAIN && chData?.Cnt < 10) return true;          // 雨量筒小於 10 顯示為正常
+    else if (sensor.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 30) return true;       // 伸縮計小於 30 顯示為正常
+    else if (sensor.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 5 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
+    else if (sensor.type === DEVICE_TYPES.WATER && chData?.pEgf < -15) return true; // 水位儀小於 5 度顯示為正常
     return false;
   }
 

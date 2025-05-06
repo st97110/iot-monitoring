@@ -13,11 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Show workspace files
-        run: |
-          pwd
-          ls -R .
-
       # 2. 切到 backend 資料夾，build image
       - name: Build Docker image
         working-directory: ./backend
