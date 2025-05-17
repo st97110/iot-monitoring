@@ -40,8 +40,8 @@ export const deviceMapping = {
   '80k區': {
     name: '80k區',
     devices: [
-      { id: 'TDR_T1', name: 'T1 TDR', lat: 24.0175, lng: 121.128056, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T2', name: 'T2 TDR', lat: 24.018056, lng: 121.129444, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T1', name: 'T1 TDR', lat: 24.0175, lng: 121.128056, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T2', name: 'T2 TDR', lat: 24.018056, lng: 121.129444, type: DEVICE_TYPES.TDR }
     ],
   },
   '春陽區': {
@@ -76,7 +76,7 @@ export const deviceMapping = {
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
         ]
       },
-      { id: 'AH3', name: 'AH3 TDR', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_AH3', name: 'AH3 TDR', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
     ]
   },
   '90k區': {
@@ -100,8 +100,8 @@ export const deviceMapping = {
           { name: '91.5k雨量筒', channels: ['DI_0'], type: DEVICE_TYPES.RAIN },
         ]
       },
-      { id: 'TDR_T3', name: 'T3 TDR', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T4', name: 'T4 TDR', lat: 24.0267, lng: 121.1838, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T3', name: 'T3 TDR', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T4', name: 'T4 TDR', lat: 24.0267, lng: 121.1838, type: DEVICE_TYPES.TDR }
     ]
   },
   '梅峰區': {
@@ -140,9 +140,9 @@ export const deviceMapping = {
       { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', lat: 24.08945, lng: 121.173611, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', lat: 24.0896, lng: 121.17395, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', lat: 24.0890, lng: 121.174050, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 }, geRange: 500 }] },
-      { id: 'TDR_CH1', name: 'CH1 TDR', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_CH3', name: 'CH3 TDR', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14A_CH1', name: 'CH1 TDR', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14A_CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14A_CH3', name: 'CH3 TDR', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
     ]
   }
 };
