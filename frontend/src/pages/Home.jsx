@@ -259,15 +259,11 @@ function Home() {
                                   </h4>
                                   {/* 迭代該 sensor 的所有 channels */}
                                   {(sensor.channels || []).map((ch, cIdx) => {
-                                    
-                                    // for (const dataKey in device) {
-                                    //   console.log("dataKey", dataKey, device[dataKey]);
-                                    // }
 
                                     const chData = data.channels?.[ch];
                                     const pEgF = formatValue(sensor, chData, data);
 
-                                    console.log("sensor", sensor, "chData", chData, "PEgF", pEgF);
+                                    console.debug("sensor", sensor, "chData", chData, "PEgF", pEgF);
                                     return (
                                       <div key={ch} className="pl-2 flex justify-between text-sm items-center">
                                         <span className="text-gray-600">
