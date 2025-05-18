@@ -285,7 +285,7 @@ function History() {
                             onClick={() => {
                               // ✨ 使用 navigate 跳轉到 TrendPage
                               // 將 timestamp 進行 URL 編碼，以防特殊字符
-                              navigate(`/trend?deviceId=${entry.deviceId}×tamp=${encodeURIComponent(entry.timestamp)}`);
+                              navigate(`/trend?deviceId=${entry.deviceId}&timestamp=${encodeURIComponent(entry.timestamp)}`);
                             }}
                             className="text-blue-600 hover:text-blue-800 underline px-2 py-1 rounded hover:bg-blue-50"
                           >

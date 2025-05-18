@@ -119,7 +119,7 @@ function TrendPage() {
           setLoading(false);
           return;
         }
-        const processed = historyRecords.map(entry => {
+        let processed = historyRecords.map(entry => {
           const row = { time: entry.timestamp };
           if (entry.channels || entry.raw) {
             for (const ch of sensor.channels) {
@@ -137,7 +137,11 @@ function TrendPage() {
             }
           }
           return row;
-        }).filter(row => row.time);
+        }).filter(row => row.time); // 過濾掉沒有時間戳的資料
+        
+        // ✨ 按時間升序排序，確保圖表 X 軸時間從左到右是從舊到新
+        processed.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+        
         setData(processed);
       }
     } catch (err) {
