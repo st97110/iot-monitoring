@@ -256,7 +256,7 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
           (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     ));
   } else if (key === 'tdr') {
-    console.debug('tdr', historyRaw);
+    // console.debug('tdr', historyRaw);
     // TDR 數據組裝邏輯 (按時間戳分組，收集 distance_m 和 rho 到 data 陣列)
     const groupedByTs: Record<string, any> = {}; // tsStr -> { timestamp, data: [] }
 
