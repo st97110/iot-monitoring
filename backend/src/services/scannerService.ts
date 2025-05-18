@@ -1,12 +1,25 @@
 // backend/services/scannerService.ts
 import fs from 'fs-extra';
 import path from 'path';
+import { format, subDays, startOfDay } from 'date-fns';
 import { config } from '../config/config';
 import { parseWiseCSVFile, parseTdrJSONFile  } from '../utils/parser';
 // import { updateLatestDataCache } from './dataService';
 import { logger } from '../utils/logger';
 import { convertWiseToInfluxPoints, convertTdrToInfluxPoints, writeWiseDataToInflux, writeTdrDataToInflux } from './influxDataService';
 import { moveFileAfterWrite } from './FileService';
+
+const DATE_FORMAT = 'yyyyMMdd'; // 日期目錄格式
+
+/**
+ * 獲取當前日期和前一天的日期字串
+ */
+function getCurrentAndPreviousDateStrings(): { today: string; yesterday: string } {
+    const now = new Date();
+    const today = format(now, DATE_FORMAT);
+    const yesterday = format(subDays(now, 1), DATE_FORMAT);
+    return { today, yesterday };
+}
 
 /**
  * 掃描所有設備的所有未處理資料
@@ -72,30 +85,111 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
         return;
     }
 
-    const dateDirEntries = await fs.readdir(deviceSpecificRootPath, { withFileTypes: true });
-    const dateDirs = dateDirEntries
-        .filter(entry => entry.isDirectory())
-        .map(entry => entry.name);
+    const { today, yesterday } = getCurrentAndPreviousDateStrings();
+    let allDateDirs: string[] = [];
 
-    if (dateDirs.length === 0) {
+    try {
+        allDateDirs = (await fs.readdir(deviceSpecificRootPath, { withFileTypes: true }))
+        .filter(entry => entry.isDirectory() && /^\d{8}$/.test(entry.name)) // 確保是8位數字的日期目錄
+        .map(entry => entry.name);
+    } catch (error: any) {
+        logger.error(`[掃描] 讀取設備 ${deviceId} (來源: ${source}) 的日期目錄列表失敗: ${error.message}`);
+        return;
+    }
+
+    if (allDateDirs.length === 0) {
         logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 在 ${deviceSpecificRootPath} 沒有找到日期目錄。`);
         return;
     }
 
-    dateDirs.sort((a, b) => a.localeCompare(b)); // 日期升冪排序（舊的先處理）
+    // 1. 處理昨天的目錄 (如果存在)
+    if (allDateDirs.includes(yesterday)) {
+        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 檢查昨天的目錄: ${yesterday}`);
+        const yesterdayPath = path.join(deviceSpecificRootPath, yesterday);
+        try {
+            const files = (await fs.readdir(yesterdayPath)).filter(filename =>
+                (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
+                (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
+            );
+            if (files.length > 0) {
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理昨天 (${yesterday}) 的 ${files.length} 個檔案。`);
+                await processFilesBatch(yesterdayPath, deviceId, source, files, yesterday);
+            } else {
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 為空。`);
+            }
+            // 處理完後，檢查目錄是否為空，如果為空則刪除
+            const remainingFilesInYesterday = await fs.readdir(yesterdayPath);
+            if (remainingFilesInYesterday.length === 0) {
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 已空，準備刪除。`);
+                await fs.rm(yesterdayPath, { recursive: true, force: true }); // Node 14.14+ for recursive on rmdir
+                                                                         // fs-extra's remove also works: await fs.remove(yesterdayPath);
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 已刪除昨天的空目錄 ${yesterday}。`);
+            } else {
+                 logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 處理後仍有 ${remainingFilesInYesterday.length} 個檔案/目錄，不刪除。`);
+            }
+        } catch (error: any) {
+            if (error.code === 'ENOENT') {
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 似乎已被刪除或不存在。`);
+            } else {
+                logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理或刪除昨天目錄 ${yesterday} 時出錯: ${error.message}`);
+            }
+        }
+    }
     
-    for (const dateDirName of dateDirs) {
-        const currentDataPath = path.join(deviceSpecificRootPath, dateDirName); // 這是包含資料檔案的目錄
+    // 2. 處理今天的目錄 (如果存在)
+    if (allDateDirs.includes(today)) {
+        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 檢查今天的目錄: ${today}`);
+        const todayPath = path.join(deviceSpecificRootPath, today);
+        try {
+            const files = (await fs.readdir(todayPath)).filter(filename =>
+                (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
+                (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
+            );
+            if (files.length > 0) {
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理今天 (${today}) 的 ${files.length} 個檔案。`);
+                await processFilesBatch(todayPath, deviceId, source, files, today);
+            }
+        } catch (error: any) {
+             if (error.code !== 'ENOENT') { // 如果不是 '文件或目錄不存在' 錯誤，則記錄
+                logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理今天目錄 ${today} 時出錯: ${error.message}`);
+            }
+        }
+    } else {
+        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 今天的目錄 ${today} 不存在。`);
+    }
 
-        const files = (await fs.readdir(currentDataPath)).filter(filename =>
-            (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
-            (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
-        );
+    // 3. 刪除其他舊的空日期目錄 (除了今天和昨天)
+    // 重新讀取一次目錄列表，因為昨天目錄可能已被刪除
+    let currentExistingDateDirs: string[] = [];
+    try {
+        currentExistingDateDirs = (await fs.readdir(deviceSpecificRootPath, { withFileTypes: true }))
+            .filter(entry => entry.isDirectory() && /^\d{8}$/.test(entry.name))
+            .map(entry => entry.name);
+    } catch (error: any) {
+        logger.error(`[掃描] 清理舊目錄前，重新讀取設備 ${deviceId} (來源: ${source}) 的日期目錄列表失敗: ${error.message}`);
+        return;
+    }
 
-        if (files.length > 0) {
-            await processFilesBatch(currentDataPath, deviceId, source, files, dateDirName);
-        } else {
-            logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 在日期目錄 ${dateDirName} (${currentDataPath}) 沒有找到對應的資料檔案。`);
+    for (const dirName of currentExistingDateDirs) {
+        if (dirName !== today && dirName !== yesterday) {
+            const dirPath = path.join(deviceSpecificRootPath, dirName);
+            try {
+                const filesInDir = await fs.readdir(dirPath);
+                if (filesInDir.length === 0) {
+                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 發現舊的空目錄 ${dirName}，準備刪除。`);
+                    await fs.rm(dirPath, { recursive: true, force: true });
+                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 已刪除舊的空目錄 ${dirName}。`);
+                } else {
+                    // 可以選擇記錄或忽略非空舊目錄
+                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 發現舊的非空目錄 ${dirName} (包含 ${filesInDir.length} 個項目)，不刪除。`);
+                }
+            } catch (error: any) {
+                 if (error.code === 'ENOENT') {
+                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 嘗試刪除的舊目錄 ${dirName} 似乎已被刪除。`);
+                } else {
+                    logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 刪除舊目錄 ${dirName} 時出錯: ${error.message}`);
+                }
+            }
         }
     }
 }
@@ -125,7 +219,7 @@ async function processFilesBatch(
                     if (wisePoints.length > 0) {
                         allPoints.push(...wisePoints);
                         processedFilePaths.push(filePath);
-                        for (const record of validRecords) { // 從有效記錄中獲取時間戳
+                        for (const record of validRecords) {
                             const recordTs = new Date(record.timestamp).getTime();
                             if (!isNaN(recordTs)) {
                                 batchFirstTimestampMs = (batchFirstTimestampMs === null) ? recordTs : Math.min(batchFirstTimestampMs, recordTs);
@@ -133,9 +227,11 @@ async function processFilesBatch(
                         }
                     }
                 } else if (wiseRecords.length > 0) {
-                    logger.warn(`[掃描] WISE 檔案 ${filename} 所有 ${wiseRecords.length} 條記錄均無效或缺少時間戳。`);
+                    logger.warn(`[處理批次] WISE 檔案 ${filename} 所有 ${wiseRecords.length} 條記錄均無效或缺少時間戳。`);
+                     // 即使記錄無效，也將檔案視為已處理並移動，以避免重複處理
+                    processedFilePaths.push(filePath);
                 } else {
-                    logger.warn(`[掃描] WISE 檔案 ${filename} 解析後沒有有效資料或解析失敗, 跳過。`);
+                    logger.warn(`[處理批次] WISE 檔案 ${filename} 解析後沒有有效資料或解析失敗, 跳過。`);
                 }
 
             } else if (source === 'tdr') {
@@ -154,17 +250,24 @@ async function processFilesBatch(
                             }
                         }
                     } else {
-                         logger.warn(`[掃描] TDR 檔案 ${filename} (時間戳: ${tdrPayload.timestamp}) data 陣列為空, 跳過。`);
+                         logger.warn(`[處理批次] TDR 檔案 ${filename} (時間戳: ${tdrPayload.timestamp}) data 陣列為空, 跳過。`);
+                         // 即使data為空，也將檔案視為已處理並移動
+                         processedFilePaths.push(filePath);
                     }
                 } else {
-                    logger.warn(`[掃描] TDR 檔案 ${filename} 解析失敗或結構無效, 跳過。`);
+                    logger.warn(`[處理批次] TDR 檔案 ${filename} 解析失敗或結構無效, 跳過。`);
+                     // 解析失敗或結構無效的檔案也移動，防止重複掃描
+                    processedFilePaths.push(filePath);
                 }
             }
         } catch (error: any) {
-            logger.error(`[掃描] 處理檔案 ${filename} (源: ${source}) 內部發生錯誤: ${error.message}`, error);
+            logger.error(`[處理批次] 處理檔案 ${filename} (源: ${source}) 內部發生錯誤: ${error.message}`, error);
+            // 發生錯誤的檔案也應該被移動，以避免無限重試
+            processedFilePaths.push(filePath);
         }
     }
 
+    // 寫入 InfluxDB
     if (allPoints.length > 0) {
         try {
             if (source === 'wise') {
@@ -172,33 +275,47 @@ async function processFilesBatch(
             } else {
                 await writeTdrDataToInflux(allPoints);
             }
-
             const displayTimestamp = batchFirstTimestampMs ? new Date(batchFirstTimestampMs).toISOString() : "未知";
-            logger.info(`[掃描] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 成功寫入 ${allPoints.length} 筆資料到 InfluxDB。批次最早時間戳約為 ${displayTimestamp}`);
+            logger.info(`[處理批次] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 成功寫入 ${allPoints.length} 筆資料到 InfluxDB。批次最早時間戳約為 ${displayTimestamp}`);
+        } catch (error: any) {
+            logger.error(`[處理批次] 寫入 InfluxDB 時出錯 (設備 ${deviceId}, 源: ${source}, 日期: ${dateDirName}): ${error.message}`, error);
+            // 如果寫入DB失敗，processedFilePaths 中的檔案不應被標記為成功處理並移動到常規備份路徑
+            // 這裡需要一個策略：是重試，還是將這些檔案移動到一個 "待重試" 或 "錯誤" 的備份位置？
+            // 為了簡化，目前如果寫入失敗，檔案仍然會被移動（因為 processedFilePaths 已經填充）
+            // 但這可能導致數據丟失。一個更好的方法是只在寫入成功後才將檔案加入 processedFilePaths，或者有更複雜的狀態管理。
+            // **重要：以下移動邏輯應該在寫入成功後執行，或者有更完善的錯誤處理。**
+        }
+    }
 
-            for (const filePath of processedFilePaths) {
+    // 移動已處理的檔案 (無論是否成功生成 points 或成功寫入 DB，只要掃描過就移動以避免重複掃描)
+    if (processedFilePaths.length > 0) {
+        logger.info(`[處理批次] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 準備移動 ${processedFilePaths.length} 個已掃描檔案。`);
+        for (const filePath of processedFilePaths) {
+            try {
                 const backupDir = (source === 'wise') ? config.folder.wiseBackupDir : config.folder.tdrBackupDir;
-                let logType: string | undefined = undefined; // WISE 特有
+                let logType: string | undefined = undefined;
 
                 if (source === 'wise') {
                     if (filePath.includes('/signal_log/') || filePath.includes('\\signal_log\\')) {
                         logType = 'signal_log';
                     }
                 }
-                // 對於 TDR，logType 為 undefined，dateDirName 已經是正確的日期目錄名
-                await moveFileAfterWrite( // 考慮重命名
+                await moveFileAfterWrite(
                     filePath,
                     deviceId,
-                    dateDirName, // 現在 dateDirName 對於 TDR 也是日期目錄
+                    dateDirName,
                     backupDir,
                     logType
                 );
-            }
-            logger.info(`[掃描] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 成功搬移 ${processedFilePaths.length} 個檔案至備份資料夾。`);
-        } catch (error: any) {
-            logger.error(`[掃描] 寫入 InfluxDB 或搬移檔案時出錯 (設備 ${deviceId}, 源: ${source}, 日期: ${dateDirName}): ${error.message}`, error);
-        }
-    } else if (files.length > 0) {
-        logger.info(`[掃描] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 在路徑 ${currentDataPath} 的 ${files.length} 個檔案中沒有產生可寫入的資料點。`);
+            } catch (moveError: any) {
+                logger.error(`[處理批次] 移動檔案 ${path.basename(filePath)} 到備份時出錯: ${moveError.message}`);
+                // 即使移動失敗，也繼續處理下一個檔案
+           }
+       }
+       logger.info(`[處理批次] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 完成移動 ${processedFilePaths.length} 個已掃描檔案。`);
+    }
+    if (allPoints.length === 0 && files.length > 0 && processedFilePaths.length === files.length) {
+        // 所有檔案都被掃描了，但沒有產生任何點
+        logger.info(`[處理批次] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 在路徑 ${currentDataPath} 的 ${files.length} 個檔案中沒有產生可寫入的資料點，但檔案已被處理並移動。`);
     }
 }

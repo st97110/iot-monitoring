@@ -97,7 +97,7 @@ function calculateRainfall(currentData: any, previousData: any): void {
   }
 }
 
-
+//#region From Folder
 
 /**
  * 取得所有設備的最新數據或指定設備的最新數據
@@ -275,6 +275,8 @@ export function clearCache(deviceId?: string): void {
     latestDataCache.clear();
   }
 }
+
+//#endregion
 
 //#region InfluxDB
 

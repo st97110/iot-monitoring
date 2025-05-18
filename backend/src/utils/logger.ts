@@ -5,7 +5,7 @@ import path from 'path';
 import { createLogger, format, transports, Logger } from 'winston';
 
 // 1. 確保日誌輸出目錄存在
-const logDir = path.resolve(__dirname, '../logs');
+const logDir = path.resolve(__dirname, '../../logs');
 fs.ensureDirSync(logDir);
 
 // 2. 定義日誌輸出格式
