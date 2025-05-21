@@ -33,8 +33,7 @@ backend/.DS_Store
 backend/Thumbs.db
 
 # Temporary files
-backend/tmp/
-backend/temp/
+backend/rainGaugeState.json
 
 # Data files
 tdr_data/

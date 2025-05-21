@@ -24,7 +24,6 @@ export const logger: Logger = createLogger({
     // 輸出到控制台（帶顏色）
     new transports.Console({
       format: format.combine(
-        format.colorize(),
         logFormat
       )
     }),

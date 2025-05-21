@@ -20,6 +20,21 @@ export function getSourceByDeviceId(id: string): SourceKey {
   throw new Error(`[getSourceByDeviceId] 無法判斷 deviceId=${id} 來源（請補規則）`);
 }
 
+/*
+ * Helper：由 deviceId 判斷是否為雨量筒
+ */
+export function isDeviceRainGauge(deviceId: string): boolean {
+  let isCurrentDeviceRainGauge = false;
+  for (const area of Object.values(deviceMapping)) {
+    const devCfg = area.devices.find(d => d.id === deviceId);
+    if (devCfg && devCfg.type === DEVICE_TYPES.RAIN) {
+        isCurrentDeviceRainGauge = true;
+        break;
+    }
+  }
+  return isCurrentDeviceRainGauge;
+}
+
 /**
  * Helper：由 deviceId 反查 channel 設定
  */

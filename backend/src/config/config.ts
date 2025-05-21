@@ -156,27 +156,27 @@ export const deviceMapping: Record<
     devices: [
       {
         id: 'WISE-4010LAN_74FE48941ABE',
-        name: '84.6k',
+        name: '84.6k, 84.65k',
         area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 12.259 } },
           { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 12.865 } },
+          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_0: 11.388 } },
+          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_1: 10.317 } },
         ]
       },
       {
         id: 'WISE-4010LAN_00D0C9FAD2E3',
-        name: '84.65k, 84.7k',
+        name: '84.7k',
         area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 11.388 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 10.317 } },
           { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 11.56 } },
           { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.911 } },
         ]
       },
-      { id: 'AH3', name: 'AH3 TDR', type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_AH3', name: 'AH3 TDR', type: DEVICE_TYPES.TDR }
     ]
   },
   '90k區': {
@@ -242,7 +242,7 @@ export const deviceMapping: Record<
       { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 4.82 }, geRange: 500 }] },
       { id: 'TDR_T14A_CH1', name: 'CH1 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14A_CH2', name: 'CH2 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH3', name: 'CH3 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14A_CH4', name: 'CH4 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR }
     ]
   }
 };

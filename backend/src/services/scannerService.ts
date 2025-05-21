@@ -1,15 +1,61 @@
 // backend/services/scannerService.ts
 import fs from 'fs-extra';
 import path from 'path';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { config } from '../config/config';
 import { parseWiseCSVFile, parseTdrJSONFile  } from '../utils/parser';
 // import { updateLatestDataCache } from './dataService';
+import { isDeviceRainGauge } from '../utils/helper';
 import { logger } from '../utils/logger';
+import { Point } from './influxClientService';
 import { convertWiseToInfluxPoints, convertTdrToInfluxPoints, writeWiseDataToInflux, writeTdrDataToInflux } from './influxDataService';
 import { moveFileAfterWrite } from './FileService';
 
 const DATE_FORMAT = 'yyyyMMdd'; // 日期目錄格式
+
+// ✨ 1. 定義狀態檔案的路徑
+const RAIN_GAUGE_STATE_FILE_PATH = path.resolve(__dirname, '../../rainGaugeState.json'); // 放在項目根目錄或一個可配置的路徑
+
+// ✨ 維護雨量筒最後狀態的內存對象
+// Key: deviceId, Value: { lastCount: number, lastTimestamp: number (ms) }
+let rainGaugeLastState: Record<string, { lastCount: number, lastTimestamp: number }> = {};
+
+// ✨ 2. 函數：載入雨量筒狀態從檔案
+async function loadRainGaugeState(): Promise<void> {
+    try {
+        if (await fs.pathExists(RAIN_GAUGE_STATE_FILE_PATH)) {
+            const fileContent = await fs.readFile(RAIN_GAUGE_STATE_FILE_PATH, 'utf-8');
+            const loadedState = JSON.parse(fileContent);
+            // 簡單的驗證，確保載入的是一個物件
+            if (typeof loadedState === 'object' && loadedState !== null) {
+                rainGaugeLastState = loadedState;
+                logger.info(`[雨量狀態] 已從 ${RAIN_GAUGE_STATE_FILE_PATH} 成功載入雨量筒狀態。`);
+            } else {
+                logger.warn(`[雨量狀態] ${RAIN_GAUGE_STATE_FILE_PATH} 內容格式不正確，使用空狀態。`);
+                rainGaugeLastState = {};
+            }
+        } else {
+            logger.info(`[雨量狀態] 狀態檔案 ${RAIN_GAUGE_STATE_FILE_PATH} 不存在，將使用空狀態。`);
+            rainGaugeLastState = {};
+        }
+    } catch (error: any) {
+        logger.error(`[雨量狀態] 載入雨量筒狀態失敗: ${error.message}`);
+        rainGaugeLastState = {}; // 出錯時使用空狀態
+    }
+}
+
+// ✨ 3. 函數：保存雨量筒狀態到檔案
+async function saveRainGaugeState(): Promise<void> {
+    try {
+        await fs.writeFile(RAIN_GAUGE_STATE_FILE_PATH, JSON.stringify(rainGaugeLastState, null, 2), 'utf-8');
+        logger.debug(`[雨量狀態] 雨量筒狀態已成功保存到 ${RAIN_GAUGE_STATE_FILE_PATH}`);
+    } catch (error: any) {
+        logger.error(`[雨量狀態] 保存雨量筒狀態失敗: ${error.message}`);
+    }
+}
+
+// ✨ 在服務啟動時調用一次載入狀態的函數。
+let stateLoaded = false; // 標記狀態是否已載入
 
 /**
  * 獲取當前日期和前一天的日期字串
@@ -25,6 +71,12 @@ function getCurrentAndPreviousDateStrings(): { today: string; yesterday: string 
  * 掃描所有設備的所有未處理資料
  */
 export async function scanLatestData(): Promise<void> {
+    // ✨ 確保狀態只在首次掃描時載入一次
+    if (!stateLoaded) {
+        await loadRainGaugeState();
+        stateLoaded = true;
+    }
+
     try {
         logger.info('[掃描] 開始掃描 WISE 資料夾...');
         await scanFolder(config.folder.wiseDataDir, 'wise');
@@ -201,7 +253,7 @@ async function processFilesBatch(
     files: string[],
     dateDirName: string // 現在對於 WISE 和 TDR 都是日期目錄名
 ) {
-    const allPoints: any[] = [];
+    const allPoints: Point[] = [];
     const processedFilePaths: string[] = [];
     let batchFirstTimestampMs: number | null = null;
 
@@ -211,23 +263,83 @@ async function processFilesBatch(
         const filePath = path.join(currentDataPath, filename);
         try {
             if (source === 'wise') {
-                const wiseRecords = await parseWiseCSVFile(filePath);
-                const validRecords = wiseRecords.filter(r => !r.hasOwnProperty('error') && r.timestamp);
+                const wiseRecordsRaw = await parseWiseCSVFile(filePath);
+                const validRecordsForInflux: any[] = [];
 
-                if (validRecords.length > 0) {
-                    const wisePoints = convertWiseToInfluxPoints(deviceId, validRecords);
+                for (const rawRecord of wiseRecordsRaw) {
+                    if (rawRecord.hasOwnProperty('error') || !rawRecord.timestamp || !rawRecord.raw) {
+                        logger.warn(`[處理批次] WISE 檔案 ${filename} 包含無效記錄或缺少時間戳，跳過此記錄。原始: %j`, rawRecord);
+                        continue;
+                    }
+
+                    const recordForInflux = { ...rawRecord };
+                    let isCurrentDeviceRainGauge = isDeviceRainGauge(deviceId);
+
+                    if (isCurrentDeviceRainGauge && recordForInflux.raw['DI_0 Cnt'] !== undefined) {
+                        const currentCount = parseFloat(recordForInflux.raw['DI_0 Cnt'] as string);
+                        const currentTimestampMs = new Date(recordForInflux.timestamp).getTime();
+
+                        if (!isNaN(currentCount) && !isNaN(currentTimestampMs)) {
+                            const prevState = rainGaugeLastState[deviceId];
+                            let calculatedRain10m = 0;
+
+                            if (prevState && !isNaN(prevState.lastCount) && !isNaN(prevState.lastTimestamp)) {
+                                if (currentTimestampMs > prevState.lastTimestamp) {
+                                    const timeDiffMinutes = (currentTimestampMs - prevState.lastTimestamp) / (1000 * 60);
+
+                                    // 假設我們只在數據間隔接近 10 分鐘時才計算差值作為 10 分鐘雨量
+                                    // 您可以定義一個允許的最大間隔，例如 15 分鐘
+                                    // 如果超過這個間隔，則認為數據不連續，不能簡單地用差值代表 "最近10分鐘"
+                                    const MAX_INTERVAL_FOR_DIFF_CALC_MINUTES = 15; // 可配置
+
+                                    if (timeDiffMinutes <= MAX_INTERVAL_FOR_DIFF_CALC_MINUTES) {
+
+                                        const countDiff = currentCount >= prevState.lastCount
+                                                        ? (currentCount - prevState.lastCount)
+                                                        : currentCount;
+                                        calculatedRain10m = countDiff / 2.0;
+                                        logger.debug(`[雨量計算] 設備 ${deviceId} (時間間隔: ${timeDiffMinutes.toFixed(1)} 分鐘): Cnt差 ${countDiff}, 計算雨量 ${calculatedRain10m} mm`);
+                                    } else {
+                                        // 時間間隔過長，數據不連續
+                                        logger.warn(`[雨量計算] 設備 ${deviceId} 數據不連續，時間間隔 ${timeDiffMinutes.toFixed(1)} 分鐘 (大於 ${MAX_INTERVAL_FOR_DIFF_CALC_MINUTES} 分鐘)。`);
+                                         calculatedRain10m = 0;
+                                        logger.warn(`[雨量計算] ...因此，設備 ${deviceId} 本次掃描的10分鐘雨量（基於差值）設為 ${calculatedRain10m}。`);
+                                    }
+                                } else {
+                                     logger.warn(`[雨量計算] 設備 ${deviceId} 的當前時間戳 ${new Date(currentTimestampMs).toISOString()} 不晚於上次記錄時間戳 ${new Date(prevState.lastTimestamp).toISOString()} (狀態檔案值)，本次雨量設為 0。`);
+                                }
+                            } else {
+                                logger.info(`[雨量計算] 設備 ${deviceId} 沒有上一個狀態記錄 (來自狀態檔案)，本次10分鐘雨量設為0 (或當前計數/2)。當前計數: ${currentCount}`);
+                                // calculatedRain10m = currentCount / 2.0; // 可選：首次記錄也計算雨量
+                            }
+                            recordForInflux.rain_10m_scanner = calculatedRain10m;
+
+                            // 更新最後狀態 (內存)
+                            rainGaugeLastState[deviceId] = { lastCount: currentCount, lastTimestamp: currentTimestampMs };
+
+                            await saveRainGaugeState(); // ✨ 保存狀態
+
+                        } else {
+                             logger.warn(`[雨量計算] 設備 ${deviceId} 在檔案 ${filename} 的記錄 DI_0 Cnt 或時間戳無效。`);
+                        }
+                    }
+                    validRecordsForInflux.push(recordForInflux);
+                }
+
+                if (validRecordsForInflux.length > 0) {
+                    const wisePoints = convertWiseToInfluxPoints(deviceId, validRecordsForInflux);
                     if (wisePoints.length > 0) {
                         allPoints.push(...wisePoints);
                         processedFilePaths.push(filePath);
-                        for (const record of validRecords) {
+                        for (const record of validRecordsForInflux) {
                             const recordTs = new Date(record.timestamp).getTime();
                             if (!isNaN(recordTs)) {
                                 batchFirstTimestampMs = (batchFirstTimestampMs === null) ? recordTs : Math.min(batchFirstTimestampMs, recordTs);
                             }
                         }
                     }
-                } else if (wiseRecords.length > 0) {
-                    logger.warn(`[處理批次] WISE 檔案 ${filename} 所有 ${wiseRecords.length} 條記錄均無效或缺少時間戳。`);
+                } else if (wiseRecordsRaw.length > 0) {
+                    logger.warn(`[處理批次] WISE 檔案 ${filename} 所有 ${wiseRecordsRaw.length} 條記錄均無效或缺少時間戳。`);
                      // 即使記錄無效，也將檔案視為已處理並移動，以避免重複處理
                     processedFilePaths.push(filePath);
                 } else {
@@ -296,8 +408,11 @@ async function processFilesBatch(
                 let logType: string | undefined = undefined;
 
                 if (source === 'wise') {
+                    // 判斷 logType 的邏輯可以保持或根據您的路徑結構調整
                     if (filePath.includes('/signal_log/') || filePath.includes('\\signal_log\\')) {
                         logType = 'signal_log';
+                    } else if (filePath.includes('/system_log/') || filePath.includes('\\system_log\\')) {
+                        logType = 'system_log';
                     }
                 }
                 await moveFileAfterWrite(

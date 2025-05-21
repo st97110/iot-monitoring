@@ -4,6 +4,7 @@ import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataF
 import { parseWiseCSVFile } from '../utils/parser';
 import { config, DEVICE_TYPES, deviceMapping } from '../config/config';
 import { logger } from '../utils/logger';
+import { isDeviceRainGauge } from '../utils/helper';
 
 type SourceKey = 'wise' | 'tdr';
 
@@ -355,40 +356,66 @@ export async function getHistoryDataFromDB(
   }
 }
 
-/** 
- * Helper: 判斷一個 deviceId 是否為雨量筒
- * @param id 裝置 ID
- * @returns boolean */
-function isRainDevice(id: string): boolean {
-  for (const area of Object.values(deviceMapping)) {
-    const dev = area.devices.find(d => d.id === id);
-    if (!dev) continue;
-    if (dev.type === DEVICE_TYPES.RAIN) return true;
-  }
-  return false;
-}
-
 /** 補上 rainfall 指定區間 (例如 30m、6h、24h) */
-export async function enrichRainfall(latest: Record<string, any>, duration?: RainDuration): Promise<void> {
-  for (const id of Object.keys(latest)) {
-    if (!isRainDevice(id)) continue;
+export async function enrichRainfall(
+    dataRecords: any[] | Record<string, any>, // ✨ 可以是記錄陣列或設備ID為key的對象
+    duration?: RainDuration
+): Promise<void> {
+    const entriesToProcess: [string, any][] = Array.isArray(dataRecords)
+        ? dataRecords.map(record => [record.deviceId, record]) : Object.entries(dataRecords);
 
-    // ── 策略 A：scanner 寫進了 raw.rain10m ──
-    if (duration === '10m' &&
-      latest[id]?.raw?.rain10m !== undefined) {
-      latest[id][`rainfall_${duration}`] = latest[id].raw.rain10m;
-      continue;
-    }
+    for (const [deviceId, record] of entriesToProcess) {
+        // 確保 record 是物件且有 deviceId
+        if (typeof record !== 'object' || record === null) {
+            // logger.debug(`[RainCalc] enrichRainfall 跳過無效記錄 (非物件或為null) for deviceId: ${deviceId}`);
+            continue;
+        }
 
-    // ── 策略 B：即時計算 ──
-    try {
-      const rain = await queryRainfall(id, duration);
-      if (rain !== null)
-        latest[id][`rainfall_${duration}`] = rain;
-    } catch (e) {
-      logger.warn(`[RainCalc] ${id} (${duration}) 失敗: ${(e as Error).message}`);
+        if (!isDeviceRainGauge(deviceId)) { // isRainDevice 應從 helper.ts 導入或在此處實現
+            continue;
+        }
+        
+        // ── 策略 A：優先使用已預計算的 10 分鐘雨量 (假設 field key 是 'rain_10m') ──
+        if (duration === '10m' || duration === 10) { // ✨ 也處理數字 10
+            // 檢查 record.raw (來自 scanner 或 direct DB query) 或 record (來自 aggregated history)
+            let precalculatedRain10m: number | undefined = undefined;
+            if (record.raw && typeof record.raw === 'object' && record.raw.rain_10m !== undefined) {
+                precalculatedRain10m = parseFloat(record.raw.rain_10m);
+            }
+            // 如果 raw 中沒有，再檢查 record 頂層是否有 rain_10m (可能是從 DB 讀取歷史時已聚合)
+            else if (record.rain_10m !== undefined) {
+                precalculatedRain10m = parseFloat(record.rain_10m);
+            }
+
+            if (precalculatedRain10m !== undefined && !isNaN(precalculatedRain10m)) {
+                record[`rainfall_10m`] = precalculatedRain10m; // ✨ 使用標準化的 key
+                // logger.debug(`[RainCalc] ${deviceId} 使用預計算的 10m 雨量: ${precalculatedRain10m}`);
+                continue; // 已經有10分鐘雨量，跳過後續即時計算
+            } else {
+                // logger.debug(`[RainCalc] ${deviceId} 未找到預計算的 10m 雨量，將嘗試即時計算。Raw: %j, Record: %j`, record.raw, record);
+            }
+        }
+
+        // ── 策略 B：即時計算 (適用於非 '10m' 的 duration，或者 '10m' 但預計算值不存在) ──
+        // 如果 duration 是 undefined，或者與 '10m' (或數字 10) 不同，則執行即時計算
+        if (duration !== undefined) { // 確保 duration 有定義才進行即時計算
+            const durationStr = typeof duration === 'number' ? `${duration}m` : duration;
+            try {
+                const rain = await queryRainfall(deviceId, durationStr); // queryRainfall 接受 string | number
+                // logger.debug(`[RainCalc] ${deviceId} (${durationStr}) 即時計算結果 = ${rain}`);
+                if (rain !== null && !isNaN(rain)) { // 確保 rain 是有效數字
+                    record[`rainfall_${durationStr}`] = rain;
+                } else if (rain === null) {
+                    // logger.debug(`[RainCalc] ${deviceId} (${durationStr}) 即時計算無數據，設為 null。`);
+                    record[`rainfall_${durationStr}`] = null; // 或 0，取決於希望如何表示無數據
+                }
+            } catch (e: any) {
+                logger.warn(`[RainCalc] ${deviceId} (${durationStr}) 即時計算失敗: ${e.message}`);
+                // 可以選擇在這裡給一個錯誤標記或保持 undefined
+                // record[`rainfall_${durationStr}_error`] = e.message;
+            }
+        }
     }
-  }
 }
 
 //#endregion InfluxDB

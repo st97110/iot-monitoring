@@ -30,34 +30,79 @@ export interface TdrPayload {
 export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Point[] {
   const points: Point[] = [];
 
+  // 首先，獲取當前設備的類型
+  let currentDeviceType: DEVICE_TYPES | undefined;
+  for (const area of Object.values(deviceMapping)) {
+    const devCfg = area.devices.find(d => d.id === deviceId);
+    if (devCfg) {
+      currentDeviceType = devCfg.type;
+      break;
+    }
+  }
+
   for (const record of records) {
       if (!record.timestamp || !record.raw) continue;
 
       const tsNs = new Date(record.timestamp).getTime() * 1e6;
-      const fields = toPEgF(deviceId, record.raw);   // ✨ 取得 PEgF delta 值
-      if (Object.keys(fields).length === 0) continue;  // 無有效欄位
-      
-      const point = new Point('wise_raw')
+      const point = new Point('wise_raw') // Measurement 名稱
           .tag('device', deviceId)
           .timestamp(tsNs);
 
-      for (const [field, value] of Object.entries(record.raw)) {
-        const floatVal = parseFloat(value as string);
+      let hasValidDataField = false;
+
+      // 處理原始的 AI/DI 欄位 (來自 record.raw)
+      for (const [fieldKey, fieldValue] of Object.entries(record.raw)) {
+        // 確保只處理 config 中定義的 sensor channel 相關的原始數據
+        // 或者您可以選擇寫入所有 raw 中的數值型數據
+        let isConfiguredChannelField = false;
         for (const sensor of getSensorsByDeviceId(deviceId) ?? []) {
           for (const ch of sensor.channels) {
-            if (!isNaN(floatVal) && field.startsWith(`${ch} `)) {
-              point.floatField(field, floatVal);
+            if (fieldKey.startsWith(`${ch} `)) { // 例如 "AI_0 EgF"
+              isConfiguredChannelField = true;
+              break;
             }
           }
+          if (isConfiguredChannelField) break;
+        }
+
+        if (isConfiguredChannelField) {
+            const floatVal = parseFloat(fieldValue as string);
+            if (!isNaN(floatVal)) {
+                point.floatField(fieldKey, floatVal);
+                hasValidDataField = true;
+            } else {
+                // logger.debug(`[InfluxData] 設備 ${deviceId} 欄位 ${fieldKey} 值 "${fieldValue}" 不是有效數字，跳過此欄位。`);
+            }
         }
       }
 
-      for (const [field, value] of Object.entries(fields)) { // 加入PEgF delta 欄位
-        point.floatField(field, value);
+      // 處理 PEgF 數據 (假設 toPEgF 返回的是 { 'AI_0 PEgF': value, 'AI_0 Delta': value })
+      if (currentDeviceType !== DEVICE_TYPES.RAIN) {
+          const pegfFields = toPEgF(deviceId, record.raw);
+          for (const [pegfKey, pegfValue] of Object.entries(pegfFields)) {
+              if (typeof pegfValue === 'number' && !isNaN(pegfValue)) {
+                point.floatField(pegfKey, pegfValue);
+                hasValidDataField = true;
+              } else if (pegfValue !== undefined) {
+                logger.warn(`[InfluxData] 設備 ${deviceId} (非雨量筒) 的 PEgF 欄位 ${pegfKey} 值無效: ${pegfValue}`);
+              }
+          }
       }
 
-      points.push(point);
-      logger.debug('deviceId', deviceId, 'point', point);
+      // ✨ 關鍵：處理預計算的10分鐘雨量 ✨
+      if (currentDeviceType === DEVICE_TYPES.RAIN && record.rain_10m_scanner !== undefined && typeof record.rain_10m_scanner === 'number' && !isNaN(record.rain_10m_scanner)) {
+          point.floatField('rain_10m', record.rain_10m_scanner); // ✨ 將 'rain_10m_scanner' 的值以 'rain_10m' 為欄位名寫入
+          hasValidDataField = true;
+          logger.debug(`[InfluxData] 設備 ${deviceId} 添加預計算雨量 rain_10m: ${record.rain_10m_scanner}`);
+      } else if (record.hasOwnProperty('rain_10m_scanner')) { // 如果屬性存在但值無效
+          logger.warn(`[InfluxData] 設備 ${deviceId} 的 rain_10m_scanner 值無效: ${record.rain_10m_scanner}`);
+      }
+
+      if (hasValidDataField) {
+          points.push(point);
+      } else {
+          logger.warn(`[InfluxData] 設備 ${deviceId} (類型: ${currentDeviceType}) 在時間戳 ${record.timestamp} 的記錄沒有產生任何可寫入的欄位，跳過此 Point。 Raw: %j`, record.raw);
+      }
   }
 
   return points;
