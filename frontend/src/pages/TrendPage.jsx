@@ -6,22 +6,19 @@ import html2canvas from 'html2canvas';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
 
-// 獲取設備類型顏色
-const getDeviceTypeColor = (type) => {
-  const colors = {
-    [DEVICE_TYPES.TI]: 'from-blue-500 to-blue-600',
-    [DEVICE_TYPES.WATER]: 'from-cyan-500 to-cyan-600',
-    [DEVICE_TYPES.RAIN]: 'from-indigo-500 to-indigo-600',
-    [DEVICE_TYPES.GE]: 'from-green-500 to-green-600',
-    [DEVICE_TYPES.TDR]: 'from-purple-500 to-purple-600',
-  };
-  return colors[type] || 'from-gray-500 to-gray-600';
-};
-
 // 獲取通道顏色
-const getChannelColor = (index) => {
-  const colors = ['#8884d8', '#82ca9d', '#ff7300', '#0088aa', '#ff5252', '#4caf50', '#9c27b0', '#ff9800'];
-  return colors[index % colors.length];
+const getChartLineColor = (deviceType) => {
+  const typeBaseColors = {
+    [DEVICE_TYPES.TI]: '#3B82F6', // blue-500
+    [DEVICE_TYPES.WATER]: '#06B6D4', // cyan-500
+    [DEVICE_TYPES.RAIN]: '#6366F1', // indigo-500
+    [DEVICE_TYPES.GE]: '#22C55E', // green-500
+    [DEVICE_TYPES.TDR]: '#8B5CF6', // purple-500
+  };
+  const defaultColor = '#6B7280'; // gray-500
+
+  // 單通道或特定設備類型，使用基於設備類型的主色
+  return typeBaseColors[deviceType] || defaultColor;
 };
 
 function TrendPage() {
@@ -121,23 +118,33 @@ function TrendPage() {
         }
         let processed = historyRecords.map(entry => {
           const row = { time: entry.timestamp };
-          if (entry.channels || entry.raw) {
-            for (const ch of sensor.channels) {
-              const channelData = entry.channels?.[ch];
-              let valueToProcess;
-              if (channelData && channelData.EgF !== undefined) valueToProcess = channelData.EgF;
-              else if (entry.raw && entry.raw[`${ch} EgF`] !== undefined) valueToProcess = entry.raw[`${ch} EgF`];
-              else if (sensor.type === DEVICE_TYPES.RAIN && entry.raw && entry.raw[`${ch} Cnt`] !== undefined) valueToProcess = parseFloat(entry.raw[`${ch} Cnt`]) / 2;
-              else if (sensor.type === DEVICE_TYPES.RAIN && entry[`rainfall_10m`] !== undefined) valueToProcess = entry[`rainfall_10m`];
+          if (entry.channels || entry.raw || entry.rainfall_10m !== undefined) {
+            if (currentDevice.type === DEVICE_TYPES.RAIN) {
+              let rainValue = entry.rainfall_10m; // 優先使用 enrichRainfall 的結果
+              if (rainValue === undefined && entry.raw?.rain_10m !== undefined) {
+                  rainValue = entry.raw.rain_10m; // 退回使用 scanner 寫入的
+              }
+              if (rainValue !== undefined) {
+                row['rainfall'] = parseFloat(rainValue); // ✨ 將雨量數據放到名為 'rainfall' 的 key
+              }
+            } else {
+              // 其他 WISE 設備
+              for (const ch of sensor.channels) {
+                const channelData = entry.channels?.[ch];
+                let valueToProcess;
+                if (channelData && channelData.EgF !== undefined) valueToProcess = channelData.EgF;
+                else if (entry.raw && entry.raw[`${ch} EgF`] !== undefined) valueToProcess = entry.raw[`${ch} EgF`];
+                // (這裡可以省略雨量筒的 Cnt 處理，因為上面已經特別處理了 RAIN 類型)
 
-              if (valueToProcess !== undefined) {
-                const init = sensor.initialValues?.[ch] ?? 0;
-                row[ch] = sensor.type === DEVICE_TYPES.RAIN ? parseFloat(valueToProcess) : (parseFloat(valueToProcess) - init);
+                if (valueToProcess !== undefined) {
+                  const init = sensor.initialValues?.[ch] ?? 0;
+                  row[ch] = parseFloat(valueToProcess) - init;
+                }
               }
             }
           }
           return row;
-        }).filter(row => row.time); // 過濾掉沒有時間戳的資料
+        }).filter(row => row.time && (currentDevice.type === DEVICE_TYPES.RAIN ? row.rainfall !== undefined : Object.keys(row).length > 1) ); // 過濾掉無效數據
         
         // ✨ 按時間升序排序，確保圖表 X 軸時間從左到右是從舊到新
         processed.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
@@ -396,7 +403,7 @@ function TrendPage() {
           </div>
 
           {/* 通道組 (WISE) 或 時間點選擇 (TDR) */}
-          {deviceId && currentDevice && currentDevice.type !== DEVICE_TYPES.TDR && (
+          {deviceId && currentDevice && currentDevice.type !== DEVICE_TYPES.TDR && currentDevice.type !== DEVICE_TYPES.RAIN && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">通道組</label>
               <select
@@ -466,10 +473,12 @@ function TrendPage() {
               {currentDevice.name} -
               {currentDevice.type === DEVICE_TYPES.TDR
                 ? ` TDR 曲線 @ ${selectedTimestamp ? new Date(selectedTimestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '請選擇時間點'}`
-                : currentDevice.sensors?.[sensorIndex]?.name
+                : currentDevice.type === DEVICE_TYPES.RAIN
+                  ? '10分鐘雨量趨勢' // ✨ 雨量筒的圖表標題
+                  : currentDevice.sensors?.[sensorIndex]?.name
               }
             </h2>
-            {currentDevice.type !== DEVICE_TYPES.TDR && (
+            {currentDevice.type !== DEVICE_TYPES.TDR && ( // TDR 的時間信息已在標題中
                  <p className="text-sm text-gray-500">
                     {new Date(startDate).toLocaleDateString('zh-TW')} ~ {new Date(endDate).toLocaleDateString('zh-TW')}
                     <span className="ml-2">({(data || []).length} 筆資料)</span>
@@ -486,19 +495,25 @@ function TrendPage() {
                   dataKey={currentDevice.type === DEVICE_TYPES.TDR ? "distance_m" : "time"} // ✨ TDR 的 X 軸是 distance_m
                   type={currentDevice.type === DEVICE_TYPES.TDR ? "number" : "category"}   // ✨ TDR 的 X 軸是數值
                   domain={currentDevice.type === DEVICE_TYPES.TDR ? ['dataMin', 'dataMax'] : undefined} // ✨ TDR X 軸範圍
-                  tickFormatter={(tick) => 
-                    currentDevice.type === DEVICE_TYPES.TDR 
+                  tickFormatter={(tick) =>
+                    currentDevice.type === DEVICE_TYPES.TDR
                       ? tick // TDR X 軸直接顯示距離數值
                       : new Date(tick).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit'})
                   }
-                  label={currentDevice.type === DEVICE_TYPES.TDR ? { value: '距離 (m)', position: 'insideBottomRight', offset: 0 } : undefined}
+                  label={currentDevice.type === DEVICE_TYPES.TDR ? { value: '距離 (m)', position: 'insideBottomRight', offset: -5 } : undefined}
                 />
                 <YAxis
-                  label={currentDevice.type === DEVICE_TYPES.TDR ? { value: '反射係數 (Rho)', angle: -90, position: 'insideLeft' } : undefined}
+                  label={
+                    currentDevice.type === DEVICE_TYPES.TDR ? { value: '反射係數 (Rho)', angle: -90, position: 'insideLeft' } :
+                    currentDevice.type === DEVICE_TYPES.RAIN ? { value: '雨量 (mm)', angle: -90, position: 'insideLeft' } : // ✨ 雨量筒 Y 軸標籤
+                    undefined
+                  }
                 />
                 <Tooltip
                   formatter={(value, name, props) =>
-                     currentDevice.type === DEVICE_TYPES.TDR ? [Number(value).toFixed(4), 'Rho'] : [Number(value).toFixed(3), name]
+                     currentDevice.type === DEVICE_TYPES.TDR ? [Number(value).toFixed(4), 'Rho'] :
+                     currentDevice.type === DEVICE_TYPES.RAIN && name === 'rainfall' ? [Number(value).toFixed(1) + ' mm', '10分鐘雨量'] : // ✨ 雨量筒 Tooltip
+                     [Number(value).toFixed(3), name]
                   }
                   labelFormatter={(label) =>
                     currentDevice.type === DEVICE_TYPES.TDR
@@ -508,22 +523,18 @@ function TrendPage() {
                 />
                 <Legend />
                 {currentDevice.type === DEVICE_TYPES.TDR ? (
-                  (data && data.length > 0) && // ✨ 確保 data 有數據才渲染 Line
-                  <Line
-                    key="rho"
-                    type="monotone"
-                    dataKey="rho"
-                    stroke={getChannelColor(0)}
-                    dot={false}
-                    name="反射係數 (Rho)"
-                  />
+                  (data && data.length > 0) &&
+                  <Line key="rho" type="monotone" dataKey="rho" stroke={getChartLineColor(DEVICE_TYPES.TDR)} dot={false} name="反射係數 (Rho)" />
+                ) : currentDevice.type === DEVICE_TYPES.RAIN ? ( // ✨ 雨量筒圖表線
+                  (data && data.length > 0) &&
+                  <Line key="rainfall" type="monotone" dataKey="rainfall" stroke={getChartLineColor(DEVICE_TYPES.RAIN)} dot={false} name="10分鐘雨量 (mm)" />
                 ) : (
                   currentDevice.sensors?.[sensorIndex]?.channels.map((ch, index) => (
                     <Line
                       key={ch}
                       type="monotone"
                       dataKey={ch}
-                      stroke={getChannelColor(index)}
+                      stroke={getChartLineColor(currentDevice.type)} // ✨ 使用新的顏色函數
                       dot={false}
                     />
                   ))

@@ -97,23 +97,23 @@ function Home() {
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()));
   }
 
-  function isNormalData(chData, sensor) {
-    if (sensor.type === DEVICE_TYPES.RAIN && chData?.Cnt < 10) return true;          // 雨量筒小於 10 顯示為正常
-    else if (sensor.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 30) return true;       // 伸縮計小於 30 顯示為正常
-    else if (sensor.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 5 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
-    else if (sensor.type === DEVICE_TYPES.WATER && chData?.pEgf < -15) return true; // 水位儀小於 5 度顯示為正常
+  function isNormalData(device, chData) {
+    if (device.type === DEVICE_TYPES.RAIN && chData?.rainfall_10m < 10) return true;          // 雨量筒小於 10 顯示為正常
+    else if (device.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 50) return true;       // 伸縮計小於 30 顯示為正常
+    else if (device.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 5 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
+    else if (device.type === DEVICE_TYPES.WATER && chData?.PEgF < -15) return true; // 水位計小於 -15 公尺顯示為正常
     return false;
   }
 
   /** 依感測器類型回傳要顯示的文字與單位 */
-  function formatValue(sensor, chData, allData) {
-    switch (sensor.type) {
+  function formatValue(device, chData, allData) {
+    switch (device.type) {
       case DEVICE_TYPES.WATER: {                       // 水位計：PEgF → m
         const v = chData?.PEgF;
         return v != null ? `${v.toFixed(2)} m` : '無資料';
       }
       case DEVICE_TYPES.RAIN: {                        // 雨量筒：10‑min 雨量 → mm
-        const v = allData.rainfall10Min;
+        const v = allData.rainfall_10m;
         return v != null ? `${v.toFixed(1)} mm` : '無資料';
       }
       case DEVICE_TYPES.GE: {                          // 伸縮計：Display → mm
@@ -215,8 +215,8 @@ function Home() {
 
                     // ======= 統一卡片樣式 =======
                     const cardColor = getDeviceTypeColor(device);
-                    // 取得相對時間顏色
                     const statusClass = getStatusColor(data.timestamp);
+                    const isRainGauge = device.type === DEVICE_TYPES.RAIN;
 
                     // 全部 sensor 整合到同一張卡片
                     return (
@@ -242,47 +242,56 @@ function Home() {
                             </span>
                           </div>
                           
-                          {data.rainfall10Min !== undefined && (
-                            <div className="mb-3 text-sm text-blue-600 font-semibold">
-                              十分鐘雨量: {data.rainfall10Min.toFixed(1)} mm
+                          {/* 雨量數據 */}
+                          {isRainGauge && (
+                            <div className="border-t pt-3 mt-2 space-y-3">
+                              <h4 className="font-semibold text-gray-700 mb-1">
+                                最近10分鐘雨量
+                              </h4>
+                              <div className="pl-2 flex justify-between text-lg items-center font-bold text-blue-600">
+                                {data.rainfall_10m !== undefined && data.rainfall_10m !== null
+                                  ? `${data.rainfall_10m.toFixed(1)} mm`
+                                  : '無資料'}
+                              </div>
                             </div>
                           )}
 
-                          <div className="border-t pt-3 mt-2 space-y-3">
-                            {/* 依序渲染每個 sensor 的數據 */}
-                            {device.sensors?.map((sensor, sIdx) => {
-                              // 用 sensor.name 作為標題
-                              return (
-                                <div key={sIdx} className="border-b pb-2 last:border-b-0">
-                                  <h4 className="font-semibold text-gray-700 mb-1">
-                                    {sensor.name}
-                                  </h4>
-                                  {/* 迭代該 sensor 的所有 channels */}
-                                  {(sensor.channels || []).map((ch, cIdx) => {
+                          {!isRainGauge && (
+                            <div className="border-t pt-3 mt-2 space-y-3">
+                              {/* 依序渲染每個 sensor 的數據 */}
+                              {device.sensors?.map((sensor, sIdx) => {
+                                // 用 sensor.name 作為標題
+                                return (
+                                  <div key={sIdx} className="border-b pb-2 last:border-b-0">
+                                    <h4 className="font-semibold text-gray-700 mb-1">
+                                      {sensor.name}
+                                    </h4>
+                                    {/* 迭代該 sensor 的所有 channels */}
+                                    {(sensor.channels || []).map((ch, cIdx) => {
 
-                                    const chData = data.channels?.[ch];
-                                    const pEgF = formatValue(sensor, chData, data);
+                                      const chData = data.channels?.[ch];
 
-                                    console.debug("sensor", sensor, "chData", chData, "PEgF", pEgF);
-                                    return (
-                                      <div key={ch} className="pl-2 flex justify-between text-sm items-center">
-                                        <span className="text-gray-600">
-                                          數值：
-                                        </span>
-                                    
-                                        {/* ===== 數值與單位 ===== */}
-                                        <span className={`text-xs font-semibold ${
-                                          isNormalData(chData, sensor) ? 'text-green-500' : 'text-red-500'
-                                        }`}>
-                                          {formatValue(sensor, chData, data)}
-                                        </span>
-                                      </div>
-                                    );                                    
-                                  })}
-                                </div>
-                              );
-                            })}
-                          </div>
+                                      console.log("device", device, "chData", chData, isNormalData(device, chData), formatValue(device, chData, data));
+                                      return (
+                                        <div key={ch} className="pl-2 flex justify-between text-sm items-center">
+                                          <span className="text-gray-600">
+                                            數值：
+                                          </span>
+                                      
+                                          {/* ===== 數值與單位 ===== */}
+                                          <span className={`text-xs font-semibold ${
+                                            isNormalData(device, chData) ? 'text-green-500' : 'text-red-500'
+                                          }`}>
+                                            {formatValue(device, chData, data)}
+                                          </span>
+                                        </div>
+                                      );                                    
+                                    })}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
 
                           {/* 卡片底部：查看趨勢 */}
                           <div className="mt-4 flex justify-end">
