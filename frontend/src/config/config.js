@@ -1,12 +1,12 @@
 // config/config.js
 
 // API development & production 網址
-// export const API_BASE =
-//   process.env.NODE_ENV === 'production'
-//     ? 'https://api.lianyougeo.com'
-//     : 'http://localhost:3000';
+export const API_BASE =
+  process.env.NODE_ENV === 'production'
+    ? 'https://api.lianyougeo.com'
+    : 'http://localhost:3000';
 
-export const API_BASE = 'https://api.lianyougeo.com';
+// export const API_BASE = 'https://api.lianyougeo.com';
 
 // 裝置類型代碼（type）
 export const DEVICE_TYPES = {
@@ -39,11 +39,11 @@ export const DEVICE_TYPE_ORDER = [
 ];
 
 export const deviceMapping = {
-  '80k區': {
-    name: '80k區',
+  '80K區': {
+    name: '80K區',
     devices: [
-      { id: 'TDR_T14_T1', name: 'T1 TDR', lat: 24.0175, lng: 121.128056, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T2', name: 'T2 TDR', lat: 24.018056, lng: 121.129444, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T1', name: 'T1', lat: 24.0175, lng: 121.128056, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T2', name: 'T2', lat: 24.018056, lng: 121.129444, type: DEVICE_TYPES.TDR }
     ],
   },
   '春陽區': {
@@ -51,7 +51,7 @@ export const deviceMapping = {
     devices: [
       {
         id: 'WISE-4010LAN_74FE48941ABE',
-        name: '84.6k',
+        name: '84.6K',
         lat: 24.0301,
         lng: 121.16,
         type: DEVICE_TYPES.TI,
@@ -62,7 +62,7 @@ export const deviceMapping = {
       },
       {
         id: 'WISE-4010LAN_74FE48941ABE',
-        name: '84.65k',
+        name: '84.65K',
         lat: 24.0301,
         lng: 121.16,
         type: DEVICE_TYPES.TI,
@@ -72,7 +72,7 @@ export const deviceMapping = {
         ]
       },{
         id: 'WISE-4010LAN_00D0C9FAD2E3',
-        name: '84.7k',
+        name: '84.7K',
         lat: 24.0302,
         lng: 121.16,
         type: DEVICE_TYPES.TI,
@@ -81,34 +81,34 @@ export const deviceMapping = {
           { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.911 } },
         ]
       },
-      { id: 'TDR_T14_AH3', name: 'AH3 TDR', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_AH3', name: 'AH3', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
     ]
   },
-  '90k區': {
-    name: '90k區',
+  '90K區': {
+    name: '90K區',
     devices: [
       {
         id: 'WISE-4010LAN_74FE489299CB',
-        name: '90k 地下水位計W2',
+        name: 'W2',
         lat: 24.025278,
         lng: 121.18385,
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], wellDepth: -50 },
+          { name: '地下水位', channels: ['AI_0'], wellDepth: -50 },
         ]
       },
       {
         id: 'WISE-4060LAN_00D0C9FD4D44',
-        name: '91.5k雨量筒',
+        name: 'H2-R',
         lat: 24.0267,
         lng: 121.184,
         type: DEVICE_TYPES.RAIN,
         sensors: [
-          { name: '91.5k雨量筒', channels: ['DI_0']},
+          { name: '91.5K雨量筒', channels: ['DI_0']},
         ]
       },
-      { id: 'TDR_T14_T3', name: 'T3 TDR', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T4', name: 'T4 TDR', lat: 24.0267, lng: 121.1838, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T3', name: 'T3', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T4', name: 'T4', lat: 24.0267, lng: 121.1838, type: DEVICE_TYPES.TDR }
     ]
   },
   '梅峰區': {
@@ -116,7 +116,7 @@ export const deviceMapping = {
     devices: [
       {
         id: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.25k',
+        name: '14.25K-BT',
         lat: 24.08995,
         lng: 121.17361,
         type: DEVICE_TYPES.TI,
@@ -127,7 +127,7 @@ export const deviceMapping = {
       },
       {
         id: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.27k',
+        name: '14.27K-BT',
         lat: 24.08995,
         lng: 121.17361,
         type: DEVICE_TYPES.TI,
@@ -138,7 +138,7 @@ export const deviceMapping = {
       },
       {
         id: 'WISE-4010LAN_00D0C9FAC4F8',
-        name: '14甲CH1傾斜儀',
+        name: 'CH-1-BT',
         lat: 24.0898,
         lng: 121.17389,
         type: DEVICE_TYPES.TI,
@@ -148,29 +148,29 @@ export const deviceMapping = {
         ]
       },
       { id: 'WISE-4010LAN_74FE489299F4',
-        name: 'GE1',
+        name: 'BE1',
         lat: 24.08945,
         lng: 121.173611,
         type: DEVICE_TYPES.GE,
         sensors: [
           { name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 9.97 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE4890BAFC',
-        name: 'GE2',
+        name: 'BE2',
         lat: 24.0896,
         lng: 121.17395,
         type: DEVICE_TYPES.GE,
         sensors: [
           { name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 18.155 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE48941AD9',
-        name: 'GE3',
+        name: 'BE3',
         lat: 24.0890,
         lng: 121.174050,
         type: DEVICE_TYPES.GE,
         sensors: [
           { name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 4.82 }, geRange: 500 }] },
-      { id: 'TDR_T14A_CH1', name: 'CH1 TDR', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH2', name: 'CH2 TDR', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH4', name: 'CH4 TDR', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14A_CH1', name: 'CH1', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14A_CH2', name: 'CH2', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14A_CH4', name: 'CH4', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
     ]
   }
 };
