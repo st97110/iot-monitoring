@@ -1,4 +1,4 @@
-// services/influxService.ts
+// services/influxClientService.ts
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
@@ -76,12 +76,11 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
   const queryApi = client.getQueryApi(config.influx.org);
   const bucket = config.influx.buckets[key];
 
-  let fluxQuery: string;
   let records: any = {}; // 初始化一個空的結果對象
 
   if (key === 'wise') {
-    // WISE 數據的原始查詢和處理邏輯 (多個欄位在同一個 point)
-    fluxQuery = `
+    // WISE 數據的原始查詢和處理邏輯 (多個欄位在同一個 point) 
+    const fluxQuery = `
       from(bucket: "${bucket}")
         |> range(start: -30d)
         |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
