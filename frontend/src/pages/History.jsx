@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
-import { mAtoDepth } from '../utils/sensor';
+import { getDeviceTypeBorderColor } from '../utils/sensor';
 
 function History() {
   const [data, setData] = useState([]);
@@ -50,9 +50,9 @@ function History() {
         }
       });
 
-      // const sorted = res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      // setData(sorted);
-      setData(res.data || []);
+      const sorted = res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setData(sorted);
+      // setData(res.data || []);
       setLoading(false);
     } catch (err) {
       console.error('取得歷史資料錯誤', err);
@@ -147,40 +147,33 @@ function History() {
   return (
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6">
       {/* 頁面標題和描述 */}
-      <div className="text-center py-6">
+      <div className="text-center">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">歷史資料查詢</h1>
         <p className="text-gray-600 mt-2">查詢各監測設備的歷史數據記錄</p>
       </div>
 
-      {/* 搜尋欄位 - 改進的設計 */}
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="搜尋裝置名稱..."
-          value={searchTerm}
-          onChange={handleSearch}
-          className="w-full border-2 border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm transition-all duration-200"
-        />
-        <div className="absolute right-3 top-3">
-          <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-      </div>
-
-      {/* 快速選擇 - 美化設計 */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-sm">
         <h3 className="text-sm font-semibold text-gray-600 mb-2">快速時間範圍：</h3>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => applyRange(1)} className="px-4 py-2 rounded-full text-sm bg-white border border-blue-200 hover:bg-blue-50 transition-colors">最近一天</button>
-          <button onClick={() => applyRange(7)} className="px-4 py-2 rounded-full text-sm bg-white border border-blue-200 hover:bg-blue-50 transition-colors">最近一週</button>
-          <button onClick={() => applyRange(30)} className="px-4 py-2 rounded-full text-sm bg-white border border-blue-200 hover:bg-blue-50 transition-colors">最近一個月</button>
+          <button 
+            onClick={() => applyRange(1)} 
+            className="px-4 py-2 rounded-full text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          >
+            最近一天
+          </button>
+          <button 
+            onClick={() => applyRange(7)} 
+            className="px-4 py-2 rounded-full text-sm font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+          >
+            最近一週
+          </button>
+          <button 
+              onClick={() => applyRange(30)} 
+              className="px-4 py-2 rounded-full text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
+          >
+            最近一個月
+          </button>
         </div>
-      </div>
-
-      {/* 查詢條件 - 美化設計 */}
-      <div className="bg-white p-5 rounded-xl shadow-md">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">查詢條件</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">裝置</label>
@@ -261,8 +254,16 @@ function History() {
 
                   const isTdrEntry = entry.source === 'tdr' || deviceConfig.type === DEVICE_TYPES.TDR;
 
+                  // 獲取設備的主題顏色 (例如邊框顏色，但去掉 'border-' 前綴，並加上 'text-')
+                  //    或者您可以為文字定義一組新的顏色映射
+                  let stationNameColorClass = 'text-slate-700'; // 預設顏色
+                  const borderColorClass = getDeviceTypeBorderColor(deviceConfig); // e.g., "border-blue-500"
+                  if (borderColorClass.startsWith('border-')) {
+                      stationNameColorClass = `text-${borderColorClass.substring('border-'.length)}`; // e.g., "text-blue-500"
+                  }
+
                   if (isTdrEntry) {
-                  // ✨ TDR 數據的新列佈局
+                  // TDR 數據的新列佈局
                     return (
                       <tr key={`${index}-tdr-${entry.timestamp}`} className="border-b hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
@@ -277,7 +278,7 @@ function History() {
                             hour12: false,
                           })}
                         </td>
-                        <td className="px-4 py-3">{deviceConfig.name}</td> {/* 站名 */}
+                        <td className={`px-4 py-3 font-medium ${stationNameColorClass}`}>{deviceConfig.name}</td> {/* 站名 */}
                         <td className="px-4 py-3">{deviceConfig.id} (TDR)</td> {/* 設備ID 和類型 */}
                         <td className="px-4 py-3 text-center">-</td> {/* 類型/通道 */}
                         <td className="px-4 py-3 text-right">
@@ -317,7 +318,7 @@ function History() {
                             const isWater = sensor.type === DEVICE_TYPES.WATER; // 注意：sensor.type 來自 config
                             const raw = egf;
                             displayValue = isNaN(raw) ? 'N/A' : (isWater
-                              ? `${mAtoDepth(raw, sensor.wellDepth).toFixed(2)} m`
+                              ? raw.toFixed(1)
                               : raw.toFixed(3));
                             deltaValueText = isNaN(delta) ? '-' : delta.toFixed(3);
                             deltaColorClass = getStatusColor(delta);
@@ -337,7 +338,7 @@ function History() {
                                 hour12: false,
                               })}
                             </td>
-                            <td className="px-4 py-3">{deviceConfig.name}</td>
+                            <td className={`px-4 py-3 font-medium ${stationNameColorClass}`}>{deviceConfig.name}</td>
                             <td className="px-4 py-3">{sensor.name}</td>
                             <td className="px-4 py-3">{ch}</td> {/* 類型/通道 */}
                             <td className="px-4 py-3 text-right font-medium"> {/* 數值/操作 */}

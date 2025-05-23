@@ -363,21 +363,34 @@ function TrendPage() {
   return (
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6">
       {/* 頁面標題和描述 */}
-      <div className="text-center py-6">
+      <div className="text-center">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">趨勢圖查詢</h1>
         <p className="text-gray-600 mt-2">查詢監測設備的數據變化趨勢</p>
       </div>
 
       {/* 查詢區塊 */}
-      <div className="bg-white p-5 rounded-xl shadow-md">
-        {/* 快速選擇 */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl mb-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">快速時間範圍：</h3>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => applyRange(1)} className="px-4 py-2 rounded-full text-sm bg-white border border-blue-200 hover:bg-blue-50 transition-colors">最近一天</button>
-            <button onClick={() => applyRange(7)} className="px-4 py-2 rounded-full text-sm bg-white border border-blue-200 hover:bg-blue-50 transition-colors">最近一週</button>
-            <button onClick={() => applyRange(30)} className="px-4 py-2 rounded-full text-sm bg-white border border-blue-200 hover:bg-blue-50 transition-colors">最近一個月</button>
-          </div>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-sm">
+        {/* 快速選擇 - 美化設計 */}
+        <h3 className="text-sm font-semibold text-gray-600 mb-2">快速時間範圍：</h3>
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => applyRange(1)} 
+            className="px-4 py-2 rounded-full text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          >
+            最近一天
+          </button>
+          <button 
+            onClick={() => applyRange(7)} 
+            className="px-4 py-2 rounded-full text-sm font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+          >
+            最近一週
+          </button>
+          <button 
+              onClick={() => applyRange(30)} 
+              className="px-4 py-2 rounded-full text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
+          >
+            最近一個月
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

@@ -7,7 +7,6 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
-import { mAtoDepth } from '../utils/sensor';
 
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 
@@ -18,7 +17,7 @@ const stations = Object.values(deviceMapping).flatMap(area =>
     lat: device.lat,
     lng: device.lng,
     deviceId: device.mac ? `WISE-4010LAN_${device.mac}` : device.id,
-    type: device.sensors?.[0]?.type || device.type,
+    type: device.type,
     sensors: device.sensors || []
   }))
 );
@@ -236,12 +235,11 @@ function InteractiveMap() {
                   {latestData?.timestamp ? (
                     <div className="text-sm">
                       <p className="mb-1">時間：{latestData.timestamp}</p>
-                      {st.sensors && st.sensors[0]?.type === DEVICE_TYPES.TI ? (
-                        st.sensors.filter(s => s.type === DEVICE_TYPES.TI).slice(0,2).map((sensor, idx) => {
+                      {st.sensors && st.type === DEVICE_TYPES.TI ? (
+                        st.sensors.slice(0,2).map((sensor, idx) => {
                           const channel = sensor.channels[0];
                           const chData = latestData.channels?.[channel];
-                          const egf = chData?.EgF ?? null;
-                          const initial = sensor.initialValues?.[channel] ?? 0;
+                          const egf = chData?.Delta ?? null;
                           let sensorLabel = sensor.name.replace(/.*(A軸|B軸)/, '$1');
                           return (
                             <p key={idx} className="text-gray-700">
@@ -259,8 +257,7 @@ function InteractiveMap() {
                               const label = sensor.channels.length > 1 ? `${sensor.name} (${index + 1})` : sensor.name;
                               let display;
                               if (sensor.type === DEVICE_TYPES.WATER && raw != null) {
-                                const wellDepth = sensor.wellDepth ?? 50;
-                                display = `${mAtoDepth(raw, wellDepth).toFixed(2)} m`;
+                                display = `${chData?.PEgF.toFixed(2)} m`;
                               } else {
                                 display = raw != null ? raw.toFixed(3) : '-';
                               }
