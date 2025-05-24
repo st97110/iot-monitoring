@@ -130,7 +130,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
     // Step 1: 找出最新的時間戳
     const latestTimeQuery = `
       from(bucket: "${bucket}")
-        |> range(start: -30d) // 從最近 30 天找最新
+        |> range(start: -15d) // 從最近 15 天找最新
         |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
         |> sort(columns: ["distance_m"], desc: false)
         |> keep(columns: ["_time", "distance_m", "_value"])
