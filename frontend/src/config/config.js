@@ -104,7 +104,7 @@ export const deviceMapping = {
         lng: 121.184,
         type: DEVICE_TYPES.RAIN,
         sensors: [
-          { name: '91.5K雨量筒', channels: ['DI_0']},
+          { name: '10分鐘雨量', channels: ['DI_0']},
         ]
       },
       { id: 'TDR_T14_T3', name: 'T3', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },

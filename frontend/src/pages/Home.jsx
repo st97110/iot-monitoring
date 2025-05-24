@@ -325,11 +325,6 @@ function Home() {
             </button>
           </div>
         )}
-
-        {/* 頁面底部 */}
-        <div className="mt-8 py-4 border-t text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} 監測系統儀表板
-        </div>
       </div>
     </div>
   );

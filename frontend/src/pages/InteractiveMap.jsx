@@ -22,16 +22,13 @@ const stations = Object.values(deviceMapping).flatMap(area =>
   }))
 );
 
-function isAbnormalData(data, sensor) {
-  if (!data || !sensor) return false;
-  const threshold = 1;
-  return sensor.channels.some(ch => {
-    const chData = data.channels?.[ch];
-    if (!chData) return false;
-    const egf = chData.EgF;
-    return typeof egf === 'number' && Math.abs(egf) >= threshold;
-  });
-}
+function isNormalData(device, chData) {
+    if (device.type === DEVICE_TYPES.RAIN && chData?.rainfall_10m < 10) return true;          // 雨量筒小於 10 顯示為正常
+    else if (device.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 50) return true;       // 伸縮計小於 30 顯示為正常
+    else if (device.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 2 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
+    else if (device.type === DEVICE_TYPES.WATER && chData?.PEgF < -15) return true; // 水位計小於 -15 公尺顯示為正常
+    return false;
+  }
 
 function getIconByType(type, abnormal) {
   let text = '';
@@ -212,7 +209,7 @@ function InteractiveMap() {
         {stations.filter(st => visibleLayers[st.type]).map(st => {
           const latestData = dataCache[st.deviceId];
           let abnormal = false;
-          if (latestData && st.sensors[0]) abnormal = isAbnormalData(latestData, st.sensors[0]);
+          if (latestData && st.sensors[0]) abnormal = isNormalData(latestData, st.sensors[0]);
 
           return (
             <Marker
@@ -252,14 +249,19 @@ function InteractiveMap() {
                           <div key={idx} className="space-y-1">
                             {(sensor.channels).map((ch, index) => {
                               const chData = latestData.channels?.[ch];
-                              const raw = chData?.EgF;
                               // 若有多個通道，加上序號
-                              const label = sensor.channels.length > 1 ? `${sensor.name} (${index + 1})` : sensor.name;
+                              const label = sensor.name;
                               let display;
-                              if (sensor.type === DEVICE_TYPES.WATER && raw != null) {
-                                display = `${chData?.PEgF.toFixed(2)} m`;
+                              if (st.type === DEVICE_TYPES.WATER) {
+                                display = chData?.PEgF != null ? `${chData?.PEgF.toFixed(2)} m` : '-';
+                              } else if (st.type === DEVICE_TYPES.RAIN) {
+                                display = latestData.rainfall_10m != null ? `${latestData.rainfall_10m.toFixed(1)} mm` : '-';
+                              } else if (st.type === DEVICE_TYPES.GE) {
+                                display = chData?.Delta != null ? `${chData?.Delta.toFixed(2)} mm` : '-';
+                              } else if (st.type === DEVICE_TYPES.TI) {
+                                display = chData?.Delta != null ? chData?.Delta.toFixed(3) : '-';
                               } else {
-                                display = raw != null ? raw.toFixed(3) : '-';
+                                display = chData?.EgF != null ? chData?.EgF.toFixed(3) : '-';
                               }
                               return (
                                 <p key={ch} className="text-gray-700">
