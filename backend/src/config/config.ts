@@ -115,17 +115,19 @@ if (config.nodeEnv !== 'production') {
 export interface Sensor {
   name          : string;
   channels      : string[];
+  type          : DEVICE_TYPES;
   initialValues?: Record<string, number>;
-  wellDepth?    : number;
-  fsDeg?        : number;
-  geRange?      : number;
+  wellDepth?    : number; // For WATER
+  fsDeg?        : number; // For TI
+  geRange?      : number; // For GE
+  flowRateFactor?: number; // For FLOW
 }
 
 export interface Device {
   id     : string;
   name   : string;
   area?  : string;
-  type   : DEVICE_TYPES;
+  type?   : DEVICE_TYPES;
   sensors?: Sensor[];
 }
 
@@ -138,17 +140,18 @@ export enum DEVICE_TYPES {
   RAIN = 'RAIN',     // 雨量筒
   GE = 'GE',         // 伸縮計
   TDR = 'TDR',       // TDR
+  FLOW = 'FLOW',     // FLOW
 }
 
 export const deviceMapping: Record<
   string,
   { name: string; devices: Device[]; }
 > = {
-  '80k區': {
-    name: '80k區',
+  '80K區': {
+    name: '80K區',
     devices: [
-      { id: 'TDR_T14_T1', name: 'T1 TDR', area: '80k區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80k區', type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T1', name: 'T1 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80K區', type: DEVICE_TYPES.TDR }
     ],
   },
   '春陽區': {
@@ -156,48 +159,48 @@ export const deviceMapping: Record<
     devices: [
       {
         id: 'WISE-4010LAN_74FE48941ABE',
-        name: '84.6k, 84.65k',
+        name: '84.6K, 84.65K',
         area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 12.259 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 12.865 } },
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_0: 11.388 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_1: 10.317 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 11.388 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 10.317 } },
         ]
       },
       {
         id: 'WISE-4010LAN_00D0C9FAD2E3',
-        name: '84.7k',
+        name: '84.7K',
         area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 11.56 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.911 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
         ]
       },
       { id: 'TDR_T14_AH3', name: 'AH3 TDR', type: DEVICE_TYPES.TDR }
     ]
   },
-  '90k區': {
-    name: '90k區',
+  '90K區': {
+    name: '90K區',
     devices: [
       {
         id: 'WISE-4010LAN_74FE489299CB',
-        name: '90k 地下水位計W2',
-        area: '90k區',
+        name: '90K 地下水位計W2',
+        area: '90K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], wellDepth: -50 },
+          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
         ]
       },
       {
         id: 'WISE-4060LAN_00D0C9FD4D44',
-        name: '91.5k雨量筒',
-        area: '90k區',
+        name: '91.5K雨量筒',
+        area: '90K區',
         type: DEVICE_TYPES.RAIN,
         sensors: [
-          { name: '91.5k雨量筒', channels: ['DI_0'] },
+          { name: '91.5K雨量筒', channels: ['DI_0'], type: DEVICE_TYPES.RAIN,  },
         ]
       },
       { id: 'TDR_T14_T3', name: 'T3 TDR', type: DEVICE_TYPES.TDR },
@@ -209,22 +212,22 @@ export const deviceMapping: Record<
     devices: [
       {
         id: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.25k',
+        name: '14.25K',
         area: '梅峰區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 12.052 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 11.798 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
         ]
       },
       {
         id: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.27k',
+        name: '14.27K',
         area: '梅峰區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 12.294 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 12.463 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
         ]
       },
       {
@@ -233,16 +236,107 @@ export const deviceMapping: Record<
         area: '梅峰區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 5.684 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 12.974 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
         ]
       },
-      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 9.97 }, geRange: 500 }] },
-      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 18.155 }, geRange: 500 }] },
-      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 4.82 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 }] },
+      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 }, geRange: 500 }] },
       { id: 'TDR_T14A_CH1', name: 'CH1 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14A_CH2', name: 'CH2 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14A_CH4', name: 'CH4 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR }
     ]
-  }
+  },
+  '台8線107K區': {
+    name: '台8線107K區',
+    devices: [
+      { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T4', name: 'TDR T4 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T7', name: 'TDR T7 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T9', name: 'TDR T9 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      {
+        id: 'WISE-4010LAN_74FE4860F492', // 假設這是完整的 ID
+        name: 'OW10 水位計', // 簡化名稱，通道信息在 sensor 裡
+        area: '台8線107K區',
+        type: DEVICE_TYPES.WATER,
+        sensors: [
+          { name: 'OW10 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_00D0C9FAD2C2',
+        name: 'GE3 (50m, 70m) 伸縮計',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.GE,
+        sensors: [
+          { name: 'GE3 50m (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.GE, geRange: 500, /*initialValues: { AI_0: 2 }*/ },
+          { name: 'GE3 70m (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.GE, geRange: 500, /*initialValues: { AI_1:  }*/ }
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE48595E19',
+        name: 'BT1 & BT3 傾斜儀',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.TI,
+        sensors: [
+          { name: 'BT1 A軸 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_0: Y } (請補充) */ },
+          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_1: Y } (請補充) */ },
+          { name: 'BT3 A軸 (AI2)', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_2: Y } (請補充) */ },
+          { name: 'BT3 B軸 (AI3)', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_3: Y } (請補充) */ }
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE486CEDFB',
+        name: 'OW6 水位計',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.WATER,
+        sensors: [
+          { name: 'OW6', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE486B76BB',
+        name: 'BT2 傾斜儀',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.TI,
+        sensors: [
+          { name: 'BT2 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, /* initialValues: { AI_0: Y } (請補充) */ },
+          { name: 'BT2 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, /* initialValues: { AI_1: Y } (請補充) */ }
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE488F3BA0',
+        name: 'OW5 水位計',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.WATER,
+        sensors: [
+          { name: 'OW5', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+        ]
+      },
+      {
+        id: 'WISE-4060LAN_00D0C9E332E8',
+        name: '107K+600 雨量筒',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.RAIN,
+        sensors: [
+          { name: '10分鐘雨量', channels: ['DI_0'], type: DEVICE_TYPES.RAIN } // 雨量筒通常用 DI_0 Cnt
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE487F4FE3',
+        name: 'FL1~4 流量計',
+        area: '台8線107K區',
+        type: DEVICE_TYPES.FLOW, // ✨ 使用新的 FLOW 類型
+        sensors: [
+          { name: 'FL1 (AI1)', channels: ['AI_0'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
+          { name: 'FL2 (AI2)', channels: ['AI_1'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
+          { name: 'FL3 (AI3)', channels: ['AI_2'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
+          { name: 'FL4 (AI4)', channels: ['AI_3'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ }
+        ]
+      }
+    ]
+  },
 };

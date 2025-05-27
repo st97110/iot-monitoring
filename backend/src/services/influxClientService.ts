@@ -125,57 +125,88 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
     // 返回組裝好的 WISE 數據結構
     return records; // For WISE, return the single record object
   } else if (key === 'tdr') {
-    // TDR 數據的查詢和處理邏輯 (一個時間戳多個 point，tag 是 distance_m)
+    let latestTimestamp: string | null = null;
+    const tdrDataPoints: { distance_m: number, rho: number }[] = [];
 
     // Step 1: 找出最新的時間戳
     const latestTimeQuery = `
       from(bucket: "${bucket}")
-        |> range(start: -15d) // 從最近 15 天找最新
-        |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
-        |> sort(columns: ["distance_m"], desc: false)
-        |> keep(columns: ["_time", "distance_m", "_value"])
-        |> last()
+        |> range(start: -30d)
+        |> filter(fn: (r) => r._measurement == "tdr_raw" and r.device == "${deviceId}")
+        |> keep(columns: ["_time"])
+        |> last(column: "_time")
     `;
 
-    // TDR 數據的組裝邏輯：組合成一個包含 timestamp 和 data 陣列的對象
-    const tdrDataPoints: { distance_m: number, rho: number }[] = [];
-    let latestTimestamp: string | null = null;
-    await new Promise<void>((resolve, reject) => {
-        queryApi.queryRows(latestTimeQuery, {
-            next(row, tableMeta) {
-                const o = tableMeta.toObject(row);
-                latestTimestamp = o._time;
-                const distance = parseFloat(o.distance_m as string); // distance_m 是 Tag，讀出來是字串
-                const rhoValue = parseFloat(o._value as string);      // _value 是 Field 值
-
-                if (!isNaN(distance) && !isNaN(rhoValue)) {
-                  tdrDataPoints.push({ distance_m: distance, rho: rhoValue });
-                } else {
-                  logger.warn(`[InfluxQuery] 裝置 ${deviceId} TDR 最新數據包含無效數值，跳過。距離: ${o.distance_m}, Rho: ${o._value}`);
-                }
-
-                tdrDataPoints.sort((a, b) => a.distance_m - b.distance_m);
-            },
-          
-          
-            error(error) {
-                 // 如果找不到最新時間戳，可能沒有數據，不算致命錯誤
-                 logger.error(`[InfluxQuery] 查詢裝置 ${deviceId} 最新 TDR 資料點失敗: ${error.message}`);
-                 resolve(); // 不reject
-            },
-            complete: resolve,
-        });
+    await new Promise<void>((resolveStep1, rejectStep1) => {
+      queryApi.queryRows(latestTimeQuery, {
+        next(row, tableMeta) {
+          const o = tableMeta.toObject(row);
+          if (o._time) {
+            latestTimestamp = o._time as string;
+          }
+        },
+        error(error) {
+          logger.error(`[InfluxQuery] 查詢裝置 ${deviceId} 最新 TDR 時間戳失敗 (Step 1): ${error.message}`);
+          rejectStep1(error); // 如果第一步就失敗，直接 reject
+        },
+        complete() {
+          if (latestTimestamp) {
+            logger.debug(`[InfluxQuery] 找到裝置 ${deviceId} 最新 TDR 時間戳: ${latestTimestamp}`);
+            resolveStep1();
+          } else {
+            resolveStep1(); // 即使沒找到也 resolve，後續 data 會是空的
+          }
+        },
+      });
     });
 
-    // 返回 TDR 數據結構包含 timestamp 和 data 陣列
+    // 如果沒有找到最新時間戳，直接返回
+    if (!latestTimestamp) {
+      return { [deviceId]: { timestamp: null, deviceId, source: key, data: [] } };
+    }
+
+    // Step 2: 查詢這個最新時間戳下的所有數據點
+    const latestDataQuery = `
+      from(bucket: "${bucket}")
+        |> range(start: time(v: "${latestTimestamp}"), stop: time(v: "${new Date(new Date(latestTimestamp).getTime() + 1000).toISOString()}")) // ✨ 設置 stop 為 latestTimestamp + 1秒
+        |> filter(fn: (r) => r._measurement == "tdr_raw" and r.device == "${deviceId}")
+        |> filter(fn: (r) => r._time == time(v: "${latestTimestamp}"))
+        |> filter(fn: (r) => r._field == "rho")
+        |> sort(columns: ["distance_m"], desc: false)
+    `;  
+
+    await new Promise<void>((resolveStep2, rejectStep2) => {
+      queryApi.queryRows(latestDataQuery, {
+        next(row, tableMeta) {
+          const o = tableMeta.toObject(row);
+          const distance = parseFloat(o.distance_m as string);
+          const rhoValue = parseFloat(o._value as string);
+          if (!isNaN(distance) && !isNaN(rhoValue)) {
+            tdrDataPoints.push({ distance_m: distance, rho: rhoValue });
+          } else {
+            logger.warn(`[InfluxQuery] 裝置 ${deviceId} TDR 最新數據包含無效數值，跳過。TS: ${latestTimestamp}, Dist: ${o.distance_m}, Rho: ${o._value}`);
+          }
+        },
+        error(error) {
+          logger.error(`[InfluxQuery] 查詢裝置 ${deviceId} 最新 TDR 資料點失敗 (Step 2, TS: ${latestTimestamp}): ${error.message}`);
+          rejectStep2(error);
+        },
+        complete() {
+          logger.debug(`[InfluxQuery] 裝置 ${deviceId} 最新 TDR 資料點收集完成 (TS: ${latestTimestamp})。點數: ${tdrDataPoints.length}`);
+          resolveStep2();
+        },
+      });
+    });
+
     return {
-            timestamp: latestTimestamp,
-            data: tdrDataPoints
+      timestamp: latestTimestamp,
+      deviceId: deviceId,
+      source: key,
+      data: tdrDataPoints
     };
-    
+
   } else {
-      // 不支援的 source key
-      throw new Error(`[InfluxQuery] 不支援的資料來源: ${key}`);
+    throw new Error(`[InfluxQuery] 不支援的資料來源: ${key}`);
   }
 }
 
@@ -191,8 +222,8 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
     from(bucket: "${bucket}")
       |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
       |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
-      |> sort(columns: ["_time"])
-      |> keep(columns: ["_time", "distance_m", "_field", "_value"])
+      |> filter(fn: (r) => r._field == "rho" or r._measurement != "tdr_raw") // ✨ 只有 TDR 才嚴格篩選 rho
+      |> sort(columns: ["_time", "distance_m"], desc: false)
   `;
 
   /* 1️⃣ 先把所有 row 收進 history 陣列 */

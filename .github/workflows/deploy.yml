@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       # 1. 先把原始碼拉下來
@@ -17,12 +17,12 @@ jobs:
       - name: Build Docker image
         working-directory: ./backend
         run: |
-          docker build -t monitoring-backend:latest .
+          docker build -t backend:latest .
 
       # 3. 把 image 存成 tar
       - name: Save image to TAR
         run: |
-          docker save monitoring-backend:latest -o backend.tar
+          docker save -o backend.tar backend:latest
 
       # 4. SCP 送到 CT
       - name: Copy TAR to CT
@@ -49,9 +49,6 @@ jobs:
 
             # 將新 image 載入
             docker load -i backend.tar
-
-            # 刪掉舊 container（有就停掉，沒有也別報錯）
-            docker rm -f monitoring-backend-1 || true
 
             # 重啟服務
             docker compose up -d

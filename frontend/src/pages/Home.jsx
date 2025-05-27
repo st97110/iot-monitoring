@@ -187,26 +187,26 @@ function Home() {
 
                       const hasValidTimestamp = data && data.timestamp && !isNaN(new Date(data.timestamp).getTime());
                       const hasTdrDataPoints = device.type === DEVICE_TYPES.TDR ? (data && Array.isArray(data.data) && data.data.length > 0) : true;
-
+                      
                       // ✨ 如果沒有數據、時間戳無效或 TDR data 為空
                       if (!data || !hasValidTimestamp || !hasTdrDataPoints ) { 
                         if (loading) return null;
-                          return (
-                            //「無數據」卡片樣式統一
-                            <div key={deviceId} className={`flex flex-col justify-between border-2 ${getDeviceTypeBorderColor(device)} rounded-xl p-5 bg-white shadow-lg hover:shadow-xl transition-shadow`}>
-                              <div>
-                                <h3 className="text-lg font-semibold mb-2 text-slate-700">{device.name}</h3>
-                                <p className="text-slate-500 text-xs mb-1">{DEVICE_TYPE_NAMES[device.type] || '設備'}</p>
-                                <div className="text-slate-400 text-sm mt-4">
-                                  {data && data.error ? `錯誤: ${data.error}` : '無即時數據'}
-                                </div>
-                              </div>
-                              <div className="mt-4 flex justify-end">
-                                <span className="text-sm text-slate-400 italic">請檢查設備或數據源</span>
+                        return (
+                          //「無數據」卡片樣式統一
+                          <div key={deviceId} className={`flex flex-col justify-between border-2 ${getDeviceTypeBorderColor(device)} rounded-xl p-5 bg-white shadow-lg hover:shadow-xl transition-shadow`}>
+                            <div>
+                              <h3 className="text-lg font-semibold mb-2 text-slate-700">{device.name}</h3>
+                              <p className="text-slate-500 text-xs mb-1">{DEVICE_TYPE_NAMES[device.type] || '設備'}</p>
+                              <div className="text-slate-400 text-sm mt-4">
+                                {data && data.error ? `錯誤: ${data.error}` : '無即時數據'}
                               </div>
                             </div>
-                          );
-                        }
+                            <div className="mt-4 flex justify-end">
+                              <span className="text-sm text-slate-400 italic">請檢查設備或數據源</span>
+                            </div>
+                          </div>
+                        );
+                      }
 
                       // ======= 統一卡片樣式 =======
                       const cardColor = getDeviceTypeColor(device);

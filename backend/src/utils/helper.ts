@@ -110,7 +110,7 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
 
       // ➜ 真實值
       const pe = rawToPEgF({
-        type      : device.type,
+        type      : sensor.type,
         raw       : val,
         wellDepth : sensor.wellDepth,
         fsDeg     : sensor.fsDeg,
