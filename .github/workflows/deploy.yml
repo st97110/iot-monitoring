@@ -33,7 +33,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           source: "backend.tar"
-          target: "/root/monitoring/backend.tar"
+          target: "/root/monitoring/"
 
       # 5. SSH 到 CT 上做部署（load、rm、docker compose up）
       - name: Deploy on CT
