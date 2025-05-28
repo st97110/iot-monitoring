@@ -274,7 +274,7 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: 'OW10 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+          { name: 'OW10 (AI0)', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
         ]
       },
       {
@@ -314,8 +314,8 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 11.189 } },
-          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 11.896 } }
+          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.189 } },
+          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 11.896 } }
         ]
       },
       {
