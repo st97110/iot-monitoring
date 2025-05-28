@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux, queryRainfall } from './influxClientService';
 import { parseWiseCSVFile } from '../utils/parser';
-import { config, DEVICE_TYPES, deviceMapping } from '../config/config';
+import { config } from '../config/config';
 import { logger } from '../utils/logger';
 import { isDeviceRainGauge } from '../utils/helper';
 

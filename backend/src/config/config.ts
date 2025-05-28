@@ -143,12 +143,19 @@ export enum DEVICE_TYPES {
   FLOW = 'FLOW',     // FLOW
 }
 
+export interface AreaConfig { // 可以為 Area 創建一個 interface
+  name: string;
+  routeGroup: 't14' | 't8'; // ✨ 新增：標識區域屬於哪個路線群組
+  devices: Device[];
+}
+
 export const deviceMapping: Record<
   string,
-  { name: string; devices: Device[]; }
+  AreaConfig
 > = {
   '80K區': {
     name: '80K區',
+    routeGroup: 't14',
     devices: [
       { id: 'TDR_T14_T1', name: 'T1 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80K區', type: DEVICE_TYPES.TDR }
@@ -156,6 +163,7 @@ export const deviceMapping: Record<
   },
   '春陽區': {
     name: '春陽區',
+    routeGroup: 't14',
     devices: [
       {
         id: 'WISE-4010LAN_74FE48941ABE',
@@ -184,6 +192,7 @@ export const deviceMapping: Record<
   },
   '90K區': {
     name: '90K區',
+    routeGroup: 't14',
     devices: [
       {
         id: 'WISE-4010LAN_74FE489299CB',
@@ -209,6 +218,7 @@ export const deviceMapping: Record<
   },    
   '梅峰區': {
     name: '梅峰區',
+    routeGroup: 't14',
     devices: [
       {
         id: 'WISE-4010LAN_00D0C9FAD2C9',
@@ -250,6 +260,7 @@ export const deviceMapping: Record<
   },
   '台8線107K區': {
     name: '台8線107K區',
+    routeGroup: 't8',
     devices: [
       { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
@@ -258,8 +269,8 @@ export const deviceMapping: Record<
       { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T8_T9', name: 'TDR T9 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
       {
-        id: 'WISE-4010LAN_74FE4860F492', // 假設這是完整的 ID
-        name: 'OW10 水位計', // 簡化名稱，通道信息在 sensor 裡
+        id: 'WISE-4010LAN_74FE4860F492',
+        name: 'OW10 水位計',
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -272,8 +283,8 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: 'GE3 50m (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.GE, geRange: 500, /*initialValues: { AI_0: 2 }*/ },
-          { name: 'GE3 70m (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.GE, geRange: 500, /*initialValues: { AI_1:  }*/ }
+          { name: 'GE3 50m (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_0: 4.984 } },
+          { name: 'GE3 70m (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_1: 5.457 } }
         ]
       },
       {
@@ -282,10 +293,10 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT1 A軸 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_0: Y } (請補充) */ },
-          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_1: Y } (請補充) */ },
-          { name: 'BT3 A軸 (AI2)', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_2: Y } (請補充) */ },
-          { name: 'BT3 B軸 (AI3)', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, /*initialValues: { AI_3: Y } (請補充) */ }
+          { name: 'BT1 A軸 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
+          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
+          { name: 'BT3 A軸 (AI2)', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
+          { name: 'BT3 B軸 (AI3)', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
         ]
       },
       {
@@ -303,8 +314,8 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT2 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, /* initialValues: { AI_0: Y } (請補充) */ },
-          { name: 'BT2 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, /* initialValues: { AI_1: Y } (請補充) */ }
+          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 11.189 } },
+          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 11.896 } }
         ]
       },
       {

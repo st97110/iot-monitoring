@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, use } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
 import { getDeviceTypeBorderColor } from '../utils/sensor';
 
 function History() {
+  const { routeGroup } = useParams();
+  const navigate = useNavigate();
+
   const [data, setData] = useState([]);
   const [deviceId, setDeviceId] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -14,21 +17,30 @@ function History() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-
   const today = new Date().toISOString().split('T')[0];
-  // const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   useEffect(() => { 
     setStartDate(today);
     setEndDate(today);
   }, []);
 
+  // 根據 routeGroup 篩選出相關的設備 ID 列表
+  const relevantDeviceIds = useMemo(() => {
+    if (!routeGroup) return [];
+    const ids = [];
+    Object.values(deviceMapping).forEach(areaConfig => {
+      if (areaConfig.routeGroup === routeGroup) {
+        areaConfig.devices.forEach(device => ids.push(device.id));
+      }
+    });
+    return ids;
+  }, [routeGroup]);
+
   useEffect(() => {
     if (startDate && endDate) {
       fetchData();
     }
-  }, [deviceId, startDate, endDate]);
+  }, [deviceId, startDate, endDate, routeGroup]);
 
   const syncDates = (start, end, setStartDate, setEndDate) => {
     if (new Date(start) > new Date(end)) {
@@ -50,13 +62,18 @@ function History() {
         }
       });
 
-      const sorted = res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      let fetchedData = res.data || [];
+
+      if (!deviceId && routeGroup) {
+        fetchedData = fetchedData.filter(entry => relevantDeviceIds.includes(entry.deviceId));
+      }
+
+      const sorted = fetchedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       setData(sorted);
-      // setData(res.data || []);
-      setLoading(false);
     } catch (err) {
       console.error('取得歷史資料錯誤', err);
       setData([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -75,62 +92,59 @@ function History() {
   };
 
   // 過濾裝置選項，用於顯示符合搜尋條件的裝置
-  const filterDeviceOptions = () => {
-    const allDeviceOptions = [];
+  const filterDeviceOptions = useMemo(() => {
+    if (!routeGroup) return [];
 
-    Object.entries(deviceMapping).forEach(([areaKey, area]) => {
-      const filteredDevices = area.devices.filter(device =>
-        !searchTerm ||
-        device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-
-      if (filteredDevices.length > 0) {
-        allDeviceOptions.push({
-          areaKey,
-          areaName: area.name,
-          devices: filteredDevices
-        });
+    const options = [];
+    Object.entries(deviceMapping).forEach(([areaKey, areaConfig]) => {
+      if (areaConfig.routeGroup === routeGroup) { // 只處理當前路線組的區域
+        const filteredDevices = areaConfig.devices.filter(device =>
+          !searchTerm || // 如果沒有搜尋詞，則包含所有此區域的設備
+          device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        if (filteredDevices.length > 0) {
+          options.push({
+            areaKey,
+            areaName: areaConfig.name,
+            devices: filteredDevices
+          });
+        }
       }
     });
-
-    return allDeviceOptions;
-  };
+    return options;
+  }, [routeGroup, searchTerm]); // 依賴 routeGroup 和 searchTerm
 
   // 過濾表格資料，用於在不重新請求API的情況下過濾顯示資料
   const getFilteredTableData  = () => {
-     if (!searchTerm && deviceId) { // 如果指定了 deviceId，且沒有額外搜尋詞，直接用 API 返回的 (已過濾)
-        return data;
-    }
-    if (!searchTerm && !deviceId) { // 如果沒選 deviceId 且沒搜尋詞，顯示全部
-        return data;
-    }
+    let currentData = data;
 
-    // 如果有 searchTerm，則在當前 data 基礎上進行前端過濾
-    return data.filter(entry => {
-      // 嘗試從 deviceMapping 中找到與 entry.deviceId 匹配的裝置配置
-      let deviceConfig;
-      let foundInMapping = false;
-      Object.values(deviceMapping).some(area => {
-        deviceConfig = area.devices.find(d => d.id === entry.deviceId);
+    if (searchTerm && !deviceId) { // 只有在未選擇特定 deviceId 時，searchTerm 才用於進一步過濾列表
+      // 如果有 searchTerm，則在當前 data 基礎上進行前端過濾
+      currentData = data.filter(entry => {
+        // 嘗試從 deviceMapping 中找到與 entry.deviceId 匹配的裝置配置
+        let deviceConfig;
+        Object.values(deviceMapping).some(area => {
+          if (area.routeGroup === routeGroup) {
+            deviceConfig = area.devices.find(d => d.id === entry.deviceId);
+            if (deviceConfig) return true;
+          }
+          return false;
+        });
+
+        // 如果在 mapping 中找到了配置，則根據配置中的 name 和 id 進行搜尋
         if (deviceConfig) {
-          foundInMapping = true;
-          return true; // 找到即停止
+          return (
+            deviceConfig.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (deviceConfig.id && deviceConfig.id.toLowerCase().includes(searchTerm.toLowerCase()))
+          );
         }
-        return false;
+        // 如果 mapping 中沒有找到 (例如 TDR_T14_T3 這種直接用 ID 的)，則直接對 entry.deviceId 進行搜尋
+        // 或者，如果 deviceId 是選中的，且 searchTerm 用於進一步過濾 (雖然通常 searchTerm 是用來選 deviceId 的)
+        return entry.deviceId?.toLowerCase().includes(searchTerm.toLowerCase());
       });
-
-      // 如果在 mapping 中找到了配置，則根據配置中的 name 和 id 進行搜尋
-      if (foundInMapping && deviceConfig) {
-        return (
-          deviceConfig.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (deviceConfig.id && deviceConfig.id.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-      }
-      // 如果 mapping 中沒有找到 (例如 TDR_T14_T3 這種直接用 ID 的)，則直接對 entry.deviceId 進行搜尋
-      // 或者，如果 deviceId 是選中的，且 searchTerm 用於進一步過濾 (雖然通常 searchTerm 是用來選 deviceId 的)
-      return entry.deviceId?.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+    }
+    return currentData;
   };
 
   const handleSearch = (e) => {
@@ -146,9 +160,10 @@ function History() {
 
   return (
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6">
-      {/* 頁面標題和描述 */}
       <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">歷史資料查詢</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+            歷史資料查詢 - {routeGroup === 'T14' ? '台14線及甲線' : routeGroup === 'T8' ? '台8線' : ''}
+        </h1>
         <p className="text-gray-600 mt-2">查詢各監測設備的歷史數據記錄</p>
       </div>
 
@@ -182,8 +197,8 @@ function History() {
               value={deviceId}
               onChange={e => setDeviceId(e.target.value)}
             >
-              <option value="">全部裝置</option>
-              {filterDeviceOptions().map(({areaKey, areaName, devices}) => (
+              <option value="">全部裝置 ({routeGroup === 'T14' ? '台14線及甲線' : '台8線'})</option>
+              {filterDeviceOptions.map(({areaKey, areaName, devices}) => ( 
                 <optgroup key={areaKey} label={areaName}>
                   {devices.map(device => (
                     <option key={device.id} value={device.id}>
@@ -245,9 +260,15 @@ function History() {
               <tbody>
                 {getFilteredTableData().map((entry, index) => { // ✨ 使用 getFilteredTableData()
                   let deviceConfig;
-                  Object.values(deviceMapping).some(area => {
-                    deviceConfig = area.devices.find(device => device.id === entry.deviceId);
-                    return deviceConfig;
+                  Object.values(deviceMapping).some(areaConfig => {
+                    if (areaConfig.routeGroup === routeGroup) {
+                      const foundDevice = areaConfig.devices.find(d => d.id === entry.deviceId);
+                      if (foundDevice) {
+                        deviceConfig = foundDevice;
+                        return true;
+                      }
+                    }
+                    return false;
                   });
 
                   if (!deviceConfig || !entry.timestamp) return null;

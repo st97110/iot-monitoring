@@ -78,31 +78,32 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
 
       // 處理 PEgF 數據 (假設 toPEgF 返回的是 { 'AI_0 PEgF': value, 'AI_0 Delta': value })
       if (currentDeviceType !== DEVICE_TYPES.RAIN) {
-          const pegfFields = toPEgF(deviceId, record.raw);
-          for (const [pegfKey, pegfValue] of Object.entries(pegfFields)) {
-              if (typeof pegfValue === 'number' && !isNaN(pegfValue)) {
-                point.floatField(pegfKey, pegfValue);
-                hasValidDataField = true;
-              } else if (pegfValue !== undefined) {
-                logger.warn(`[InfluxData] 設備 ${deviceId} (非雨量筒) 的 PEgF 欄位 ${pegfKey} 值無效: ${pegfValue}`);
-              }
-          }
+        const pegfFields = toPEgF(deviceId, record.raw);
+        for (const [pegfKey, pegfValue] of Object.entries(pegfFields)) {
+            if (typeof pegfValue === 'number' && !isNaN(pegfValue)) {
+              point.floatField(pegfKey, pegfValue);
+              hasValidDataField = true;
+            } else if (pegfValue !== undefined) {
+              logger.warn(`[InfluxData] 設備 ${deviceId} (非雨量筒) 的 PEgF 欄位 ${pegfKey} 值無效: ${pegfValue}`);
+            }
+        }
       }
 
       // ✨ 關鍵：處理預計算的10分鐘雨量 ✨
       if (currentDeviceType === DEVICE_TYPES.RAIN && record.rain_10m_scanner !== undefined && typeof record.rain_10m_scanner === 'number' && !isNaN(record.rain_10m_scanner)) {
-          point.floatField('rain_10m', record.rain_10m_scanner); // ✨ 將 'rain_10m_scanner' 的值以 'rain_10m' 為欄位名寫入
-          hasValidDataField = true;
-          logger.debug(`[InfluxData] 設備 ${deviceId} 添加預計算雨量 rain_10m: ${record.rain_10m_scanner}`);
+        point.floatField('rain_10m', record.rain_10m_scanner); // ✨ 將 'rain_10m_scanner' 的值以 'rain_10m' 為欄位名寫入
+        hasValidDataField = true;
+        logger.debug(`[InfluxData] 設備 ${deviceId} 添加預計算雨量 rain_10m: ${record.rain_10m_scanner}`);
       } else if (record.hasOwnProperty('rain_10m_scanner')) { // 如果屬性存在但值無效
-          logger.warn(`[InfluxData] 設備 ${deviceId} 的 rain_10m_scanner 值無效: ${record.rain_10m_scanner}`);
+        logger.warn(`[InfluxData] 設備 ${deviceId} 的 rain_10m_scanner 值無效: ${record.rain_10m_scanner}`);
       }
 
       if (hasValidDataField) {
-          points.push(point);
-      } else {
-          logger.warn(`[InfluxData] 設備 ${deviceId} (類型: ${currentDeviceType}) 在時間戳 ${record.timestamp} 的記錄沒有產生任何可寫入的欄位，跳過此 Point。 Raw: %j`, record.raw);
+        points.push(point);
       }
+  }
+  if (points.length === 0) {
+    logger.warn(`[InfluxData] 設備 ${deviceId} 在開頭 ${records[0].timestamp} 沒有有效的數據。沒有有效的數據。`);
   }
 
   return points;

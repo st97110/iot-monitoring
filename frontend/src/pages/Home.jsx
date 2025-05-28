@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getDeviceTypeColor, getDeviceTypeBorderColor, formatValue } from '../utils/sensor';
 
 // 將 ISO 格式時間轉成相對時間字串（秒/分鐘/小時/天前）
@@ -48,8 +48,6 @@ const defaultDeviceImages = {
   [DEVICE_TYPES.TDR]: '/TDR.png',
 };
 
-
-
 // 根據設備資訊取得站點照片
 function getDeviceImage(deviceConfig) { // 參數改為 deviceConfig 以更清晰
   // 1. 優先嘗試使用 deviceConfig.name 查找照片
@@ -82,6 +80,7 @@ function getStatusColor(timestamp) {
 }
 
 function Home() {
+  const { routeGroup } = useParams(); // 獲取當前路線群組 ('t14' 或 't8')
   const [latestData, setLatestData] = useState({});
   const [filterArea, setFilterArea] = useState('全部');
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,14 +99,25 @@ function Home() {
       });
   }, []);
 
-  // 取得所有區域名稱（第一個是「全部」）
-  const allAreas = ['全部', ...Object.values(deviceMapping).map(a => a.name)];
+  // ✨ 根據 routeGroup 篩選 deviceMapping 中的區域
+  const relevantDeviceMappingEntries = useMemo(() => {
+    if (!routeGroup) return []; // 理論上不會發生，因為 App.jsx 會重定向或顯示404
+    return Object.entries(deviceMapping)
+      .filter(([areaKey, areaConfig]) => areaConfig.routeGroup === routeGroup);
+  }, [routeGroup]); // 當 routeGroup 變化時重新計算
 
-  // 篩選：若使用者有選特定區域且輸入關鍵字
-  function filterDevices(areaKey, area) {
-    if (filterArea !== '全部' && area.name !== filterArea) return false;
+  // ✨ 根據篩選後的區域生成區域選擇按鈕的列表
+  const currentSiteAreas = useMemo(() => {
+      return ['全部', ...relevantDeviceMappingEntries.map(([areaKey, areaConfig]) => areaConfig.name)];
+  }, [relevantDeviceMappingEntries]);
+
+  // ✨ 篩選設備區域的邏輯，現在基於 relevantDeviceMappingEntries
+  function filterDevices(areaKeyFromMapping, areaConfigFromMapping) {
+    // areaKeyFromMapping 和 areaConfigFromMapping 來自 relevantDeviceMappingEntries.filter(...)
+    // 這裡的 areaConfigFromMapping 已經是屬於當前 routeGroup 的
+    if (filterArea !== '全部' && areaConfigFromMapping.name !== filterArea) return false;
     if (!searchTerm.trim()) return true;
-    return area.devices.some(device =>
+    return areaConfigFromMapping.devices.some(device =>
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -135,15 +145,18 @@ function Home() {
         
         {/* 頁面標題 */}
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">監測系統儀表板</h1>
-          <p className="text-slate-600 mt-2">即時監控各區域設備狀態和數據</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">
+            監測系統儀表板 - {routeGroup === 'T14' ? '台14線及甲線' : routeGroup === 't8' ? '台8線' : '總覽'}
+          </h1>
+          <p className="text-slate-600 mt-2 text-md">即時監控各區域設備狀態和數據</p>
         </div>
+        <hr className="border-slate-200" />
 
         {/* 區域選單 */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-lg">
           <h3 className="text-md font-semibold text-slate-700 mb-3">選擇區域：</h3>
           <div className="flex flex-wrap gap-2 sm:gap-3">
-            {allAreas.map(name => (
+            {currentSiteAreas.map(name => (
               <button
                 key={name}
                 onClick={() => setFilterArea(name === filterArea ? '全部' : name)}
@@ -168,35 +181,35 @@ function Home() {
 
         {/* 資料卡片區域 */}
         <div className="space-y-12">
-          {Object.entries(deviceMapping)
-            .filter(([areaKey, area]) => filterDevices(areaKey, area))
-            .map(([areaKey, area]) => (
+          {relevantDeviceMappingEntries
+            .filter(([areaKey, areaConfig]) => filterDevices(areaKey, areaConfig))
+            .map(([areaKey, areaConfig]) => (
               // 區域標題美化
               <div key={areaKey} className="p-2">
                 <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-slate-800 relative inline-block">
-                  {area.name}
+                  {areaConfig.name}
                   <span className="absolute bottom-0 left-0 w-1/2 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full -mb-1"></span> {/* 強調線 */}
                 </h2>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-                  {area.devices
+                  {areaConfig.devices
                     .filter(device => filterDevice(device))
-                    .map(device => {
-                      const deviceId = device.id;
+                    .map(deviceConfigEntry => {
+                      const deviceId = deviceConfigEntry.id;
                       const data = latestData[deviceId];
 
                       const hasValidTimestamp = data && data.timestamp && !isNaN(new Date(data.timestamp).getTime());
-                      const hasTdrDataPoints = device.type === DEVICE_TYPES.TDR ? (data && Array.isArray(data.data) && data.data.length > 0) : true;
+                      const hasTdrDataPoints = deviceConfigEntry.type === DEVICE_TYPES.TDR ? (data && Array.isArray(data.data) && data.data.length > 0) : true;
                       
                       // ✨ 如果沒有數據、時間戳無效或 TDR data 為空
                       if (!data || !hasValidTimestamp || !hasTdrDataPoints ) { 
                         if (loading) return null;
                         return (
                           //「無數據」卡片樣式統一
-                          <div key={deviceId} className={`flex flex-col justify-between border-2 ${getDeviceTypeBorderColor(device)} rounded-xl p-5 bg-white shadow-lg hover:shadow-xl transition-shadow`}>
+                          <div key={deviceId} className={`flex flex-col justify-between border-2 ${getDeviceTypeBorderColor(deviceConfigEntry)} rounded-xl p-5 bg-white shadow-lg hover:shadow-xl transition-shadow`}>
                             <div>
-                              <h3 className="text-lg font-semibold mb-2 text-slate-700">{device.name}</h3>
-                              <p className="text-slate-500 text-xs mb-1">{DEVICE_TYPE_NAMES[device.type] || '設備'}</p>
+                              <h3 className="text-lg font-semibold mb-2 text-slate-700">{deviceConfigEntry.name}</h3>
+                              <p className="text-slate-500 text-xs mb-1">{DEVICE_TYPE_NAMES[deviceConfigEntry.type] || '設備'}</p>
                               <div className="text-slate-400 text-sm mt-4">
                                 {data && data.error ? `錯誤: ${data.error}` : '無即時數據'}
                               </div>
@@ -209,11 +222,11 @@ function Home() {
                       }
 
                       // ======= 統一卡片樣式 =======
-                      const cardColor = getDeviceTypeColor(device);
-                      const borderColor = getDeviceTypeBorderColor(device);
-                      const deviceIcon = getDeviceImage(device);
+                      const cardColor = getDeviceTypeColor(deviceConfigEntry);
+                      const borderColor = getDeviceTypeBorderColor(deviceConfigEntry);
+                      const deviceIcon = getDeviceImage(deviceConfigEntry);
                       const statusClass = getStatusColor(data.timestamp);
-                      const isRainGauge = device.type === DEVICE_TYPES.RAIN;
+                      const isRainGauge = deviceConfigEntry.type === DEVICE_TYPES.RAIN;
 
                       // 全部 sensor 整合到同一張卡片
                       return (
@@ -222,17 +235,17 @@ function Home() {
                           <div className={`relative text-white p-4 flex items-start justify-between bg-gradient-to-br ${cardColor}`}>
                             <div className="flex-1 mr-4">
                               <h3 className="text-xl font-bold leading-tight break-words"> 
-                                {device.name}
+                                {deviceConfigEntry.name}
                               </h3>
                               <p className="text-white text-opacity-80 text-sm mt-1">
-                                {DEVICE_TYPE_NAMES[device.type] || '設備'}
+                                {DEVICE_TYPE_NAMES[deviceConfigEntry.type] || '設備'}
                               </p>
                             </div>
                             {/* 站點照片區域 */}
                             <div className="w-40 h-40 rounded-lg overflow-hidden shadow-md ml-auto shrink-0 bg-white bg-opacity-25 border-2 border-white">
                               <img 
                                 src={deviceIcon}
-                                alt={`${device.name} 站點照片`}
+                                alt={`${deviceConfigEntry.name} 站點照片`}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   // 如果圖片載入失敗，顯示預設圖片或emoji
@@ -270,15 +283,15 @@ function Home() {
                                   </div>
                                 )}
 
-                                {!isRainGauge && device.type !== DEVICE_TYPES.TDR && (
+                                {!isRainGauge && deviceConfigEntry.type !== DEVICE_TYPES.TDR && (
                                   <div className="space-y-2">
-                                    {device.sensors?.map((sensor, sIdx) => (
+                                    {deviceConfigEntry.sensors?.map((sensor, sIdx) => (
                                       <div key={sIdx} className="py-1">
                                         <p className="text-xs text-slate-500 mb-0.5">{sensor.name}</p>
                                         {(sensor.channels || []).map((ch) => {
                                           const chData = data.channels?.[ch];
-                                          const displayValue = formatValue(device, chData, data);
-                                          const normal = isNormalData(device, chData);
+                                          const displayValue = formatValue(deviceConfigEntry, chData, data);
+                                          const normal = isNormalData(deviceConfigEntry, chData);
                                           return (
                                             <div key={ch} className="flex justify-between items-baseline">
                                               <span className={`text-lg font-semibold ${
@@ -298,7 +311,7 @@ function Home() {
                             {/* 卡片底部：查看趨勢 */}
                             <div className="mt-auto pt-4 flex justify-end">
                               <Link
-                                to={`/trend?deviceId=${deviceId}${isRainGauge || (device.sensors && device.sensors.length > 0) ? '&sensorIndex=0' : ''}`}
+                                to={`/trend?deviceId=${deviceId}${isRainGauge || (deviceConfigEntry.sensors && deviceConfigEntry.sensors.length > 0) ? '&sensorIndex=0' : ''}`}
                                 className="text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-colors px-5 py-2.5 rounded-lg text-sm font-semibold shadow hover:shadow-md"
                               >
                                 查看趨勢
