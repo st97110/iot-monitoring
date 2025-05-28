@@ -311,7 +311,7 @@ function Home() {
                             {/* 卡片底部：查看趨勢 */}
                             <div className="mt-auto pt-4 flex justify-end">
                               <Link
-                                to={`/trend?deviceId=${deviceId}${isRainGauge || (deviceConfigEntry.sensors && deviceConfigEntry.sensors.length > 0) ? '&sensorIndex=0' : ''}`}
+                                to={`/${routeGroup}/trend?deviceId=${deviceId}${isRainGauge || (deviceConfigEntry.sensors && deviceConfigEntry.sensors.length > 0) ? '&sensorIndex=0' : ''}`}
                                 className="text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-colors px-5 py-2.5 rounded-lg text-sm font-semibold shadow hover:shadow-md"
                               >
                                 查看趨勢

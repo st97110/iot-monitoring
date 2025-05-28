@@ -133,13 +133,13 @@ function App() {
           <Route path="/:routeGroup" element={<SiteLayout />}>
             <Route index element={<Home />} /> {/* 預設顯示 Home，例如 /t14/ */}
             <Route path="history" element={<History />} />
-            {<Route path="trend/:deviceId/:sensorIndex" element={<TrendPage />} />}
+            <Route path="trend" element={<TrendPage />} />
             <Route path="map" element={<InteractiveMap />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} /> {/* 404 頁面 */}
         
           {/* ✨ 根路徑 "/" 的處理 */}
-          <Route path="/" element={<Navigate to="/t14" replace />} /> {/* 預設跳轉到 /t14 */}
+          <Route path="/" element={<Navigate to="/t14" replace />} /> {/* 預設跳轉到 /T14 */}
         </Routes>
         
         {/* 頁腳 */}

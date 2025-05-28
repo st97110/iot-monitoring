@@ -193,7 +193,7 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: 'OW10 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+          { name: 'OW10 (AI0)', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
         ]
       },
       {
