@@ -1,5 +1,5 @@
 // services/safeDataService.ts
-import { enrichRainfall, getLatestDataFromDB, getLatestDataFromFolder } from './dataService';
+import { RainDuration, enrichRainfall, getLatestDataFromDB, getLatestDataFromFolder } from './dataService';
 import { logger } from '../utils/logger';
 
 export type SourceKey = 'wise' | 'tdr' | 'both';
@@ -10,6 +10,7 @@ export type SourceKey = 'wise' | 'tdr' | 'both';
  * @param deviceId 可選，設備 ID
  */
 export async function safeGetLatestData(source: SourceKey, deviceId?: string): Promise<Record<string, any>> {
+  const rainfallDurationsForLatest: RainDuration[] = ['10m', '1h', '3h', '24h'];
   if (source === 'both') {
     // 分別查 wise 和 tdr，然後合併
     const [wiseLatest, tdrLatest] = await Promise.all([
@@ -17,7 +18,7 @@ export async function safeGetLatestData(source: SourceKey, deviceId?: string): P
       safeGetLatestData('tdr', deviceId)
     ]);
     const result = { ...wiseLatest, ...tdrLatest };
-    await enrichRainfall(result, '10m');
+    await enrichRainfall(result, rainfallDurationsForLatest);
     return result;
   }
 
@@ -26,12 +27,13 @@ export async function safeGetLatestData(source: SourceKey, deviceId?: string): P
     const result   = (Object.keys(dbResult).length > 0)
                        ? dbResult
                        : await getLatestDataFromFolder(source, deviceId);
-    await enrichRainfall(result, '10m');
+
+    await enrichRainfall(result, rainfallDurationsForLatest);
     return result;
   } catch (error: any) {
     logger.error(`[safeGetLatestData] DB 查詢 ${deviceId}(${source}) 失敗: ${error.message}，改從資料夾讀取`);
     const result = await getLatestDataFromFolder(source, deviceId);
-    await enrichRainfall(result, '10m');
+    await enrichRainfall(result, rainfallDurationsForLatest);
     return result;
   }
 }

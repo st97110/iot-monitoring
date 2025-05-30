@@ -319,9 +319,9 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
     });
 
 
-    // 轉換為陣列並按時間降序排序
+    // 轉換為陣列並按時間升序排序
     groupedHistory.push(...Object.values(groupedByTs).sort(
-        (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     ));
   } else {
     logger.error(`[InfluxQuery] queryHistoryDataFromInflux 不支援的資料來源: ${key}`);

@@ -69,8 +69,8 @@ export const deviceMapping = {
         lng: 121.16,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_0: 11.388 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_1: 10.317 } },
+          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 11.388 } },
+          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.317 } },
         ]
       },{
         id: 'WISE-4010LAN_00D0C9FAD2E3',
@@ -193,7 +193,7 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: 'OW10 (AI0)', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+          { name: 'OW10', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
         ]
       },
       {
@@ -202,8 +202,8 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: 'GE3 50m (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_0: 4.984 } },
-          { name: 'GE3 70m (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_1: 5.457 } }
+          { name: 'GE3 50m', channels: ['AI_0'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_0: 4.984 } },
+          { name: 'GE3 70m', channels: ['AI_1'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_1: 5.457 } }
         ]
       },
       {
@@ -212,10 +212,10 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT1 A軸 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
-          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
-          { name: 'BT3 A軸 (AI2)', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
-          { name: 'BT3 B軸 (AI3)', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
+          { name: 'BT1 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
+          { name: 'BT1 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
+          { name: 'BT3 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
+          { name: 'BT3 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
         ]
       },
       {
@@ -233,8 +233,8 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 11.189 } },
-          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 11.896 } }
+          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.189 } },
+          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 11.896 } }
         ]
       },
       {

@@ -197,7 +197,7 @@ function History() {
               value={deviceId}
               onChange={e => setDeviceId(e.target.value)}
             >
-              <option value="">全部裝置 ({routeGroup === 'T14' ? '台14線及甲線' : '台8線'})</option>
+              <option value="">全部裝置 ({routeGroup === 't14' ? '台14線及甲線' : '台8線'})</option>
               {filterDeviceOptions.map(({areaKey, areaName, devices}) => ( 
                 <optgroup key={areaKey} label={areaName}>
                   {devices.map(device => (

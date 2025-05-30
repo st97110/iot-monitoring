@@ -272,13 +272,25 @@ function Home() {
                             {/* 主要數據區域 */}
                               <div className="flex-grow space-y-3"> {/* flex-grow 讓數據區填滿按鈕前的空間 */}
                                 {isRainGauge && (
-                                  <div className="text-center">
-                                    <p className="text-xs text-slate-500 mb-1">最近10分鐘雨量</p>
-                                    <p className="text-3xl font-bold text-blue-600">
+                                  <div className="text-center space-y-2">
+                                    <p className="text-xs text-slate-500 mb-1">10分鐘雨量</p>
+                                    <p className="text-xl font-bold text-blue-600">
                                       {data.rainfall_10m !== undefined && data.rainfall_10m !== null
                                         ? `${data.rainfall_10m.toFixed(1)}`
                                         : '-'}
-                                      <span className="text-lg ml-1">mm</span>
+                                      <span className="text-sm ml-1">mm</span>
+                                    </p>
+                                    <p className="text-slate-500">1小時</p>
+                                    <p className="text-xl font-bold text-blue-600">
+                                      {data.rainfall_1h !== undefined && data.rainfall_1h !== null ? `${data.rainfall_1h.toFixed(1)}` : '-'} mm
+                                    </p>
+                                    <p className="text-slate-500">3小時</p>
+                                    <p className="text-xl font-bold text-blue-600">
+                                      {data.rainfall_3h !== undefined && data.rainfall_3h !== null ? `${data.rainfall_3h.toFixed(1)}` : '-'} mm
+                                    </p>
+                                    <p className="text-slate-500">24小時</p>
+                                    <p className="text-xl font-bold text-blue-600">
+                                      {data.rainfall_24h !== undefined && data.rainfall_24h !== null ? `${data.rainfall_24h.toFixed(1)}` : '-'} mm
                                     </p>
                                   </div>
                                 )}
