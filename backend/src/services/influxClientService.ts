@@ -2,6 +2,7 @@
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
+import { isDeviceRainGauge } from '../utils/helper';
 
 export type SourceKey = 'tdr' | 'wise';
 
@@ -213,18 +214,47 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
 /**
  * 查詢指定裝置在時間範圍內的所有資料
  */
-export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: string, startDate: string, endDate: string): Promise<any[]> {
+export async function queryHistoryDataFromInflux(
+  key: SourceKey,
+  deviceId: string,
+  startDate: string,
+  endDate: string,
+  rainInterval?: string
+): Promise<any[]> {
   const client = getClient(key);
   const queryApi = client.getQueryApi(config.influx.org);
   const bucket = config.influx.buckets[key];
 
-  const fluxQuery = `
-    from(bucket: "${bucket}")
-      |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
-      |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
-      |> filter(fn: (r) => r._field == "rho" or r._measurement != "tdr_raw") // ✨ 只有 TDR 才嚴格篩選 rho
-      |> sort(columns: ["_time", "distance_m"], desc: false)
-  `;
+  let fluxQuery: string;
+
+  if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
+    fluxQuery = `
+      from(bucket: "${bucket}")
+        |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
+        |> filter(fn: (r) => r._measurement == "wise_raw" and r.device == "${deviceId}")
+        |> filter(fn: (r) => r._field == "rain_10m")
+        |> aggregateWindow(every: ${rainInterval}, fn: sum, createEmpty: false, timeSrc: "_start") // 使用 _start 作為新時間戳
+        |> map(fn: (r) => ({
+            _time: r._time, // 聚合窗口的開始時間
+            _measurement: "wise_raw", // 或一個新的聚合 measurement
+            device: "${deviceId}",
+            source: "wise", // 添加 source
+            "${"rainfall_" + rainInterval.replace(/\s+/g, '')}": r._value
+        }))
+        |> sort(columns: ["_time"], desc: false) // 按時間升序
+    `;
+    logger.debug(`[InfluxQuery] Rain Gauge History (Aggregated by ${rainInterval}) for ${deviceId}:\n${fluxQuery}`);
+
+  } else { // TDR 或非雨量筒的 WISE，或雨量筒但未指定 rainInterval (預設查明細)
+    fluxQuery = `
+      from(bucket: "${bucket}")
+        |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
+        |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
+        |> filter(fn: (r) => r._field == "rho" or r._measurement != "tdr_raw")
+        |> sort(columns: ["_time", "distance_m"], desc: false)
+    `;
+    logger.debug(`[InfluxQuery] Default History Query for ${deviceId} (Source: ${key}):\n${fluxQuery}`);
+  }
 
   /* 1️⃣ 先把所有 row 收進 history 陣列 */
   const historyRaw: any[] = [];
@@ -248,7 +278,32 @@ export async function queryHistoryDataFromInflux(key: SourceKey, deviceId: strin
   // 根據來源類型，將原始行組裝成前端需要的結構
   const groupedHistory: any[] = []; // 儲存組裝後的歷史數據
 
-  if (key === 'wise') {
+  if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
+    // 如果是聚合後的雨量數據，每個 row 應該直接是 { _time, device, source, rainfall_XX }
+    historyRaw.forEach(r => {
+        const ts = r._time as string;
+        const aggregatedRainfallField = `rainfall_${rainInterval.replace(/\s+/g, '')}`;
+
+        if (r[aggregatedRainfallField] !== undefined && r[aggregatedRainfallField] !== null) {
+          groupedHistory.push({
+            deviceId: r.device || deviceId, // 確保 deviceId 存在
+            timestamp: ts,
+            source: r.source || key,       // 確保 source 存在
+            // 直接使用聚合後的欄位，前端可以用它來計算累計和區間顯示
+            [aggregatedRainfallField]: parseFloat(r[aggregatedRainfallField] as string),
+            // 為了與前端 `TrendPage` 中處理雨量的 `row.interval_rainfall` 和 `row.accumulated_rainfall` 對應
+            // 我們可以在這裡就構建成前端期望的 `interval_rainfall`
+            interval_rainfall: parseFloat(r[aggregatedRainfallField] as string)
+          });
+        } else {
+          logger.warn(`[InfluxQuery] 設備 ${deviceId} 聚合雨量數據點缺少 ${aggregatedRainfallField} 欄位或值為null。Row: %j`, r);
+        }
+    });
+    // 聚合後的數據已經按時間排序了，但前端可能需要降序
+    groupedHistory.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  } else if (key === 'wise') {
+    
     // WISE 數據組裝邏輯 (按時間戳分組，收集 fields 到 channels/raw)
     const groupedByTs: Record<string, any> = {}; // tsStr -> record
 

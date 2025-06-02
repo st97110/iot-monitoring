@@ -17,9 +17,7 @@ export async function safeGetLatestData(source: SourceKey, deviceId?: string): P
       safeGetLatestData('wise', deviceId),
       safeGetLatestData('tdr', deviceId)
     ]);
-    const result = { ...wiseLatest, ...tdrLatest };
-    await enrichRainfall(result, rainfallDurationsForLatest);
-    return result;
+    return { ...wiseLatest, ...tdrLatest };
   }
 
   try {

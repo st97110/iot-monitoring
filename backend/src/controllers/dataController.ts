@@ -61,7 +61,7 @@ export async function getHistoryData(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { deviceId, startDate, endDate } = req.query;
+    const { deviceId, startDate, endDate, rainInterval = '10m' } = req.query;
     if (!startDate || !endDate) {
       res.status(400).json({ error: '缺少 startDate 或 endDate' });
       return;
@@ -75,8 +75,8 @@ export async function getHistoryData(
     const src = resolveSource(req.query.source as string | undefined, deviceId as string | undefined);   // ← 共用解析
 
     const data = deviceId
-      ? await safeGetHistoryData(src, deviceId as string, sDate, eDate)
-      : await safeGetAllHistoryData(src, sDate, eDate);
+      ? await safeGetHistoryData(src, deviceId as string, sDate, eDate, rainInterval as string)
+      : await safeGetAllHistoryData(src, sDate, eDate, rainInterval as string);
 
     res.json(data);
   } catch (err: any) {

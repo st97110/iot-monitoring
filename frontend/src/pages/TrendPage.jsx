@@ -8,11 +8,11 @@ import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
 import { format, startOfHour } from 'date-fns';
 
 // 獲取通道顏色
-const getChartLineColor = (deviceType, isAccumulated = false) => {
+const getChartLineColor = (deviceType, isAccumulated = false, isInterval = false) => {
   const typeBaseColors = {
     [DEVICE_TYPES.TI]: '#3B82F6', // blue-500
     [DEVICE_TYPES.WATER]: '#06B6D4', // cyan-500
-    [DEVICE_TYPES.RAIN]: isAccumulated ? '#0EA5E9' : '#6366F1', // 累計用亮藍色，區間用靛藍
+    [DEVICE_TYPES.RAIN]: isAccumulated ? '#0EA5E9' : (isInterval ? '#6366F1' : '#4F46E5'), // 累計: 亮藍, 區間: 靛藍, 其他雨量相關: 深紫
     [DEVICE_TYPES.GE]: '#22C55E', // green-500
     [DEVICE_TYPES.TDR]: '#8B5CF6', // purple-500
   };
@@ -42,6 +42,9 @@ function TrendPage() {
   const [selectedTimestamp, setSelectedTimestamp] = useState(searchParams.get('timestamp') || ''); // 當前選中的 TDR 掃描時間戳
   const [availableTimestamps, setAvailableTimestamps] = useState([]); // TDR 可選的時間戳列表
   const [fullHistoryData, setFullHistoryData] = useState([]); // 儲存從 API 獲取的完整歷史數據 (包含所有時間點的掃描)
+
+  // 新增 state 用於選擇雨量區間
+  const [selectedRainInterval, setSelectedRainInterval] = useState(searchParams.get('rainInterval') || '10m'); // 預設 10m
 
   // --- Helper Functions ---
   const findCurrentDevice = useCallback((idToFind) => {
@@ -78,13 +81,11 @@ function TrendPage() {
     }
 
     setLoading(true);
-    setData([]); // 清空舊圖表數據
-    setFullHistoryData([]);
-    setAvailableTimestamps([]);
+    setData([]); setFullHistoryData([]); setAvailableTimestamps([]);
 
     try {
       const res = await axios.get(`${API_BASE}/api/history`, {
-        params: { deviceId: currentDevice.id, startDate, endDate, source: currentDevice.type?.toLowerCase() }
+        params: { deviceId: currentDevice.id, startDate, endDate, source: currentDevice.type?.toLowerCase(), rainInterval: selectedRainInterval }
       });
       const historyRecords = (res.data || []).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
@@ -106,33 +107,31 @@ function TrendPage() {
           setSelectedTimestamp('');
         }
       } else if (currentDevice.type === DEVICE_TYPES.RAIN) {
+        let cumulativeRainfallBasedOnSelectedInterval = 0; // 用於基於選擇的區間雨量來累加
         
-        let baselineCount = null;
-        if (historyRecords.length > 0 && historyRecords[0].raw && historyRecords[0].raw['DI_0 Cnt'] !== undefined) {
-          baselineCount = parseFloat(historyRecords[0].raw['DI_0 Cnt']);
-        }
-
         const processedRain = historyRecords.map(entry => {
           const row = { time: entry.timestamp };
-          let currentCumulativeMm = null;
+          const intervalRainFieldKey = `rainfall_${selectedRainInterval}`;
           let intervalRainMm = null;
 
-          if (entry.raw && entry.raw['DI_0 Cnt'] !== undefined) {
-            const currentCnt = parseFloat(entry.raw['DI_0 Cnt']);
-            if (!isNaN(currentCnt) && baselineCount !== null) {
-              // 計算相對於基線的累計雨量
-              currentCumulativeMm = currentCnt >= baselineCount ? (currentCnt - baselineCount) / 2 : currentCnt / 2; // 處理計數器重置
-            }
+          console.log('intervalRainFieldKey', intervalRainFieldKey);
+          console.log('entry[intervalRainFieldKey]', entry[intervalRainFieldKey]);
+          if (entry[intervalRainFieldKey] !== undefined && entry[intervalRainFieldKey] !== null) {
+            intervalRainMm = parseFloat(entry[intervalRainFieldKey]);
+            console.log('intervalRainMm', intervalRainMm);
+          } else if (entry.raw && entry.raw[intervalRainFieldKey] !== undefined && entry.raw[intervalRainFieldKey] !== null) { // Fallback to raw if backend structure varies
+            intervalRainMm = parseFloat(entry.raw[intervalRainFieldKey]);
+          } else if (selectedRainInterval === '10m' && entry.raw?.rainfall_10m !== undefined && entry.raw?.rainfall_10m !== null) { // Specific fallback for 10m
+            intervalRainMm = parseFloat(entry.raw.rainfall_10m);
           }
-          row.accumulated_rainfall = currentCumulativeMm;
+          
+          row.interval_rainfall = !isNaN(intervalRainMm) ? intervalRainMm : null;
 
-          // 使用後端提供的 10 分鐘雨量 (或其他由 enrichRainfall 處理的區間雨量)
-          if (entry.rainfall_10m !== undefined && entry.rainfall_10m !== null) {
-            intervalRainMm = parseFloat(entry.rainfall_10m);
-          } else if (entry.raw?.rain_10m !== undefined && entry.raw?.rain_10m !== null) { // Fallback
-            intervalRainMm = parseFloat(entry.raw.rain_10m);
+          // ✨ 基於選擇的 interval_rainfall 來計算累計雨量
+          if (row.interval_rainfall !== null && !isNaN(row.interval_rainfall)) {
+            cumulativeRainfallBasedOnSelectedInterval += row.interval_rainfall;
           }
-          row.interval_rainfall = intervalRainMm; // 用於柱狀圖
+          row.accumulated_rainfall = cumulativeRainfallBasedOnSelectedInterval;
 
           return row;
         }).filter(row => row.time && (row.accumulated_rainfall !== null || row.interval_rainfall !== null)); // 至少要有一種雨量數據
@@ -301,17 +300,32 @@ function TrendPage() {
     return options;
   }, [routeGroup]); // 依賴 routeGroup
 
+  // ✨ 新增：處理雨量區間選擇變更
+  const handleRainIntervalChange = (interval) => {
+    setSelectedRainInterval(interval);
+    updateUrlParams({ rainInterval: interval });
+  };
+
   // 匯出 CSV
   const exportToCSV = () => {
     if (data.length === 0 || !currentDevice) return;
-    
     setExportLoading(true);
-    
     try {
-      const headers = ['時間', ...currentDevice.sensors?.[sensorIndex]?.channels || []];
-      const rows = data.map(row =>
-        [row.time, ...headers.slice(1).map(ch => row[ch] ?? '')]
-      );
+      let headers;
+      let rows;
+      if (currentDevice.type === DEVICE_TYPES.RAIN) {
+        headers = ['時間', `區間雨量 (${selectedRainInterval})`, '累計雨量'];
+        rows = data.map(row => [
+          row.time,
+          row.interval_rainfall ?? '',
+          row.accumulated_rainfall ?? ''
+        ]);
+      } else {
+        headers = ['時間', ...currentDevice.sensors?.[sensorIndex]?.channels || []];
+        rows = data.map(row =>
+          [row.time, ...headers.slice(1).map(ch => row[ch] ?? '')]
+        );
+      }
 
       const csvContent = [headers, ...rows]
         .map(e => e.join(','))
@@ -326,7 +340,7 @@ function TrendPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err) {
+      } catch (err) {
       console.error('匯出CSV錯誤:', err);
     } finally {
       setExportLoading(false);
@@ -477,6 +491,24 @@ function TrendPage() {
             </select>
           </div>
 
+          {/* ✨ 雨量區間選擇器 (僅對雨量筒顯示) */}
+          {deviceId && currentDevice && currentDevice.type === DEVICE_TYPES.RAIN && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">雨量區間</label>
+              <select
+                value={selectedRainInterval}
+                onChange={e => handleRainIntervalChange(e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300"
+              >
+                <option value="10m">10分鐘</option>
+                <option value="1h">1小時</option>
+                <option value="3h">3小時</option>
+                <option value="24h">24小時</option>
+                {/* 您可以根據後端 enrichRainfall 支持的 duration 添加更多選項 */}
+              </select>
+            </div>
+          )}
+
           {/* 通道組 (WISE) 或 時間點選擇 (TDR) */}
           {deviceId && currentDevice && currentDevice.type !== DEVICE_TYPES.TDR && currentDevice.type !== DEVICE_TYPES.RAIN && (
             <div>
@@ -549,7 +581,7 @@ function TrendPage() {
               {currentDevice.type === DEVICE_TYPES.TDR
                 ? ` TDR 曲線 @ ${selectedTimestamp ? new Date(selectedTimestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '請選擇時間點'}`
                 : currentDevice.type === DEVICE_TYPES.RAIN
-                  ? '10分鐘雨量趨勢' // ✨ 雨量筒的圖表標題
+                  ? `${selectedRainInterval} 區間與累計雨量趨勢` // ✨ 雨量筒的圖表標題
                   : currentDevice.sensors?.[sensorIndex]?.name
               }
             </h2>
@@ -583,19 +615,32 @@ function TrendPage() {
                   stroke={getChartLineColor(currentDevice.type, true)} // true for accumulated line
                   label={{
                     value:
-                      currentDevice.type === DEVICE_TYPES.RAIN ? '累計雨量 (mm)' :
+                      currentDevice.type === DEVICE_TYPES.RAIN ? `累計雨量 (基於${selectedRainInterval}, mm)` :
                       currentDevice.type === DEVICE_TYPES.TDR ? '反射係數 (Rho)' :
                       '數值', // 通用標籤
                     angle: -90, position: 'insideLeft', fill: getChartLineColor(currentDevice.type, true)
                   }}
                   domain={currentDevice.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : undefined}
                 />
+                {currentDevice.type === DEVICE_TYPES.RAIN && data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right" 
+                    stroke={getChartLineColor(DEVICE_TYPES.RAIN, false, true)} // isInterval = true
+                    label={{ value: `區間雨量 (${selectedRainInterval}, mm)`, angle: 90, position: 'insideRight', fill: getChartLineColor(DEVICE_TYPES.RAIN, false, true)}} 
+                    domain={[0, 'auto']} // 區間雨量也從0開始，自動調整上限
+                  />
+                )}
                 <Tooltip
-                  formatter={(value, name) =>
-                     currentDevice.type === DEVICE_TYPES.TDR ? [Number(value).toFixed(4), 'Rho'] :
-                     currentDevice.type === DEVICE_TYPES.RAIN && name === 'rainfall' ? [Number(value).toFixed(1) + ' mm', '10分鐘雨量'] : // ✨ 雨量筒 Tooltip
-                     [Number(value).toFixed(3), name]
-                  }
+                  formatter={(value, name, props) => {
+                    if (currentDevice.type === DEVICE_TYPES.TDR) return [Number(value).toFixed(4), 'Rho'];
+                    if (currentDevice.type === DEVICE_TYPES.RAIN) {
+                      // ✨ Tooltip 的 name 應該匹配 Line/Bar 的 name 屬性
+                      if (props.dataKey === 'accumulated_rainfall') return [Number(value).toFixed(1) + ' mm', `累計雨量 (基於${selectedRainInterval})`];
+                      if (props.dataKey === `rainfall_${selectedRainInterval}`) return [Number(value).toFixed(1) + ' mm', `${selectedRainInterval}區間雨量`];
+                    }
+                    return [Number(value).toFixed(3), name];
+                  }}
                   labelFormatter={(label) =>
                     currentDevice.type === DEVICE_TYPES.TDR
                       ? `距離: ${label} m`
@@ -607,11 +652,11 @@ function TrendPage() {
                   <Line yAxisId="left" key="rho" type="monotone" dataKey="rho" stroke={getChartLineColor(DEVICE_TYPES.TDR)} strokeWidth={2} dot={false} name="反射係數 (Rho)" isAnimationActive={false}/>
                 ) : currentDevice.type === DEVICE_TYPES.RAIN ? (
                   <>
-                    {data[0]?.hasOwnProperty('accumulated_rainfall') && (
-                      <Line yAxisId="left" type="bump" dataKey="accumulated_rainfall" stroke={getChartLineColor(DEVICE_TYPES.RAIN, true)} strokeWidth={3} name="累計雨量" dot={false} isAnimationActive={false} />
+                    {data.some(d => d.hasOwnProperty('accumulated_rainfall') && d.accumulated_rainfall !== null) && (
+                      <Line yAxisId="left" type="bump" dataKey="accumulated_rainfall" stroke={getChartLineColor(DEVICE_TYPES.RAIN, true)} strokeWidth={3} name={`累計雨量 (基於${selectedRainInterval})`} dot={false} isAnimationActive={false} />
                     )}
-                    {data[0]?.hasOwnProperty('interval_rainfall') && (
-                      <Bar yAxisId="left" dataKey="interval_rainfall" fill={getChartLineColor(DEVICE_TYPES.RAIN, false)} name="10分鐘雨量" barSize={10} />
+                    {data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
+                      <Bar yAxisId="left" dataKey={`rainfall_${selectedRainInterval}`} fill={getChartLineColor(DEVICE_TYPES.RAIN, false, true)} name={`${selectedRainInterval}區間雨量`} barSize={10} />
                     )}
                   </>
                 ) : (
