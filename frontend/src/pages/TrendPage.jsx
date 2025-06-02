@@ -81,7 +81,7 @@ function TrendPage() {
     }
 
     setLoading(true);
-    setData([]); setFullHistoryData([]); setAvailableTimestamps([]);
+    setData([]); setFullHistoryData([]); setAvailableTimestamps([]); 
 
     try {
       const res = await axios.get(`${API_BASE}/api/history`, {
@@ -114,29 +114,25 @@ function TrendPage() {
           const intervalRainFieldKey = `rainfall_${selectedRainInterval}`;
           let intervalRainMm = null;
 
-          console.log('intervalRainFieldKey', intervalRainFieldKey);
-          console.log('entry[intervalRainFieldKey]', entry[intervalRainFieldKey]);
           if (entry[intervalRainFieldKey] !== undefined && entry[intervalRainFieldKey] !== null) {
             intervalRainMm = parseFloat(entry[intervalRainFieldKey]);
-            console.log('intervalRainMm', intervalRainMm);
           } else if (entry.raw && entry.raw[intervalRainFieldKey] !== undefined && entry.raw[intervalRainFieldKey] !== null) { // Fallback to raw if backend structure varies
             intervalRainMm = parseFloat(entry.raw[intervalRainFieldKey]);
           } else if (selectedRainInterval === '10m' && entry.raw?.rainfall_10m !== undefined && entry.raw?.rainfall_10m !== null) { // Specific fallback for 10m
             intervalRainMm = parseFloat(entry.raw.rainfall_10m);
           }
           
-          row.interval_rainfall = !isNaN(intervalRainMm) ? intervalRainMm : null;
+          row[`rainfall_${selectedRainInterval}`] = !isNaN(intervalRainMm) ? intervalRainMm : null;
 
-          // ✨ 基於選擇的 interval_rainfall 來計算累計雨量
-          if (row.interval_rainfall !== null && !isNaN(row.interval_rainfall)) {
-            cumulativeRainfallBasedOnSelectedInterval += row.interval_rainfall;
+          // ✨ 基於選擇的 [`rainfall_${selectedRainInterval}`] 來計算累計雨量
+          if (row[`rainfall_${selectedRainInterval}`] !== null && !isNaN(row[`rainfall_${selectedRainInterval}`])) {
+            cumulativeRainfallBasedOnSelectedInterval += row[`rainfall_${selectedRainInterval}`];
           }
           row.accumulated_rainfall = cumulativeRainfallBasedOnSelectedInterval;
 
           return row;
-        }).filter(row => row.time && (row.accumulated_rainfall !== null || row.interval_rainfall !== null)); // 至少要有一種雨量數據
+        }).filter(row => row.time && (row.accumulated_rainfall !== null || row[`rainfall_${selectedRainInterval}`] !== null)); // 至少要有一種雨量數據
         setData(processedRain);
-
       } else { // 其他 WISE 設備 (例如 TI, WATER, GE)
         const sensor = currentDevice.sensors?.[sensorIndex];
         if (!sensor || !sensor.channels || sensor.channels.length === 0) { // ✨ 確保 sensor 和 channels 存在
@@ -445,7 +441,7 @@ function TrendPage() {
       </div>
 
       {/* 查詢區塊 */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-sm">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-sm"> 
         {/* 快速選擇 - 美化設計 */}
         <h3 className="text-sm font-semibold text-gray-600 mb-2">快速時間範圍：</h3>
         <div className="flex flex-wrap gap-2">
@@ -503,6 +499,7 @@ function TrendPage() {
                 <option value="10m">10分鐘</option>
                 <option value="1h">1小時</option>
                 <option value="3h">3小時</option>
+                <option value="6h">6小時</option>
                 <option value="24h">24小時</option>
                 {/* 您可以根據後端 enrichRainfall 支持的 duration 添加更多選項 */}
               </select>
@@ -595,7 +592,7 @@ function TrendPage() {
           
           {/* 圖表容器 - ✨ 給 TDR 圖表一個不同的 ID */}
           <div id={currentDevice.type === DEVICE_TYPES.TDR ? "tdr-chart-container" : "chart-container"} className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-            <ResponsiveContainer width="100%" height={currentDevice.type === DEVICE_TYPES.RAIN ? 500 : 400}>
+            <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -636,8 +633,8 @@ function TrendPage() {
                     if (currentDevice.type === DEVICE_TYPES.TDR) return [Number(value).toFixed(4), 'Rho'];
                     if (currentDevice.type === DEVICE_TYPES.RAIN) {
                       // ✨ Tooltip 的 name 應該匹配 Line/Bar 的 name 屬性
-                      if (props.dataKey === 'accumulated_rainfall') return [Number(value).toFixed(1) + ' mm', `累計雨量 (基於${selectedRainInterval})`];
-                      if (props.dataKey === `rainfall_${selectedRainInterval}`) return [Number(value).toFixed(1) + ' mm', `${selectedRainInterval}區間雨量`];
+                      if (props.dataKey === 'accumulated_rainfall') return [Number(value).toFixed(1) + ' mm', `累計雨量`];
+                      if (props.dataKey === `rainfall_${selectedRainInterval}`) return [Number(value).toFixed(1) + ' mm', `${selectedRainInterval}雨量`];
                     }
                     return [Number(value).toFixed(3), name];
                   }}
