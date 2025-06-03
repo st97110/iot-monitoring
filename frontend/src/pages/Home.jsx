@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
 import { Link, useParams } from 'react-router-dom';
-import { getDeviceTypeColor, getDeviceTypeBorderColor, formatValue } from '../utils/sensor';
+import { getDeviceTypeColor, getDeviceTypeBorderColor, isNormalData,formatValue } from '../utils/sensor';
 
 // 將 ISO 格式時間轉成相對時間字串（秒/分鐘/小時/天前）
 function getRelativeTime(isoString) {
@@ -128,16 +128,6 @@ function Home() {
     return device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()));
   }
-
-  function isNormalData(device, chData) {
-    if (device.type === DEVICE_TYPES.RAIN && chData?.rainfall_10m < 10) return true;          // 雨量筒小於 10 顯示為正常
-    else if (device.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 50) return true;       // 伸縮計小於 30 顯示為正常
-    else if (device.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 2 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
-    else if (device.type === DEVICE_TYPES.WATER && chData?.PEgF < -15) return true; // 水位計小於 -15 公尺顯示為正常
-    return false;
-  }
-
-  
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -302,7 +292,7 @@ function Home() {
                                         <p className="text-xs text-slate-500 mb-0.5">{sensor.name}</p>
                                         {(sensor.channels || []).map((ch) => {
                                           const chData = data.channels?.[ch];
-                                          const displayValue = formatValue(deviceConfigEntry, chData, data);
+                                          const displayValue = formatValue(deviceConfigEntry, sensor, chData, data);
                                           const normal = isNormalData(deviceConfigEntry, chData);
                                           return (
                                             <div key={ch} className="flex justify-between items-baseline">

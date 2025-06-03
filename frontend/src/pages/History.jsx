@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo, use } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
-import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
-import { getDeviceTypeBorderColor } from '../utils/sensor';
+import { API_BASE, deviceMapping, DEVICE_TYPES, DEVICE_TYPE_NAMES } from '../config/config';
+import { getDeviceTypeBorderColor, isNormalData, formatValue } from '../utils/sensor';
 
 function History() {
   const { routeGroup } = useParams();
@@ -152,7 +152,7 @@ function History() {
   };
 
   const getStatusColor = (delta) => {
-    if (!delta) return '';
+    if (delta === null || delta === undefined) return 'text-gray-400'; // 處理空值
     if (delta > 0.5) return 'text-red-600';
     if (delta < -0.5) return 'text-green-600';
     return 'text-gray-600';
@@ -162,7 +162,7 @@ function History() {
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6">
       <div className="text-center">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            歷史資料查詢 - {routeGroup === 'T14' ? '台14線及甲線' : routeGroup === 'T8' ? '台8線' : ''}
+            歷史資料查詢 - {routeGroup === 't14' ? '台14線及甲線' : routeGroup === 'T8' ? '台8線' : ''}
         </h1>
         <p className="text-gray-600 mt-2">查詢各監測設備的歷史數據記錄</p>
       </div>
@@ -189,7 +189,7 @@ function History() {
             最近一個月
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">裝置</label>
             <select
@@ -198,7 +198,7 @@ function History() {
               onChange={e => setDeviceId(e.target.value)}
             >
               <option value="">全部裝置 ({routeGroup === 't14' ? '台14線及甲線' : '台8線'})</option>
-              {filterDeviceOptions.map(({areaKey, areaName, devices}) => ( 
+              {filterDeviceOptions.map(({areaKey, areaName, devices}) => (
                 <optgroup key={areaKey} label={areaName}>
                   {devices.map(device => (
                     <option key={device.id} value={device.id}>
@@ -254,7 +254,7 @@ function History() {
                   <th className="px-4 py-3 font-semibold text-gray-700">設備/感測器名稱</th>
                   {/* ✨ 修改欄位名 */}
                   <th className="px-4 py-3 font-semibold text-gray-700">類型/通道</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700 text-right">數值/操作</th>
+                  <th className="px-4 py-3 font-semibold text-gray-700 text-right">數值 (原始值)</th>
                 </tr>
               </thead>
               <tbody>
@@ -300,8 +300,8 @@ function History() {
                           })}
                         </td>
                         <td className={`px-4 py-3 font-medium ${stationNameColorClass}`}>{deviceConfig.name}</td> {/* 站名 */}
-                        <td className="px-4 py-3">{deviceConfig.id} (TDR)</td> {/* 設備ID 和類型 */}
-                        <td className="px-4 py-3 text-center">-</td> {/* 類型/通道 */}
+                        <td className="px-4 py-3">{deviceConfig.id} ({DEVICE_TYPE_NAMES[deviceConfig.type] || 'TDR'})</td> {/* 設備ID 和類型 */}
+                        <td className="px-4 py-3 text-center">-</td> {/* 類型 (原始值) */}
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => {
@@ -317,38 +317,25 @@ function History() {
                       </tr>
                     );
                   } else {
+                    // WISE 或其他非 TDR 設備的顯示方式
                     return deviceConfig.sensors?.flatMap((sensor, sIdx) => {
                       return sensor.channels.map(ch => {
                         const chData = entry.channels?.[ch];
                         // WISE 雨量筒的特殊處理，如果後端已經處理好 rainfall_10m 或類似的，直接用
                         // 否則，可以嘗試從 raw 數據中獲取 'DI_x Cnt'
                         const isRain = sensor.type === DEVICE_TYPES.RAIN;
-                        let displayValue, deltaValueText, deltaColorClass;
+                        const displayValue = formatValue(deviceConfig, sensor, chData, entry);
 
-                        if (isRain) {
-                          // 假設後端會傳回處理好的10分鐘雨量在 entry.rainfall_10m
-                          // 或者您可以從 entry.raw[`${ch} Cnt`] 計算
-                          const rainAmount = entry.rainfall_10m ?? (entry.raw?.[`${ch} Cnt`] !== undefined ? parseFloat(entry.raw[`${ch} Cnt`]) / 2 : undefined);
-                          displayValue = rainAmount !== undefined ? `${rainAmount.toFixed(1)} mm` : 'N/A';
-                          deltaValueText = '-'; // 雨量不顯示變化量或顯示當前值
-                          deltaColorClass = '';
-                        } else if (chData || (entry.raw && entry.raw[`${ch} EgF`])) {
-                            const egf = chData ? Number(chData.EgF) : Number(entry.raw[`${ch} EgF`]);
-                            const init = sensor.initialValues?.[ch] ?? 0;
-                            const delta = egf - init;
-                            const isWater = sensor.type === DEVICE_TYPES.WATER; // 注意：sensor.type 來自 config
-                            const raw = egf;
-                            displayValue = isNaN(raw) ? 'N/A' : (isWater
-                              ? raw.toFixed(1)
-                              : raw.toFixed(3));
-                            deltaValueText = isNaN(delta) ? '-' : delta.toFixed(3);
-                            deltaColorClass = getStatusColor(delta);
-                        } else {
-                            return null; // 如果沒有相關數據，不渲染此通道行
+                        let egfText = '-';
+                        let deltaColor = 'text-gray-600';
+
+                        if (deviceConfig.type !== DEVICE_TYPES.RAIN && chData) { // 雨量筒不顯示基於初始值的 delta
+                          const egf = chData.EgF !== undefined ? Number(chData.EgF) : (entry.raw?.[`${ch} EgF`] !== undefined ? Number(entry.raw[`${ch} EgF`]) : undefined);
+                          egfText = `${egf} mA`;
                         }
 
                         return (
-                          <tr key={`${index}-${ch}`} className="border-b hover:bg-gray-50 transition-colors">
+                          <tr key={`${index}-${sIdx}-${ch}`} className="border-b hover:bg-gray-50 transition-colors">
                             <td className="px-4 py-3">
                               {new Date(entry.timestamp).toLocaleString('zh-TW', {
                                 timeZone: 'Asia/Taipei',
@@ -362,9 +349,11 @@ function History() {
                             <td className={`px-4 py-3 font-medium ${stationNameColorClass}`}>{deviceConfig.name}</td>
                             <td className="px-4 py-3">{sensor.name}</td>
                             <td className="px-4 py-3">{ch}</td> {/* 類型/通道 */}
-                            <td className="px-4 py-3 text-right font-medium"> {/* 數值/操作 */}
-                                {displayValue}
-                                <span className={`ml-2 ${deltaColorClass}`}>({deltaValueText})</span> {/* 將變化量顯示在數值旁邊 */}
+                            <td className="px-4 py-3 text-right font-medium">
+                              {displayValue}
+                              {deviceConfig.type !== DEVICE_TYPES.RAIN && ( // 雨量筒不顯示括號里的變化量
+                                <span className={`ml-2 ${deltaColor}`}>({egfText})</span>
+                              )}
                             </td>
                           </tr>
                         );

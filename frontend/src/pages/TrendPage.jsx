@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
 import { format, startOfHour } from 'date-fns';
+import { formatValue } from '../utils/sensor';
 
 // 獲取通道顏色
 const getChartLineColor = (deviceType, isAccumulated = false, isInterval = false) => {
@@ -41,7 +42,9 @@ function TrendPage() {
   // ✨ TDR 相關狀態
   const [selectedTimestamp, setSelectedTimestamp] = useState(searchParams.get('timestamp') || ''); // 當前選中的 TDR 掃描時間戳
   const [availableTimestamps, setAvailableTimestamps] = useState([]); // TDR 可選的時間戳列表
-  const [fullHistoryData, setFullHistoryData] = useState([]); // 儲存從 API 獲取的完整歷史數據 (包含所有時間點的掃描)
+
+  // 儲存從 API 獲取的完整歷史數據 (包含所有時間點的掃描)
+  const [fullHistoryData, setFullHistoryData] = useState([]); 
 
   // 新增 state 用於選擇雨量區間
   const [selectedRainInterval, setSelectedRainInterval] = useState(searchParams.get('rainInterval') || '10m'); // 預設 10m
@@ -70,7 +73,6 @@ function TrendPage() {
       // 如果不是 TDR，清空 TDR 相關 state
       setSelectedTimestamp('');
       setAvailableTimestamps([]);
-      setFullHistoryData([]);
     }
   }, [deviceId, findCurrentDevice, searchParams]);
 
@@ -81,16 +83,16 @@ function TrendPage() {
     }
 
     setLoading(true);
-    setData([]); setFullHistoryData([]); setAvailableTimestamps([]); 
+    setData([]); setAvailableTimestamps([]); setFullHistoryData([]);
 
     try {
       const res = await axios.get(`${API_BASE}/api/history`, {
         params: { deviceId: currentDevice.id, startDate, endDate, source: currentDevice.type?.toLowerCase(), rainInterval: selectedRainInterval }
       });
       const historyRecords = (res.data || []).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      setFullHistoryData(historyRecords);
 
       if (currentDevice.type === DEVICE_TYPES.TDR) {
-        setFullHistoryData(historyRecords);
         const timestamps = historyRecords
           .map(entry => entry.timestamp)
           .filter(Boolean)
@@ -111,6 +113,8 @@ function TrendPage() {
         
         const processedRain = historyRecords.map(entry => {
           const row = { time: entry.timestamp };
+          // const row = { time: new Date(entry.timestamp).toLocaleString('zh-TW', {timeZone: 'Asia/Taipei'}) };
+          // console.log("row", row);
           const intervalRainFieldKey = `rainfall_${selectedRainInterval}`;
           let intervalRainMm = null;
 
@@ -149,29 +153,23 @@ function TrendPage() {
 
           if (entry.channels || entry.raw) {
             for (const ch of sensor.channels) {
-              const channelData = entry.channels?.[ch];
-              let valueToProcess;
+              const chData = entry.channels?.[ch];
+              let displayValueString = formatValue(currentDevice, sensor, chData, entry);
+              let numericValue = null;
 
-              // 從 channelData.EgF 或 entry.raw 中獲取原始值
-              if (channelData && channelData.EgF !== undefined) {
-                valueToProcess = channelData.EgF;
-              } else if (entry.raw && entry.raw[`${ch} EgF`] !== undefined) {
-                valueToProcess = entry.raw[`${ch} EgF`];
-              }
-              // 您可以為其他類型的原始值添加類似的 else if (例如電壓、電流等)
-
-              if (valueToProcess !== undefined) {
-                const parsedValue = parseFloat(valueToProcess);
-                if (!isNaN(parsedValue)) { // ✨ 確保值可以被解析為數字
-                    const init = sensor.initialValues?.[ch] ?? 0;
-                    row[ch] = parsedValue - init; // ✨ 將計算後的值賦給 row[ch]
-                    hasValidChannelData = true; // ✨ 標記有有效數據
-                } else {
-                    // console.warn(`WISE: Value for channel ${ch} is not a number:`, valueToProcess);
-                    row[ch] = null; // 或者 undefined，確保圖表能處理
+              if (typeof displayValueString === 'string' && displayValueString !== '無資料' && displayValueString !== 'N/A') {
+                // 嘗試從 "12.34 m" 中提取 12.34
+                const match = displayValueString.match(/^(-?\d+(\.\d+)?)/);
+                if (match && match[1]) {
+                  numericValue = parseFloat(match[1]);
                 }
+              }
+              
+              if (numericValue !== null && !isNaN(numericValue)) {
+                row[ch] = numericValue; // ✨ 存儲計算後的純數字展示值
+                hasValidChannelData = true;
               } else {
-                row[ch] = null; // 如果找不到值，設為 null
+                row[ch] = null; // 如果無法解析或無數據，設為 null
               }
             }
           }
@@ -218,7 +216,7 @@ function TrendPage() {
     } else if (currentDevice?.type !== DEVICE_TYPES.TDR && data.length === 0 && !loading && fullHistoryData.length > 0) {
       // This case might be redundant if WISE data is set directly in handleSearch
     }
-  }, [selectedTimestamp, fullHistoryData, currentDevice, deviceId, loading]); // Added loading to prevent race conditions
+  }, [selectedTimestamp, fullHistoryData, currentDevice, deviceId, loading]);
 
   // --- Event Handlers to Update URL and State ---
   const updateUrlParams = (newParams) => {
@@ -296,46 +294,102 @@ function TrendPage() {
     return options;
   }, [routeGroup]); // 依賴 routeGroup
 
-  // ✨ 新增：處理雨量區間選擇變更
+  // 處理雨量區間選擇變更
   const handleRainIntervalChange = (interval) => {
     setSelectedRainInterval(interval);
     updateUrlParams({ rainInterval: interval });
   };
 
-  // 匯出 CSV
+  // 匯出 CSV (WISE)
   const exportToCSV = () => {
     if (data.length === 0 || !currentDevice) return;
     setExportLoading(true);
     try {
-      let headers;
-      let rows;
+      let headers = ['時間'];
+      const dataRows = [];
+
       if (currentDevice.type === DEVICE_TYPES.RAIN) {
-        headers = ['時間', `區間雨量 (${selectedRainInterval})`, '累計雨量'];
-        rows = data.map(row => [
-          row.time,
-          row.interval_rainfall ?? '',
-          row.accumulated_rainfall ?? ''
-        ]);
-      } else {
-        headers = ['時間', ...currentDevice.sensors?.[sensorIndex]?.channels || []];
-        rows = data.map(row =>
-          [row.time, ...headers.slice(1).map(ch => row[ch] ?? '')]
-        );
+        // 雨量筒的 CSV 導出
+        headers.push(`區間雨量 (${selectedRainInterval})`, '累計雨量'); // 假設 selectedRainInterval 和 accumulated_rainfall 存在
+        data.forEach(row => {
+          dataRows.push([
+            row.time,
+            row[`rainfall_${selectedRainInterval}`] ?? '', // 確保這些 key 在 data 中存在
+            row.accumulated_rainfall ?? ''
+          ]);
+        });
+      } else if (currentDevice.type !== DEVICE_TYPES.TDR) { // 其他 WISE 設備 (TI, WATER, GE)
+        const sensor = currentDevice.sensors?.[sensorIndex];
+        if (sensor && sensor.channels) {
+          // 為每個通道創建兩個表頭：一個原始值(EgF)，一個展示值
+          sensor.channels.forEach(ch => {
+            headers.push(`${ch} (原始值)`); // 例如 AI_0 (原始值)
+            // ✨ 獲取展示值的單位，用於表頭
+            // 這裡需要一個方法從 sensor 配置或 deviceConfig 中獲取單位
+            // 為了簡化，我們先用一個通用的 "展示值"
+            // 您可以根據 sensor.type 或 chData 特性來決定更精確的單位名
+            let displayUnit = '';
+            if (sensor.type === DEVICE_TYPES.WATER) displayUnit = ' (m)';
+            else if (sensor.type === DEVICE_TYPES.GE) displayUnit = ' (mm)';
+            else if (sensor.type === DEVICE_TYPES.TI) displayUnit = ' (")';
+            // 其他類型可以不加單位或按需添加
+
+            headers.push(`${sensor.name} (展示值${displayUnit})`); // 例如 AI_0 (展示值 m)
+          });
+
+          data.forEach(entry => { // entry 是圖表的一行數據，例如 { time: "...", AI_0: (delta值), AI_1: (delta值) }
+            const rowValues = [entry.time];
+            // ✨ 要獲取原始 EgF，我們需要訪問後端返回的、未經處理的歷史數據
+            //    這意味著 data state 可能只存了 delta 值。
+            //    我們需要 fullHistoryData (如果 WISE 也存了原始的 API response)
+            //    或者，修改 handleSearch，讓 data state 中同時包含 delta 和 EgF
+
+            // 假設 fullHistoryData 存有 API 原始返回的、包含 channels 和 raw 的數據
+            const originalEntry = fullHistoryData.find(histEntry => histEntry.timestamp === entry.time);
+
+            sensor.channels.forEach(ch => {
+              let rawEgfValue = '';
+              let displayValue = '';
+
+              if (originalEntry) {
+                  const chDataFromOriginal = originalEntry.channels?.[ch];
+                  const rawFromOriginal = originalEntry.raw;
+
+                  // 獲取原始 EgF
+                  if (chDataFromOriginal && chDataFromOriginal.EgF !== undefined) {
+                      rawEgfValue = chDataFromOriginal.EgF;
+                  } else if (rawFromOriginal && rawFromOriginal[`${ch} EgF`] !== undefined) {
+                      rawEgfValue = rawFromOriginal[`${ch} EgF`];
+                  }
+                  rawEgfValue = (typeof rawEgfValue === 'number') ? rawEgfValue.toFixed(3) : (rawEgfValue || '');
+
+
+                  // 獲取展示值 (需要傳入正確的 sensor 和 chData)
+                  // formatValue(deviceConfig, sensorConfig, channelSpecificData, fullEntryDataForTimestamp)
+                  displayValue = formatValue(currentDevice, sensor, chDataFromOriginal, originalEntry);
+              }
+              rowValues.push(rawEgfValue);
+              rowValues.push(displayValue);
+            });
+            dataRows.push(rowValues);
+          });
+        }
       }
 
-      const csvContent = [headers, ...rows]
-        .map(e => e.join(','))
-        .join('\n');
+      const csvContent = [headers.join(','), ...dataRows.map(e => e.join(','))].join('\n');
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `trend_${deviceId}_${Date.now()}.csv`);
+      const filename = currentDevice.type === DEVICE_TYPES.RAIN
+        ? `${deviceId}_rainfall_${startDate}_${endDate}.csv`
+        : `${currentDevice.name}-${currentDevice.sensors?.[sensorIndex]?.name || 'data'}_${deviceId}_${startDate}_${endDate}.csv`;
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
       } catch (err) {
       console.error('匯出CSV錯誤:', err);
     } finally {
@@ -409,27 +463,6 @@ function TrendPage() {
     } finally {
       setExportLoading(false);
     }
-  };
-
-  const customTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
-          <p className="text-gray-700 font-medium">{new Date(label).toLocaleString('zh-TW')}</p>
-          <div className="mt-2">
-            {payload.map((entry, index) => (
-              <div key={index} className="flex items-center mb-1">
-                <div className="w-3 h-3 mr-2" style={{ backgroundColor: entry.color }}></div>
-                <span className="text-sm">
-                  {entry.name}: <span className="font-medium">{entry.value?.toFixed(3)}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (
@@ -574,7 +607,7 @@ function TrendPage() {
           {/* 圖表標題 */}
           <div className="mb-5">
             <h2 className="text-xl font-bold text-gray-800">
-              {currentDevice.name} -
+              {currentDevice.name}-
               {currentDevice.type === DEVICE_TYPES.TDR
                 ? ` TDR 曲線 @ ${selectedTimestamp ? new Date(selectedTimestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '請選擇時間點'}`
                 : currentDevice.type === DEVICE_TYPES.RAIN
@@ -617,7 +650,11 @@ function TrendPage() {
                       '數值', // 通用標籤
                     angle: -90, position: 'insideLeft', fill: getChartLineColor(currentDevice.type, true)
                   }}
-                  domain={currentDevice.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : undefined}
+                  domain={currentDevice.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : 
+                          currentDevice.type === DEVICE_TYPES.WATER ? [-55, 0] : 
+                          currentDevice.type === DEVICE_TYPES.TI ? [-3600, 3600] : 
+                          currentDevice.type === DEVICE_TYPES.GE ? [-500, 500] :
+                          undefined}
                 />
                 {currentDevice.type === DEVICE_TYPES.RAIN && data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
                   <YAxis 
@@ -630,12 +667,15 @@ function TrendPage() {
                 )}
                 <Tooltip
                   formatter={(value, name, props) => {
-                    if (currentDevice.type === DEVICE_TYPES.TDR) return [Number(value).toFixed(4), 'Rho'];
+                    if (currentDevice.type === DEVICE_TYPES.TDR) return [value, 'Rho'];
                     if (currentDevice.type === DEVICE_TYPES.RAIN) {
                       // ✨ Tooltip 的 name 應該匹配 Line/Bar 的 name 屬性
-                      if (props.dataKey === 'accumulated_rainfall') return [Number(value).toFixed(1) + ' mm', `累計雨量`];
-                      if (props.dataKey === `rainfall_${selectedRainInterval}`) return [Number(value).toFixed(1) + ' mm', `${selectedRainInterval}雨量`];
+                      if (props.dataKey === `rainfall_${selectedRainInterval}`) return [value + ' mm', `${selectedRainInterval}雨量`];
+                      if (props.dataKey === 'accumulated_rainfall') return [value + ' mm', `累計雨量`];
                     }
+                    if (currentDevice.type === DEVICE_TYPES.WATER) return [value + ' m', '地下水位'];
+                    if (currentDevice.type === DEVICE_TYPES.TI) return [value + ' "', '傾斜量'];
+                    if (currentDevice.type === DEVICE_TYPES.GE) return [value + ' mm', '伸縮量'];
                     return [Number(value).toFixed(3), name];
                   }}
                   labelFormatter={(label) =>
@@ -649,17 +689,20 @@ function TrendPage() {
                   <Line yAxisId="left" key="rho" type="monotone" dataKey="rho" stroke={getChartLineColor(DEVICE_TYPES.TDR)} strokeWidth={2} dot={false} name="反射係數 (Rho)" isAnimationActive={false}/>
                 ) : currentDevice.type === DEVICE_TYPES.RAIN ? (
                   <>
-                    {data.some(d => d.hasOwnProperty('accumulated_rainfall') && d.accumulated_rainfall !== null) && (
-                      <Line yAxisId="left" type="bump" dataKey="accumulated_rainfall" stroke={getChartLineColor(DEVICE_TYPES.RAIN, true)} strokeWidth={3} name={`累計雨量 (基於${selectedRainInterval})`} dot={false} isAnimationActive={false} />
-                    )}
                     {data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
                       <Bar yAxisId="left" dataKey={`rainfall_${selectedRainInterval}`} fill={getChartLineColor(DEVICE_TYPES.RAIN, false, true)} name={`${selectedRainInterval}區間雨量`} barSize={10} />
+                    )}
+                    {data.some(d => d.hasOwnProperty('accumulated_rainfall') && d.accumulated_rainfall !== null) && (
+                      <Line yAxisId="left" type="bump" dataKey="accumulated_rainfall" stroke={getChartLineColor(DEVICE_TYPES.RAIN, true)} strokeWidth={3} name={`累計雨量 (基於${selectedRainInterval})`} dot={false} isAnimationActive={false} />
                     )}
                   </>
                 ) : (
                   // 其他 WISE 設備
                   currentDevice.sensors?.[sensorIndex]?.channels.map((ch, index) => (
-                    <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(currentDevice.type, index > 0)} strokeWidth={2} dot={false} name={ch} isAnimationActive={false}/>
+                    <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(currentDevice.type, index > 0)} strokeWidth={1} dot={false} isAnimationActive={false}
+                    name={(currentDevice.type === DEVICE_TYPES.WATER) ? '地下水位' :
+                    (currentDevice.type === DEVICE_TYPES.TI) ? '傾斜量' :
+                    (currentDevice.type === DEVICE_TYPES.GE) ? '伸縮量' : ch} />
                   ))
                 )}
               </ComposedChart>
