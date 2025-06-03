@@ -61,12 +61,12 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
   // 優先使用 sensor.type，如果沒有則使用 device.type
   const typeToUse = sensorType || deviceType;
 
-  switch (typeToUse) {
+  switch (typeToUse) { 
     case DEVICE_TYPES.WATER: {
       // 水位計的 PEgF 通常在 chData.PEgF 或 allEntryData.raw[`${sensor.channels[0]} PEgF`]
       // 假設 chData 結構是 { PEgF: value }
       const v = chData?.PEgF;
-      return v != null && !isNaN(v) ? `${v.toFixed(2)} m` : `${mAtoDepth(chData?.EgF, sensor.wellDepth).toFixed(2)} m`;
+      return v != null && !isNaN(v) && v != 0 ? `${v.toFixed(2)} m` : `${mAtoDepth(chData?.EgF, sensor.wellDepth).toFixed(2)} m`;
     }
     case DEVICE_TYPES.RAIN: {
       // 雨量筒在 History 頁面，我們更關注單筆記錄的原始計數或已計算的十分鐘雨量

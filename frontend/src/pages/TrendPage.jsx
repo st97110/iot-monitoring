@@ -23,6 +23,34 @@ const getChartLineColor = (deviceType, isAccumulated = false, isInterval = false
   return typeBaseColors[deviceType] || defaultColor;
 };
 
+const formatDateTimeForCSV = (isoString) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      // 檢查日期是否有效
+      if (isNaN(date.getTime())) {
+        return isoString; // 如果無效，返回原始字串
+      }
+      // 'zh-TW' 代表台灣地區，會使用符合該地區的日期和時間格式 (通常是 YYYY/M/D 上/下午 H:MM:SS)
+      // timeZone: 'Asia/Taipei' 明確指定轉換到台北時區
+      // hour12: true 使用12小時制, hour12: false 使用24小時制
+      return date.toLocaleString('zh-TW', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: 'numeric', // 'numeric' (e.g., 6), '2-digit' (e.g., 06)
+        day: 'numeric',   // 'numeric' (e.g., 2), '2-digit' (e.g., 02)
+        hour: 'numeric',  // 'numeric' (e.g., 14 or 2), '2-digit' (e.g., 14 or 02)
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false // ✨ 設定為 true 顯示為12小時制 (例如 下午 2:42:27)
+                       // ✨ 設定為 false 顯示為24小時制 (例如 14:42:27)
+      });
+    } catch (e) {
+      console.error("Error formatting date for CSV:", isoString, e);
+      return isoString; // 出錯時返回原始字串
+    }
+  };
+
 function TrendPage() {
   const { routeGroup } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -180,10 +208,10 @@ function TrendPage() {
         .filter(row => row && row.time); // ✨ 3. 過濾掉 null (沒有有效 channel 數據的) 和沒有時間戳的
         
         if (processed.length > 0) {
-            setData(processed);
+          setData(processed);
         } else {
-            console.warn(`WISE: No processable data found for device ${currentDevice.id} and sensor ${sensor.name} after filtering.`);
-            setData([]); // 如果處理後沒有數據，也清空
+          console.warn(`WISE: No processable data found for device ${currentDevice.id} and sensor ${sensor.name} after filtering.`);
+          setData([]); // 如果處理後沒有數據，也清空
         }
       }
     } catch (err) {
@@ -313,7 +341,7 @@ function TrendPage() {
         headers.push(`區間雨量 (${selectedRainInterval})`, '累計雨量'); // 假設 selectedRainInterval 和 accumulated_rainfall 存在
         data.forEach(row => {
           dataRows.push([
-            row.time,
+            formatDateTimeForCSV(row.time),
             row[`rainfall_${selectedRainInterval}`] ?? '', // 確保這些 key 在 data 中存在
             row.accumulated_rainfall ?? ''
           ]);
@@ -323,52 +351,59 @@ function TrendPage() {
         if (sensor && sensor.channels) {
           // 為每個通道創建兩個表頭：一個原始值(EgF)，一個展示值
           sensor.channels.forEach(ch => {
-            headers.push(`${ch} (原始值)`); // 例如 AI_0 (原始值)
+            headers.push(`${ch} (原始值 mA)`); // 例如 AI_0 (原始值 mA)
             // ✨ 獲取展示值的單位，用於表頭
             // 這裡需要一個方法從 sensor 配置或 deviceConfig 中獲取單位
             // 為了簡化，我們先用一個通用的 "展示值"
             // 您可以根據 sensor.type 或 chData 特性來決定更精確的單位名
             let displayUnit = '';
-            if (sensor.type === DEVICE_TYPES.WATER) displayUnit = ' (m)';
-            else if (sensor.type === DEVICE_TYPES.GE) displayUnit = ' (mm)';
-            else if (sensor.type === DEVICE_TYPES.TI) displayUnit = ' (")';
+            if (currentDevice.type === DEVICE_TYPES.WATER) displayUnit = ' m';
+            else if (currentDevice.type === DEVICE_TYPES.GE) displayUnit = ' mm';
+            else if (currentDevice.type === DEVICE_TYPES.TI) displayUnit = ' "';
             // 其他類型可以不加單位或按需添加
 
             headers.push(`${sensor.name} (展示值${displayUnit})`); // 例如 AI_0 (展示值 m)
           });
 
           data.forEach(entry => { // entry 是圖表的一行數據，例如 { time: "...", AI_0: (delta值), AI_1: (delta值) }
-            const rowValues = [entry.time];
-            // ✨ 要獲取原始 EgF，我們需要訪問後端返回的、未經處理的歷史數據
-            //    這意味著 data state 可能只存了 delta 值。
-            //    我們需要 fullHistoryData (如果 WISE 也存了原始的 API response)
-            //    或者，修改 handleSearch，讓 data state 中同時包含 delta 和 EgF
+            const rowValues = [formatDateTimeForCSV(entry.time)];
+            // 要獲取原始 EgF，我們需要訪問後端返回的、未經處理的歷史數據
+            // 我們需要 fullHistoryData (如果 WISE 也存了原始的 API response)
 
             // 假設 fullHistoryData 存有 API 原始返回的、包含 channels 和 raw 的數據
             const originalEntry = fullHistoryData.find(histEntry => histEntry.timestamp === entry.time);
 
             sensor.channels.forEach(ch => {
               let rawEgfValue = '';
-              let displayValue = '';
+              let displayValueString = '';
 
               if (originalEntry) {
-                  const chDataFromOriginal = originalEntry.channels?.[ch];
-                  const rawFromOriginal = originalEntry.raw;
+                const chDataFromOriginal = originalEntry.channels?.[ch];
+                const rawFromOriginal = originalEntry.raw;
 
-                  // 獲取原始 EgF
-                  if (chDataFromOriginal && chDataFromOriginal.EgF !== undefined) {
-                      rawEgfValue = chDataFromOriginal.EgF;
-                  } else if (rawFromOriginal && rawFromOriginal[`${ch} EgF`] !== undefined) {
-                      rawEgfValue = rawFromOriginal[`${ch} EgF`];
-                  }
-                  rawEgfValue = (typeof rawEgfValue === 'number') ? rawEgfValue.toFixed(3) : (rawEgfValue || '');
+                // 獲取原始 EgF
+                if (chDataFromOriginal && chDataFromOriginal.EgF !== undefined) {
+                    rawEgfValue = chDataFromOriginal.EgF;
+                } else if (rawFromOriginal && rawFromOriginal[`${ch} EgF`] !== undefined) {
+                    rawEgfValue = rawFromOriginal[`${ch} EgF`];
+                }
+                rawEgfValue = (typeof rawEgfValue === 'number') ? rawEgfValue.toFixed(3) : (rawEgfValue || '');
 
 
-                  // 獲取展示值 (需要傳入正確的 sensor 和 chData)
-                  // formatValue(deviceConfig, sensorConfig, channelSpecificData, fullEntryDataForTimestamp)
-                  displayValue = formatValue(currentDevice, sensor, chDataFromOriginal, originalEntry);
+                // 獲取展示值 (需要傳入正確的 sensor 和 chData)
+                // formatValue(deviceConfig, sensorConfig, channelSpecificData, fullEntryDataForTimestamp)
+                displayValueString = formatValue(currentDevice, sensor, chDataFromOriginal, originalEntry);
+                
               }
               rowValues.push(rawEgfValue);
+              let displayValue = 0;
+              if (typeof displayValueString === 'string' && displayValueString !== '無資料' && displayValueString !== 'N/A') {
+                // 嘗試從 "12.34 m" 中提取 12.34
+                const match = displayValueString.match(/^(-?\d+(\.\d+)?)/);
+                if (match && match[1]) {
+                  displayValue = parseFloat(match[1]);
+                }
+              }
               rowValues.push(displayValue);
             });
             dataRows.push(rowValues);
