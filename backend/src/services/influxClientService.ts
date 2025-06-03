@@ -153,7 +153,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
         },
         complete() {
           if (latestTimestamp) {
-            logger.debug(`[InfluxQuery] 找到裝置 ${deviceId} 最新 TDR 時間戳: ${latestTimestamp}`);
+            // logger.debug(`[InfluxQuery] 找到裝置 ${deviceId} 最新 TDR 時間戳: ${latestTimestamp}`);
             resolveStep1();
           } else {
             resolveStep1(); // 即使沒找到也 resolve，後續 data 會是空的
@@ -194,7 +194,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
           rejectStep2(error);
         },
         complete() {
-          logger.debug(`[InfluxQuery] 裝置 ${deviceId} 最新 TDR 資料點收集完成 (TS: ${latestTimestamp})。點數: ${tdrDataPoints.length}`);
+          // logger.debug(`[InfluxQuery] 裝置 ${deviceId} 最新 TDR 資料點收集完成 (TS: ${latestTimestamp})。點數: ${tdrDataPoints.length}`);
           resolveStep2();
         },
       });
@@ -234,11 +234,11 @@ export async function queryHistoryDataFromInflux(
 
   // startDate 的 00:00:00 本地時間，轉換為 UTC
   const utcStart = formatInTimeZone(
-    new Date(`${startDate}T00:00:00`),'UTC','yyyy-MM-dd\'T\'HH:mm:ss.SSSxxx');
+    new Date(`${startDate}T00:00:00`), timeZone, 'yyyy-MM-dd\'T\'HH:mm:ss.SSSxxx', );
 
   // endDate 的 23:59:59.999 本地時間，轉換為 UTC
   const endDateTime = new Date(`${endDate}T23:59:59.999`); // 本地時間的結束
-  const utcEnd = formatInTimeZone(endDateTime, 'UTC','yyyy-MM-dd\'T\'HH:mm:ss.SSSxxx');
+  const utcEnd = formatInTimeZone(endDateTime, timeZone, 'yyyy-MM-dd\'T\'HH:mm:ss.SSSxxx');
 
   let fluxQuery: string;
 
@@ -258,7 +258,7 @@ export async function queryHistoryDataFromInflux(
         }))
         |> sort(columns: ["_time"], desc: false) // 按時間升序
     `;
-    logger.debug(`[InfluxQuery] Rain Gauge History (Aggregated by ${rainInterval}) for ${deviceId}:\n${fluxQuery}`);
+    // logger.debug(`[InfluxQuery] Rain Gauge History (Aggregated by ${rainInterval}) for ${deviceId}:\n${fluxQuery}`);
 
   } else { // TDR 或非雨量筒的 WISE，或雨量筒但未指定 rainInterval (預設查明細)
     fluxQuery = `
@@ -268,7 +268,7 @@ export async function queryHistoryDataFromInflux(
         |> filter(fn: (r) => r._field == "rho" or r._measurement != "tdr_raw")
         |> sort(columns: ["_time", "distance_m"], desc: false)
     `;
-    logger.debug(`[InfluxQuery] Default History Query for ${deviceId} (Source: ${key}):\n${fluxQuery}`);
+    // logger.debug(`[InfluxQuery] Default History Query for ${deviceId} (Source: ${key}):\n${fluxQuery}`);
   }
 
   /* 1️⃣ 先把所有 row 收進 history 陣列 */
