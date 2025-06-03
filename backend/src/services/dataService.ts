@@ -399,11 +399,11 @@ export async function enrichRainfall(
           // ── 策略 B：即時計算 (適用於任何一種但預計算值不存在) ──
           try {
             const rain = await queryRainfall(deviceId, durationStr); // queryRainfall 接受 string | number
-            logger.debug(`[RainCalc] ${deviceId} (${durationStr}) 即時計算結果 = ${rain}`);
+            // logger.debug(`[RainCalc] ${deviceId} (${durationStr}) 即時計算結果 = ${rain}`);
             if (rain !== null && !isNaN(rain)) { // 確保 rain 是有效數字
               record[rainfallFieldKey] = rain;
             } else {
-              logger.debug(`[RainCalc] ${deviceId} (${durationStr}) 即時計算無數據，設為 null。`);
+              // logger.debug(`[RainCalc] ${deviceId} (${durationStr}) 即時計算無數據，設為 null。`);
               record[rainfallFieldKey] = null; // 或 0，取決於希望如何表示無數據
             }
           } catch (e: any) {

@@ -1,9 +1,12 @@
 // backend/server.ts
+process.env.TZ = 'Asia/Taipei';
 
 import { app } from './app';
 import { config } from './config/config';
 import { logger } from './utils/logger';
 import { start as startDataScanScheduler, stop as stopDataScanScheduler } from './schedulers/dataScanScheduler';
+
+logger.info(`[時區設定] Node.js process timezone (TZ): ${process.env.TZ}, Current Date Object: ${new Date().toString()}`);
 
 const PORT = config.port || 3000;
 

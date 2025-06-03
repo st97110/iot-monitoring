@@ -44,7 +44,7 @@ export async function safeGetHistoryData(
     if (historyDataMap && historyDataMap[deviceId] && Array.isArray(historyDataMap[deviceId])) {
       resultDataArray = historyDataMap[deviceId];
       if (resultDataArray.length > 0) {
-        logger.debug(`[SafeGetHistoryData] 從 DB 獲取到 ${deviceId} 的 ${resultDataArray.length} 筆歷史數據 (區間: ${rainInterval})。`);
+        // logger.debug(`[SafeGetHistoryData] 從 DB 獲取到 ${deviceId} 的 ${resultDataArray.length} 筆歷史數據 (區間: ${rainInterval})。`);
       }
     }
 
@@ -52,7 +52,7 @@ export async function safeGetHistoryData(
       logger.warn(`[SafeGetHistoryData] DB 查詢 ${deviceId}(${source}, interval: ${rainInterval}) 無有效歷史數據，改從資料夾讀取。`);
       resultDataArray = await getHistoryDataFromFolder(deviceId, startDate, endDate, source);
       if (resultDataArray.length > 0) {
-        logger.debug(`[SafeGetHistoryData] 從資料夾獲取到 ${deviceId} 的 ${resultDataArray.length} 筆歷史數據。`);
+        // logger.debug(`[SafeGetHistoryData] 從資料夾獲取到 ${deviceId} 的 ${resultDataArray.length} 筆歷史數據。`);
       } else {
         logger.warn(`[SafeGetHistoryData] 資料夾中也未找到 ${deviceId}(${source}) 的歷史數據。`);
       }
