@@ -48,7 +48,7 @@ async function loadRainGaugeState(): Promise<void> {
 async function saveRainGaugeState(): Promise<void> {
     try {
         await fs.writeFile(RAIN_GAUGE_STATE_FILE_PATH, JSON.stringify(rainGaugeLastState, null, 2), 'utf-8');
-        logger.debug(`[雨量狀態] 雨量筒狀態已成功保存到 ${RAIN_GAUGE_STATE_FILE_PATH}`);
+        // logger.debug(`[雨量狀態] 雨量筒狀態已成功保存到 ${RAIN_GAUGE_STATE_FILE_PATH}`);
     } catch (error: any) {
         logger.error(`[雨量狀態] 保存雨量筒狀態失敗: ${error.message}`);
     }

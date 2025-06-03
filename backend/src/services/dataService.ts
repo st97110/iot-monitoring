@@ -382,7 +382,7 @@ export async function enrichRainfall(
         const durationStr = typeof duration === 'number' ? `${duration}m` : duration;
         const rainfallFieldKey = `rainfall_${durationStr.replace(/\s+/g, '')}`; // e.g., rainfall_10m, rainfall_1h
 
-        console.log(`[EnrichRainfall] ${deviceId} 檢查 ${rainfallFieldKey}: ${record[rainfallFieldKey]}`);
+        // logger.debug(`[EnrichRainfall] ${deviceId} 檢查 ${rainfallFieldKey}: ${record[rainfallFieldKey]}`);
         // 檢查 DB 返回的數據中是否已經有這個聚合值
         if (record[rainfallFieldKey] !== undefined && record[rainfallFieldKey] !== null) {
           // 如果 DB 返回的欄位名與前端期望的一致，或者我們在這裡做映射
