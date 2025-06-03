@@ -3,6 +3,7 @@ import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
 import { isDeviceRainGauge } from '../utils/helper';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export type SourceKey = 'tdr' | 'wise';
 
@@ -225,12 +226,26 @@ export async function queryHistoryDataFromInflux(
   const queryApi = client.getQueryApi(config.influx.org);
   const bucket = config.influx.buckets[key];
 
+  // ✨ 假設前端傳來的 startDate 和 endDate 是 'YYYY-MM-DD' 格式，代表本地日期
+  // ✨ 將本地日期的開始和結束轉換為 UTC ISO 字符串給 InfluxDB
+  // ✨ 假設服務器和用戶期望的本地時區是 'Asia/Taipei' (UTC+8)
+  // ✨ 您可以將 'Asia/Taipei' 放入 config 中
+  const timeZone = 'Asia/Taipei';
+
+  // startDate 的 00:00:00 本地時間，轉換為 UTC
+  const utcStart = formatInTimeZone(
+    new Date(`${startDate}T00:00:00`),'UTC','yyyy-MM-dd\'T\'HH:mm:ss.SSSxxx');
+
+  // endDate 的 23:59:59.999 本地時間，轉換為 UTC
+  const endDateTime = new Date(`${endDate}T23:59:59.999`); // 本地時間的結束
+  const utcEnd = formatInTimeZone(endDateTime, 'UTC','yyyy-MM-dd\'T\'HH:mm:ss.SSSxxx');
+
   let fluxQuery: string;
 
   if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
     fluxQuery = `
       from(bucket: "${bucket}")
-        |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
+        |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
         |> filter(fn: (r) => r._measurement == "wise_raw" and r.device == "${deviceId}")
         |> filter(fn: (r) => r._field == "rain_10m")
         |> aggregateWindow(every: ${rainInterval}, fn: sum, createEmpty: false, timeSrc: "_start") // 使用 _start 作為新時間戳
@@ -248,7 +263,7 @@ export async function queryHistoryDataFromInflux(
   } else { // TDR 或非雨量筒的 WISE，或雨量筒但未指定 rainInterval (預設查明細)
     fluxQuery = `
       from(bucket: "${bucket}")
-        |> range(start: ${startDate}T00:00:00Z, stop: ${endDate}T23:59:59Z)
+        |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
         |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
         |> filter(fn: (r) => r._field == "rho" or r._measurement != "tdr_raw")
         |> sort(columns: ["_time", "distance_m"], desc: false)
