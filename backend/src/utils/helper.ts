@@ -55,7 +55,6 @@ interface sensor {
   sensors: any[] | undefined;
 }
 
-
 export interface SensorCtx {
   type       : DEVICE_TYPES;       // WATER | TI | GE | RAIN
   raw        : number;             // 4–20 mA 或 Cnt

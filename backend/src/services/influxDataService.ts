@@ -91,9 +91,9 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
 
       // ✨ 關鍵：處理預計算的10分鐘雨量 ✨
       if (currentDeviceType === DEVICE_TYPES.RAIN && record.rain_10m_scanner !== undefined && typeof record.rain_10m_scanner === 'number' && !isNaN(record.rain_10m_scanner)) {
-        point.floatField('rain_10m', record.rain_10m_scanner); // ✨ 將 'rain_10m_scanner' 的值以 'rain_10m' 為欄位名寫入
+        point.floatField('rainfall_10m', record.rain_10m_scanner); // ✨ 將 'rain_10m_scanner' 的值以 'rainfall_10m' 為欄位名寫入
         hasValidDataField = true;
-        logger.debug(`[InfluxData] 設備 ${deviceId} 添加預計算雨量 rain_10m: ${record.rain_10m_scanner}`);
+        // logger.debug(`[InfluxData] 設備 ${deviceId} 添加預計算雨量 rainfall_10m: ${record.rain_10m_scanner}`);
       } else if (record.hasOwnProperty('rain_10m_scanner')) { // 如果屬性存在但值無效
         logger.warn(`[InfluxData] 設備 ${deviceId} 的 rain_10m_scanner 值無效: ${record.rain_10m_scanner}`);
       }
