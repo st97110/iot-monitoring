@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, use } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPES, DEVICE_TYPE_NAMES } from '../config/config';
@@ -9,7 +9,7 @@ function History() {
   const navigate = useNavigate();
 
   const [data, setData] = useState([]);
-  const [deviceId, setDeviceId] = useState('');
+  const [deviceId, setDeviceId] = useState(''); // 存儲的是前端選中的唯一邏輯 ID (e.g., ..._SITE1)
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 //  const [limit] = useState(10);
@@ -36,24 +36,38 @@ function History() {
     return ids;
   }, [routeGroup]);
 
-  useEffect(() => {
-    if (startDate && endDate) {
-      fetchData();
-    }
-  }, [deviceId, startDate, endDate, routeGroup]);
-
   const syncDates = (start, end, setStartDate, setEndDate) => {
     if (new Date(start) > new Date(end)) {
       setEndDate(start);
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!startDate || !endDate) return;
+    setLoading(true);
+    setData([]); // 清空舊數據
+
     try {
-      setLoading(true);
+      let deviceIdForApi;
+      // ✨ 根據前端選中的邏輯 deviceId 找到對應的 originalDeviceId
+      if (deviceId) {
+        let foundDeviceConfig = null;
+        Object.values(deviceMapping).some(area => {
+          const dev = area.devices.find(d => d.id === deviceId);
+          if (dev) {
+            foundDeviceConfig = dev;
+            return true;
+          }
+          return false;
+        });
+        deviceIdForApi = foundDeviceConfig?.originalDeviceId || deviceId; // 優先使用 originalDeviceId
+      } else {
+        deviceIdForApi = undefined; // 如果前端沒有選擇特定設備，則 API 查詢所有
+      }
+
       const res = await axios.get(`${API_BASE}/api/history`, {
         params: {
-          deviceId: deviceId || undefined,
+          deviceId: deviceIdForApi || undefined,
           // area: !deviceId ? '全部' : undefined,
           startDate,
           endDate,
@@ -64,8 +78,23 @@ function History() {
 
       let fetchedData = res.data || [];
 
+      // ✨ 注意：API 返回的 entry.deviceId 是物理 ID。
       if (!deviceId && routeGroup) {
-        fetchedData = fetchedData.filter(entry => relevantDeviceIds.includes(entry.deviceId));
+        // 獲取當前 routeGroup 下所有設備的物理 ID 列表
+        const physicalIdsInRouteGroup = [];
+        Object.values(deviceMapping).forEach(areaConfig => {
+          if (areaConfig.routeGroup === routeGroup) {
+            areaConfig.devices.forEach(device => {
+              if (device.originalDeviceId && !physicalIdsInRouteGroup.includes(device.originalDeviceId)) {
+                physicalIdsInRouteGroup.push(device.originalDeviceId);
+              } else if (!device.originalDeviceId && !physicalIdsInRouteGroup.includes(device.id)) {
+                // 處理那些沒有 originalDeviceId 的配置 (例如 TDR)
+                physicalIdsInRouteGroup.push(device.id);
+              }
+            });
+          }
+        });
+        fetchedData = fetchedData.filter(entry => physicalIdsInRouteGroup.includes(entry.deviceId));
       }
 
       const sorted = fetchedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -76,7 +105,11 @@ function History() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [deviceId, startDate, endDate, routeGroup, relevantDeviceIds]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // const handlePageChange = (direction) => {
   //   setOffset(prev => Math.max(0, prev + direction * limit));
@@ -260,18 +293,41 @@ function History() {
               <tbody>
                 {getFilteredTableData().map((entry, index) => { // ✨ 使用 getFilteredTableData()
                   let deviceConfig;
-                  Object.values(deviceMapping).some(areaConfig => {
-                    if (areaConfig.routeGroup === routeGroup) {
-                      const foundDevice = areaConfig.devices.find(d => d.id === entry.deviceId);
-                      if (foundDevice) {
-                        deviceConfig = foundDevice;
+
+                  if (deviceId) { // 如果前端選了一個特定的邏輯設備
+                    Object.values(deviceMapping).some(area => {
+                      const dev = area.devices.find(d => d.id === deviceId && (d.originalDeviceId || d.id) === entry.deviceId);
+                      if (dev) {
+                        deviceConfig = dev;
                         return true;
                       }
-                    }
-                    return false;
-                  });
+                      return false;
+                    });
+                  } else { // 前端選的是「全部裝置」，entry.deviceId 是物理ID
+                    Object.values(deviceMapping).some(area => {
+                      if (area.routeGroup === routeGroup) {
+                        // 找到第一個 originalDeviceId 或 id 匹配 entry.deviceId 的邏輯設備配置
+                        const dev = area.devices.find(d => (d.originalDeviceId || d.id) === entry.deviceId);
+                        if (dev) {
+                            deviceConfig = dev;
+                            return true;
+                        }
+                      }
+                      return false;
+                    });
+                  }
 
-                  if (!deviceConfig || !entry.timestamp) return null;
+                  // 如果沒有找到匹配的 deviceConfig (理論上不應該，如果數據過濾正確)
+                  if (!deviceConfig) {
+                    // 為了安全，可以嘗試用物理 ID 找一個最基礎的配置信息
+                    deviceConfig = Object.values(deviceMapping)
+                                        .flatMap(area => area.devices)
+                                        .find(d => (d.originalDeviceId || d.id) === entry.deviceId);
+                    if (!deviceConfig) {
+                      console.warn("Cannot find deviceConfig for entry:", entry);
+                      return null; // 或者顯示一個錯誤行
+                    }
+                  }
 
                   const isTdrEntry = entry.source === 'tdr' || deviceConfig.type === DEVICE_TYPES.TDR;
 

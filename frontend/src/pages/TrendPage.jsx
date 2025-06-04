@@ -114,8 +114,10 @@ function TrendPage() {
     setData([]); setAvailableTimestamps([]); setFullHistoryData([]);
 
     try {
+      const deviceIdForApi = currentDevice.originalDeviceId || currentDevice.id;
+
       const res = await axios.get(`${API_BASE}/api/history`, {
-        params: { deviceId: currentDevice.id, startDate, endDate, source: currentDevice.type?.toLowerCase(), rainInterval: selectedRainInterval }
+        params: { deviceId: deviceIdForApi, startDate, endDate, source: currentDevice.type?.toLowerCase(), rainInterval: selectedRainInterval }
       });
       const historyRecords = (res.data || []).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       setFullHistoryData(historyRecords);

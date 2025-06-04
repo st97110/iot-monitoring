@@ -30,20 +30,32 @@ export function getDeviceTypeBorderColor(device) {
   return typeBorderColors[type] || 'border-gray-500';
 }
 
-export function mAtoDepth(mA, wellDepth) {
-    if (typeof mA !== 'number' || isNaN(mA) || typeof wellDepth !== 'number' || isNaN(wellDepth)) {
-        return NaN; // 或返回一個錯誤提示或預設值
-    }
-    const ratio = (Math.min(Math.max(mA, 4), 20) - 4) / 16;
-    return ratio * wellDepth; // 注意 wellDepth 的正負號
-}
-
 export function isNormalData(device, chData) {
   if (device.type === DEVICE_TYPES.RAIN && chData?.rainfall_10m < 10) return true;          // 雨量筒小於 10 顯示為正常
   else if (device.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 50) return true;       // 伸縮計小於 30 顯示為正常
   else if (device.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 2 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
   else if (device.type === DEVICE_TYPES.WATER && chData?.PEgF < -15) return true; // 水位計小於 -15 公尺顯示為正常
   return false;
+}
+
+function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500) {
+  switch (type) {
+    case DEVICE_TYPES.WATER: {             // mA → m
+      const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
+      return ratio * (wellDepth ?? -50);
+    }
+    case DEVICE_TYPES.TI: {                       // mA → arc‑sec
+      const fs  = fsDeg ?? 15;                    // ±FS°
+      const deg = ((raw - 12) / 16) * (2 * fs);   // 4→‑fs, 12→0, 20→+fs
+      return deg * 3600;                          // 度 → 秒
+    }
+    case DEVICE_TYPES.GE: {                       // mA → cm
+      const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
+      return ratio * (geRange ?? 500);
+    }
+    default:
+      return raw;
+  }
 }
 
 /**
@@ -55,18 +67,17 @@ export function isNormalData(device, chData) {
  * @returns 格式化後的數值字串
  */
 export function formatValue(deviceConfig, sensor, chData, allEntryData) {
-  const deviceType = deviceConfig.type; // 設備的主類型
-  const sensorType = sensor.type;     // 感測器配置中指定的類型 (可能與 deviceType 相同或更具體)
-
   // 優先使用 sensor.type，如果沒有則使用 device.type
-  const typeToUse = sensorType || deviceType;
+  const typeToUse = sensor.type || deviceConfig.type;
+  // 如果 EgF 為 20 或 4，則顯示 N/A
+  if (chData?.EgF == 20 || chData?.EgF == 4) return 'N/A';
 
-  switch (typeToUse) { 
+  switch (typeToUse) {
     case DEVICE_TYPES.WATER: {
       // 水位計的 PEgF 通常在 chData.PEgF 或 allEntryData.raw[`${sensor.channels[0]} PEgF`]
       // 假設 chData 結構是 { PEgF: value }
-      const v = chData?.PEgF;
-      return v != null && !isNaN(v) && v != 0 ? `${v.toFixed(2)} m` : `${mAtoDepth(chData?.EgF, sensor.wellDepth).toFixed(2)} m`;
+      return chData?.EgF != null && !isNaN(chData?.EgF) ? `${rawToPEgF(chData?.EgF, typeToUse, sensor?.wellDepth).toFixed(2)} m` : 
+            chData?.PEgF != null && !isNaN(chData?.PEgF) ? `${chData?.PEgF.toFixed(2)} m` : 'N/A';
     }
     case DEVICE_TYPES.RAIN: {
       // 雨量筒在 History 頁面，我們更關注單筆記錄的原始計數或已計算的十分鐘雨量
@@ -76,30 +87,27 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
       }
       // 否則，嘗試顯示原始計數
       const cnt = chData?.Cnt; // 假設 DI_0 Cnt 的 metric 是 'Cnt'
-      return cnt != null && !isNaN(cnt) ? `${cnt} counts` : '無資料';
+      return cnt != null && !isNaN(cnt) ? `${cnt} counts` : 'N/A';
     }
     case DEVICE_TYPES.GE: {
       // 伸縮計：優先使用 chData.Delta，如果沒有則使用 chData.EgF計算
-      let d = chData?.Delta;
-      let v = chData?.EgF;
-      if (d == null && v != null) d = mAtoDepth(v, sensor.wellDepth);
-      const initV = mAtoDepth(sensor.initialValues[`${sensor.channels[0]} EgF`], sensor.wellDepth);
-
-      return d != null && !isNaN(d) ? `${d.toFixed(2)} mm` : (v - initV).toFixed(2);
+      let raw = chData?.EgF;
+      let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
+      const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor.geRange);
+      return pe != null && !isNaN(pe) && initPe != null && !isNaN(initPe) ? `${(pe - initPe).toFixed(2)} mm` : 
+            chData?.PEgF != null && !isNaN(chData?.PEgF) ? `${chData?.PEgF.toFixed(2)} mm` : 'N/A';
     }
     case DEVICE_TYPES.TI: {
       // 傾斜儀：類似伸縮計
-      let d = chData?.Delta;
-      if (d == null && chData?.Delta != null) d = chData.Delta;
-      if (d == null && allEntryData.raw) {
-          const rawDelta = allEntryData.raw[`${sensor.channels[0]} Delta`];
-          if (rawDelta != null) d = parseFloat(rawDelta);
-      }
-      return d != null && !isNaN(d) ? `${d.toFixed(1)} "` : '無資料';
+      let raw = chData?.EgF;
+      let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg);
+      const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg);
+      return pe != null && !isNaN(pe) && initPe != null && !isNaN(initPe) ? `${(pe - initPe).toFixed(1)} "` : 
+            chData?.PEgF != null && !isNaN(chData?.PEgF) ? `${chData?.PEgF.toFixed(1)} "` : 'N/A';
     }
     default: { // 其他類型或未知類型，嘗試顯示 EgF
       const v = chData?.EgF;
-      return v != null && !isNaN(v) ? v.toFixed(3) : '無資料';
+      return v != null && !isNaN(v) ? v.toFixed(3) : 'N/A';
     }
   }
 }

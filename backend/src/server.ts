@@ -6,12 +6,10 @@ import { config } from './config/config';
 import { logger } from './utils/logger';
 import { start as startDataScanScheduler, stop as stopDataScanScheduler } from './schedulers/dataScanScheduler';
 
-logger.info(`[時區設定] Node.js process timezone (TZ): ${process.env.TZ}, Current Date Object: ${new Date().toString()}`);
-
 const PORT = config.port || 3000;
 
 const server = app.listen(PORT, () => {
-  logger.info(`伺服器已啟動：http://localhost:${PORT}`);
+  logger.info(`伺服器已啟動：http://localhost:${PORT} (時區: ${Intl.DateTimeFormat().resolvedOptions().timeZone})`); // 另一種檢查方式
   startDataScanScheduler();  // 啟動排程
 });
 

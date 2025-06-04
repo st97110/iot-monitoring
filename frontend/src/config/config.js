@@ -52,8 +52,9 @@ export const deviceMapping = {
     routeGroup: 't14',
     devices: [
       {
-        id: 'WISE-4010LAN_74FE48941ABE',
+        id: 'WISE-4010LAN_74FE48941ABE_SITE1',
         name: '84.6K',
+        originalDeviceId: 'WISE-4010LAN_74FE48941ABE',
         lat: 24.0301,
         lng: 121.16,
         type: DEVICE_TYPES.TI,
@@ -63,8 +64,9 @@ export const deviceMapping = {
         ]
       },
       {
-        id: 'WISE-4010LAN_74FE48941ABE',
+        id: 'WISE-4010LAN_74FE48941ABE_SITE2',
         name: '84.65K',
+        originalDeviceId: 'WISE-4010LAN_74FE48941ABE',
         lat: 24.0301,
         lng: 121.16,
         type: DEVICE_TYPES.TI,
@@ -72,7 +74,8 @@ export const deviceMapping = {
           { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 11.388 } },
           { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.317 } },
         ]
-      },{
+      },
+      {
         id: 'WISE-4010LAN_00D0C9FAD2E3',
         name: '84.7K',
         lat: 24.0302,
@@ -119,8 +122,9 @@ export const deviceMapping = {
     routeGroup: 't14',
     devices: [
       {
-        id: 'WISE-4010LAN_00D0C9FAD2C9',
+        id: 'WISE-4010LAN_00D0C9FAD2C9_SITE1',
         name: '14.25K-BT',
+        originalDeviceId: 'WISE-4010LAN_00D0C9FAD2C9',
         lat: 24.08995,
         lng: 121.17361,
         type: DEVICE_TYPES.TI,
@@ -130,8 +134,9 @@ export const deviceMapping = {
         ]
       },
       {
-        id: 'WISE-4010LAN_00D0C9FAD2C9',
+        id: 'WISE-4010LAN_00D0C9FAD2C9_SITE2',
         name: '14.27K-BT',
+        originalDeviceId: 'WISE-4010LAN_00D0C9FAD2C9',
         lat: 24.08995,
         lng: 121.17361,
         type: DEVICE_TYPES.TI,
@@ -181,15 +186,17 @@ export const deviceMapping = {
     name: '台8線107K區',
     routeGroup: 't8',
     devices: [
-      { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T4', name: 'TDR T4 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T7', name: 'TDR T7 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T9', name: 'TDR T9 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T4', name: 'TDR T4 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T7', name: 'TDR T7 (台8)', lat: 24.19166, lng: 121.3025, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T9', name: 'TDR T9 (台8)', lat: 24.19138, lng: 121.30361, area: '台8線107K區', type: DEVICE_TYPES.TDR },
       {
         id: 'WISE-4010LAN_74FE4860F492',
         name: 'OW10 水位計',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -199,6 +206,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_00D0C9FAD2C2',
         name: 'GE3 (50m, 70m) 伸縮計',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.GE,
         sensors: [
@@ -209,6 +218,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE48595E19',
         name: 'BT1 & BT3 傾斜儀',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
@@ -221,6 +232,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE486CEDFB',
         name: 'OW6 水位計',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -230,6 +243,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE486B76BB',
         name: 'BT2 傾斜儀',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
@@ -240,6 +255,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE488F3BA0',
         name: 'OW5 水位計',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -249,6 +266,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4060LAN_00D0C9E332E8',
         name: '107K+600 雨量筒',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.RAIN,
         sensors: [
@@ -258,6 +277,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE487F4FE3',
         name: 'FL1~4 流量計',
+        lat: 24.19277,
+        lng: 121.30166,
         area: '台8線107K區',
         type: DEVICE_TYPES.FLOW, // ✨ 使用新的 FLOW 類型
         sensors: [
