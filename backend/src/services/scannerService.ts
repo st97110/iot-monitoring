@@ -142,8 +142,9 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
 
     try {
         allDateDirs = (await fs.readdir(deviceSpecificRootPath, { withFileTypes: true }))
-        .filter(entry => entry.isDirectory() && /^\d{8}$/.test(entry.name)) // 確保是8位數字的日期目錄
-        .map(entry => entry.name);
+            .filter(entry => entry.isDirectory() && /^\d{8}$/.test(entry.name))
+            .map(entry => entry.name)
+            .sort((a, b) => a.localeCompare(b)); // ✨ 按日期從舊到新排序，確保按順序處理
     } catch (error: any) {
         logger.error(`[掃描] 讀取設備 ${deviceId} (來源: ${source}) 的日期目錄列表失敗: ${error.message}`);
         return;
@@ -154,96 +155,64 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
         return;
     }
 
-    // 1. 處理昨天的目錄 (如果存在)
-    if (allDateDirs.includes(yesterday)) {
-        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 檢查昨天的目錄: ${yesterday}`);
-        const yesterdayPath = path.join(deviceSpecificRootPath, yesterday);
+    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 發現日期目錄: ${allDateDirs.join(', ')}`);
+
+    // ✨ 遍歷所有找到的日期目錄進行處理
+    for (const dateDir of allDateDirs) {
+        const currentDirPath = path.join(deviceSpecificRootPath, dateDir);
+        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 開始處理目錄: ${dateDir}`);
+
         try {
-            const files = (await fs.readdir(yesterdayPath)).filter(filename =>
+            // 檢查目錄是否存在，以防在遍歷過程中被其他進程刪除
+            if (!await fs.pathExists(currentDirPath)) {
+                logger.warn(`[掃描] 設備 ${deviceId} (來源: ${source}) 目錄 ${dateDir} 在處理前已不存在，跳過。`);
+                continue;
+            }
+
+            const files = (await fs.readdir(currentDirPath)).filter(filename =>
                 (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
                 (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
             );
+
             if (files.length > 0) {
-                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理昨天 (${yesterday}) 的 ${files.length} 個檔案。`);
-                await processFilesBatch(yesterdayPath, deviceId, source, files, yesterday);
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 在目錄 ${dateDir} 中找到 ${files.length} 個檔案，準備處理。`);
+                await processFilesBatch(currentDirPath, deviceId, source, files, dateDir); // ✨ 傳遞 dateDir 給 processFilesBatch
             } else {
-                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 為空。`);
+                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 目錄 ${dateDir} 為空。`);
             }
-            // 處理完後，檢查目錄是否為空，如果為空則刪除
-            const remainingFilesInYesterday = await fs.readdir(yesterdayPath);
-            if (remainingFilesInYesterday.length === 0) {
-                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 已空，準備刪除。`);
-                await fs.rm(yesterdayPath, { recursive: true, force: true }); // Node 14.14+ for recursive on rmdir
-                                                                         // fs-extra's remove also works: await fs.remove(yesterdayPath);
-                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 已刪除昨天的空目錄 ${yesterday}。`);
-            } else {
-                 logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 處理後仍有 ${remainingFilesInYesterday.length} 個檔案/目錄，不刪除。`);
+
+            // ✨ 處理完畢後，如果目錄是「昨天以前的」並且現在是空的，則刪除
+            if (dateDir < yesterday) { // 比較 YYYYMMDD 字串
+                // 再次檢查目錄是否為空，因為 processFilesBatch 可能移動了所有檔案
+                const remainingFilesInDir = await fs.readdir(currentDirPath);
+                if (remainingFilesInDir.length === 0) {
+                    logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天以前的目錄 ${dateDir} 已處理完畢且為空，準備刪除。`);
+                    await fs.rm(currentDirPath, { recursive: true, force: true });
+                    logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 已刪除昨天以前的空目錄 ${dateDir}。`);
+                } else {
+                    logger.warn(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天以前的目錄 ${dateDir} 處理後仍有 ${remainingFilesInDir.length} 個檔案/目錄，將保留。可能原因：部分檔案處理失敗未移動，或有非數據檔案。`);
+                }
+            } else if (dateDir === yesterday) {
+                 // 對於昨天的目錄，如果處理後也空了，也刪除 (只保留今天的)
+                 const remainingFilesInYesterday = await fs.readdir(currentDirPath);
+                 if (remainingFilesInYesterday.length === 0) {
+                     logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${dateDir} 已處理完畢且為空，準備刪除。`);
+                     await fs.rm(currentDirPath, { recursive: true, force: true });
+                     logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 已刪除昨天的空目錄 ${dateDir}。`);
+                 }
             }
+            // 今天 (today) 的目錄通常不刪除，除非有特殊清理策略
+
         } catch (error: any) {
             if (error.code === 'ENOENT') {
-                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${yesterday} 似乎已被刪除或不存在。`);
+                logger.warn(`[掃描] 設備 ${deviceId} (來源: ${source}) 目錄 ${dateDir} 在處理過程中被刪除或不存在。`);
             } else {
-                logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理或刪除昨天目錄 ${yesterday} 時出錯: ${error.message}`);
+                logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理目錄 ${dateDir} 時發生錯誤: ${error.message}`);
             }
         }
+        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 目錄 ${dateDir} 處理完畢。`);
     }
-    
-    // 2. 處理今天的目錄 (如果存在)
-    if (allDateDirs.includes(today)) {
-        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 檢查今天的目錄: ${today}`);
-        const todayPath = path.join(deviceSpecificRootPath, today);
-        try {
-            const files = (await fs.readdir(todayPath)).filter(filename =>
-                (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
-                (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
-            );
-            if (files.length > 0) {
-                logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理今天 (${today}) 的 ${files.length} 個檔案。`);
-                await processFilesBatch(todayPath, deviceId, source, files, today);
-            }
-        } catch (error: any) {
-             if (error.code !== 'ENOENT') { // 如果不是 '文件或目錄不存在' 錯誤，則記錄
-                logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 處理今天目錄 ${today} 時出錯: ${error.message}`);
-            }
-        }
-    } else {
-        logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 今天的目錄 ${today} 不存在。`);
-    }
-
-    // 3. 刪除其他舊的空日期目錄 (除了今天和昨天)
-    // 重新讀取一次目錄列表，因為昨天目錄可能已被刪除
-    let currentExistingDateDirs: string[] = [];
-    try {
-        currentExistingDateDirs = (await fs.readdir(deviceSpecificRootPath, { withFileTypes: true }))
-            .filter(entry => entry.isDirectory() && /^\d{8}$/.test(entry.name))
-            .map(entry => entry.name);
-    } catch (error: any) {
-        logger.error(`[掃描] 清理舊目錄前，重新讀取設備 ${deviceId} (來源: ${source}) 的日期目錄列表失敗: ${error.message}`);
-        return;
-    }
-
-    for (const dirName of currentExistingDateDirs) {
-        if (dirName !== today && dirName !== yesterday) {
-            const dirPath = path.join(deviceSpecificRootPath, dirName);
-            try {
-                const filesInDir = await fs.readdir(dirPath);
-                if (filesInDir.length === 0) {
-                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 發現舊的空目錄 ${dirName}，準備刪除。`);
-                    await fs.rm(dirPath, { recursive: true, force: true });
-                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 已刪除舊的空目錄 ${dirName}。`);
-                } else {
-                    // 可以選擇記錄或忽略非空舊目錄
-                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 發現舊的非空目錄 ${dirName} (包含 ${filesInDir.length} 個項目)，不刪除。`);
-                }
-            } catch (error: any) {
-                 if (error.code === 'ENOENT') {
-                    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 嘗試刪除的舊目錄 ${dirName} 似乎已被刪除。`);
-                } else {
-                    logger.error(`[掃描] 設備 ${deviceId} (來源: ${source}) 刪除舊目錄 ${dirName} 時出錯: ${error.message}`);
-                }
-            }
-        }
-    }
+    logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 所有日期目錄處理完成。`);
 }
 
 async function processFilesBatch(
@@ -288,9 +257,9 @@ async function processFilesBatch(
                                     const timeDiffMinutes = (currentTimestampMs - prevState.lastTimestamp) / (1000 * 60);
 
                                     // 假設我們只在數據間隔接近 10 分鐘時才計算差值作為 10 分鐘雨量
-                                    // 您可以定義一個允許的最大間隔，例如 15 分鐘
+                                    // 您可以定義一個允許的最大間隔，例如 18 分鐘
                                     // 如果超過這個間隔，則認為數據不連續，不能簡單地用差值代表 "最近10分鐘"
-                                    const MAX_INTERVAL_FOR_DIFF_CALC_MINUTES = 15; // 可配置
+                                    const MAX_INTERVAL_FOR_DIFF_CALC_MINUTES = 18; // 可配置
 
                                     if (timeDiffMinutes <= MAX_INTERVAL_FOR_DIFF_CALC_MINUTES) {
 

@@ -275,6 +275,18 @@ export const deviceMapping = {
         ]
       },
       {
+        id: 'WISE-4010LAN_74FE486B76AA',
+        name: 'OW1 水位計 & GE1 伸縮計',
+        area: '台8線107K區',
+        lat: 24.19277,
+        lng: 121.30166,
+        sensors: [
+          { name: 'OW1', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
+          { name: 'GE1 (20m)', channels: ['AI_2'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_2: 4.175 } },
+          { name: 'GE1 (80m)', channels: ['AI_3'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_3: 4.781 } }
+        ]
+      },
+      {
         id: 'WISE-4010LAN_74FE487F4FE3',
         name: 'FL1~4 流量計',
         lat: 24.19277,
@@ -282,10 +294,10 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.FLOW, // ✨ 使用新的 FLOW 類型
         sensors: [
-          { name: 'FL1 (AI1)', channels: ['AI_0'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL2 (AI2)', channels: ['AI_1'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL3 (AI3)', channels: ['AI_2'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL4 (AI4)', channels: ['AI_3'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ }
+          { name: 'FL1', channels: ['AI_0'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
+          { name: 'FL2', channels: ['AI_1'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
+          { name: 'FL3', channels: ['AI_2'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
+          { name: 'FL4', channels: ['AI_3'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ }
         ]
       }
     ]

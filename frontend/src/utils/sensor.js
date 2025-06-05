@@ -90,7 +90,7 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
       return cnt != null && !isNaN(cnt) ? `${cnt} counts` : 'N/A';
     }
     case DEVICE_TYPES.GE: {
-      // 伸縮計：優先使用 chData.Delta，如果沒有則使用 chData.EgF計算
+      // 伸縮計：優先使用 chData.EgF計算 ，如果沒有則使用 chData.Delta
       let raw = chData?.EgF;
       let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
       const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor.geRange);
