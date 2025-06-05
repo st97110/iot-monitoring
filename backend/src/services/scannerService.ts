@@ -183,7 +183,6 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
                 );
             } else {
                 // 如果沒有 writed 目錄，則嘗試從日期目錄本身讀取檔案 (保持原有邏輯)
-                logger.info(`[掃描] 設備 ${deviceId} 在目錄 ${dateDir} 中未找到 writed 子目錄，將嘗試從日期目錄本身讀取檔案。`);
                 filesToProcess = (await fs.readdir(currentDateDirPath)).filter(filename =>
                     ((source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
                      (source === 'tdr' && filename.toLowerCase().endsWith('.json'))) &&
@@ -193,7 +192,7 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
 
             if (filesToProcess.length > 0) {
                 logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 在目錄 ${dateDir} 中找到 ${filesToProcess.length} 個檔案，準備處理。`);
-                await processFilesBatch(currentDateDirPath , deviceId, source, filesToProcess, dateDir); // ✨ 傳遞 dateDir 給 processFilesBatch
+                await processFilesBatch(sourcePathForFiles, deviceId, source, filesToProcess, dateDir); // ✨ 傳遞 dateDir 給 processFilesBatch
             } else {
                 logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 目錄 ${dateDir} 為空。`);
             }
