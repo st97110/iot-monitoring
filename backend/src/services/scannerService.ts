@@ -169,25 +169,25 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
                 continue;
             }
 
-            // ✨ 檢查是否存在 .writed 子目錄
+            // ✨ 檢查是否存在 writed 子目錄
             const writedDirPath = path.join(currentDateDirPath, 'writed');
             let filesToProcess: string[] = [];
             let sourcePathForFiles: string = currentDateDirPath; // 預設從日期目錄本身讀取
 
             if (await fs.pathExists(writedDirPath) && (await fs.lstat(writedDirPath)).isDirectory()) {
-                logger.info(`[掃描] 設備 ${deviceId} 在目錄 ${dateDir} 中找到 .writed 子目錄，將從此處讀取檔案。`);
+                logger.info(`[掃描] 設備 ${deviceId} 在目錄 ${dateDir} 中找到 writed 子目錄，將從此處讀取檔案。`);
                 sourcePathForFiles = writedDirPath; // 更新檔案來源路徑
                 filesToProcess = (await fs.readdir(writedDirPath)).filter(filename =>
                     (source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
                     (source === 'tdr' && filename.toLowerCase().endsWith('.json'))
                 );
             } else {
-                // 如果沒有 .writed 目錄，則嘗試從日期目錄本身讀取檔案 (保持原有邏輯)
-                logger.info(`[掃描] 設備 ${deviceId} 在目錄 ${dateDir} 中未找到 .writed 子目錄，將嘗試從日期目錄本身讀取檔案。`);
+                // 如果沒有 writed 目錄，則嘗試從日期目錄本身讀取檔案 (保持原有邏輯)
+                logger.info(`[掃描] 設備 ${deviceId} 在目錄 ${dateDir} 中未找到 writed 子目錄，將嘗試從日期目錄本身讀取檔案。`);
                 filesToProcess = (await fs.readdir(currentDateDirPath)).filter(filename =>
                     ((source === 'wise' && filename.toLowerCase().endsWith('.csv')) ||
                      (source === 'tdr' && filename.toLowerCase().endsWith('.json'))) &&
-                    filename !== '.writed' // 避免將 .writed 目錄本身當作檔案處理
+                    filename !== 'writed' // 避免將 writed 目錄本身當作檔案處理
                 );
             }
 
@@ -199,7 +199,7 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
             }
 
             // 清理邏輯：
-            // 1. 如果處理了 .writed 目錄，並且它現在空了，可以考慮刪除 .writed
+            // 1. 如果處理了 writed 目錄，並且它現在空了，可以考慮刪除 writed
             if (sourcePathForFiles === writedDirPath && await fs.pathExists(writedDirPath)) {
                 const remainingInWrited = await fs.readdir(writedDirPath);
                 if (remainingInWrited.length === 0) {
@@ -211,7 +211,7 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
                 }
             }
 
-            // 2. 如果日期目錄是「昨天以前的」並且現在是空的 (也沒有 .writed 或其他子目錄/檔案了)，則刪除該日期目錄
+            // 2. 如果日期目錄是「昨天以前的」並且現在是空的 (也沒有 writed 或其他子目錄/檔案了)，則刪除該日期目錄
             if (dateDir < yesterday) { // 比較 YYYYMMDD 字串
                 // 再次檢查目錄是否為空，因為 processFilesBatch 可能移動了所有檔案
                 const remainingFilesInDir = await fs.readdir(currentDateDirPath );
