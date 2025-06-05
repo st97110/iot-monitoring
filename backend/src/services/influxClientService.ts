@@ -247,7 +247,7 @@ export async function queryHistoryDataFromInflux(
       from(bucket: "${bucket}")
         |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
         |> filter(fn: (r) => r._measurement == "wise_raw" and r.device == "${deviceId}")
-        |> filter(fn: (r) => r._field == "rain_10m")
+        |> filter(fn: (r) => r._field == "rainfall_10m")
         |> aggregateWindow(every: ${rainInterval}, fn: sum, createEmpty: false, timeSrc: "_start") // 使用 _start 作為新時間戳
         |> map(fn: (r) => ({
             _time: r._time, // 聚合窗口的開始時間
@@ -316,7 +316,6 @@ export async function queryHistoryDataFromInflux(
     });
     // 聚合後的數據已經按時間排序了，但前端可能需要降序
     groupedHistory.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
   } else if (key === 'wise') {
     
     // WISE 數據組裝邏輯 (按時間戳分組，收集 fields 到 channels/raw)

@@ -274,7 +274,7 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: 'OW10 (AI0)', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+          { name: 'OW10 (AI0)', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -40 }
         ]
       },
       {
@@ -305,7 +305,7 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: 'OW6', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+          { name: 'OW6', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -40 }
         ]
       },
       {
@@ -324,7 +324,7 @@ export const deviceMapping: Record<
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: 'OW5', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -50 }
+          { name: 'OW5', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -40 }
         ]
       },
       {
@@ -341,7 +341,7 @@ export const deviceMapping: Record<
         name: 'OW1 水位計 & GE1 伸縮計',
         area: '台8線107K區',
         sensors: [
-          { name: 'OW1', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
+          { name: 'OW1', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -80 },
           { name: 'GE1 (20m)', channels: ['AI_2'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_2: 4.175 } },
           { name: 'GE1 (80m)', channels: ['AI_3'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_3: 4.781 } }
         ]
