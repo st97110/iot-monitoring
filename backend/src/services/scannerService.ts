@@ -170,7 +170,7 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
             }
 
             // ✨ 檢查是否存在 .writed 子目錄
-            const writedDirPath = path.join(currentDateDirPath, '.writed');
+            const writedDirPath = path.join(currentDateDirPath, 'writed');
             let filesToProcess: string[] = [];
             let sourcePathForFiles: string = currentDateDirPath; // 預設從日期目錄本身讀取
 
