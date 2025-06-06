@@ -56,8 +56,13 @@ function getDeviceImage(deviceConfig) { // 參數改為 deviceConfig 以更清�
   }
 
   // 2. 如果用 name 找不到，再嘗試使用 deviceConfig.id 查找照片
-  if (deviceConfig && deviceConfig.id && deviceImages[deviceConfig.id]) {
-    return deviceImages[deviceConfig.id];
+  if (deviceConfig) {
+    if (deviceConfig.originalDeviceId && deviceImages[deviceConfig.originalDeviceId]) {
+      return deviceImages[deviceConfig.originalDeviceId];
+    }
+    else if (deviceConfig.id && deviceImages[deviceConfig.id]) {
+      return deviceImages[deviceConfig.id];
+    }
   }
 
   // 3. 如果都沒有特定照片，使用設備類型的預設照片
@@ -119,14 +124,18 @@ function Home() {
     if (!searchTerm.trim()) return true;
     return areaConfigFromMapping.devices.some(device =>
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()))
+      (device.originalDeviceId && device.originalDeviceId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
   }
 
   function filterDevice(device) {
     if (!searchTerm.trim()) return true;
     return device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase()));
+      (device.originalDeviceId && device.originalDeviceId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
   }
 
   return (
@@ -185,7 +194,7 @@ function Home() {
                   {areaConfig.devices
                     .filter(device => filterDevice(device))
                     .map(deviceConfigEntry => {
-                      const deviceId = deviceConfigEntry.id;
+                      const deviceId = deviceConfigEntry.originalDeviceId || deviceConfigEntry.id;
                       const data = latestData[deviceId];
 
                       const hasValidTimestamp = data && data.timestamp && !isNaN(new Date(data.timestamp).getTime());

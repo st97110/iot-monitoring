@@ -223,10 +223,10 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT1 A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
-          { name: 'BT1 B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
-          { name: 'BT3 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
-          { name: 'BT3 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
         ]
       },
       {
@@ -248,8 +248,8 @@ export const deviceMapping = {
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.189 } },
-          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 11.896 } }
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.189 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 11.896 } }
         ]
       },
       {
