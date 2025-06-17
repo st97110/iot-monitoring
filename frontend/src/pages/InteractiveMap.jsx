@@ -227,7 +227,7 @@ function InteractiveMap() {
               <Popup className="rounded-lg shadow-lg">
                 <div className="p-3">
                   <h3 className="font-bold text-lg mb-1">{st.name}</h3>
-                  <button onClick={() => navigate(`/trend?deviceId=${st.deviceId}`)} className="text-blue-600 underline mb-2 block">查看詳細</button>
+                  <button onClick={() => navigate(`/t14/trend?deviceId=${st.deviceId}`)} className="text-blue-600 underline mb-2 block">查看詳細</button>
                   <hr className="my-2" />
                   {latestData?.timestamp ? (
                     <div className="text-sm">
