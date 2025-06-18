@@ -44,6 +44,8 @@ export const deviceMapping = {
   '80K區': {
     name: '80K區',
     routeGroup: 't14',
+    defaultCenter: [24.01778, 121.12875], // 取 T1 和 T2 的大致中間點
+    defaultZoom: 17, // 稍微放大一點，因為設備點比較近
     devices: [
       { id: 'TDR_T14_T1', name: 'T1', lat: 24.0175, lng: 121.128056, type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14_T2', name: 'T2', lat: 24.018056, lng: 121.129444, type: DEVICE_TYPES.TDR }
@@ -52,6 +54,8 @@ export const deviceMapping = {
   '春陽區': {
     name: '春陽區',
     routeGroup: 't14',
+    defaultCenter: [24.0300, 121.1605], // 取 84.6K 和 AH3 的大致中間點
+    defaultZoom: 17, // 這些點也比較集中
     devices: [
       {
         id: 'WISE-4010LAN_74FE48941ABE_SITE1',
@@ -94,6 +98,8 @@ export const deviceMapping = {
   '90K區': {
     name: '90K區',
     routeGroup: 't14',
+    defaultCenter: [24.0260, 121.1837], // 取 W2, H2-R, T3, T4 的大致中心
+    defaultZoom: 17,
     devices: [
       {
         id: 'WISE-4010LAN_74FE489299CB',
@@ -122,6 +128,8 @@ export const deviceMapping = {
   '梅峰區': {
     name: '梅峰區',
     routeGroup: 't14',
+    defaultCenter: [24.0895, 121.1738], // 梅峰區設備較多，取一個大概的中心
+    defaultZoom: 16, // 範圍稍大一點
     devices: [
       {
         id: 'WISE-4010LAN_00D0C9FAD2C9_SITE1',
@@ -187,6 +195,8 @@ export const deviceMapping = {
   '台8線107K區': {
     name: '台8線107K區',
     routeGroup: 't8',
+    defaultCenter: [24.1920, 121.3025], // ✨ 估算一個中心點
+    defaultZoom: 17, // ✨ 假設設備分佈範圍較廣
     devices: [
       { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },

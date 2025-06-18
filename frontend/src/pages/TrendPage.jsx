@@ -699,7 +699,8 @@ function TrendPage() {
                       chartSensorType === DEVICE_TYPES.RAIN ? `累計雨量 (基於${selectedRainInterval}, mm)` :
                       chartSensorType === DEVICE_TYPES.TDR ? '反射係數 (Rho)' :
                       '數值', // 通用標籤
-                    angle: -90, position: 'insideLeft', fill: getChartLineColor(chartSensorType, true)
+                    angle: -90, position: 'insideLeft', fill: getChartLineColor(chartSensorType, true),
+                    dy: chartSensorType === DEVICE_TYPES.RAIN ? 100 : 0
                   }}
                   domain={currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : 
                           currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.WATER ? [-55, 0] : 
