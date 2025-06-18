@@ -16,6 +16,7 @@ export const DEVICE_TYPES = {
   RAIN: 'RAIN',     // 雨量筒
   GE: 'GE',         // 伸縮計
   TDR: 'TDR',       // TDR
+  FLOW: 'FLOW',     // 流量計
 };
   
 // 類型對應顯示名稱
@@ -26,6 +27,7 @@ export const DEVICE_TYPE_NAMES = {
   [DEVICE_TYPES.RAIN]: '雨量筒',
   [DEVICE_TYPES.GE]: '伸縮計',
   [DEVICE_TYPES.TDR]: 'TDR',
+  [DEVICE_TYPES.FLOW]: '流量計',
 };
 
 // 分區顯示順序（Home 頁分類按鈕可用）
@@ -59,8 +61,8 @@ export const deviceMapping = {
         lng: 121.16,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 12.259 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 12.865 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.259 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.865 } },
         ]
       },
       {
@@ -71,8 +73,8 @@ export const deviceMapping = {
         lng: 121.16,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 11.388 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.317 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.388 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.317 } },
         ]
       },
       {
@@ -82,8 +84,8 @@ export const deviceMapping = {
         lng: 121.16,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 11.56 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 10.911 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.56 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.911 } },
         ]
       },
       { id: 'TDR_T14_AH3', name: 'AH3', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
@@ -100,7 +102,7 @@ export const deviceMapping = {
         lng: 121.18385,
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: '地下水位', channels: ['AI_0'], wellDepth: -50 },
+          { name: '地下水位', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
         ]
       },
       {
@@ -110,7 +112,7 @@ export const deviceMapping = {
         lng: 121.184,
         type: DEVICE_TYPES.RAIN,
         sensors: [
-          { name: '10分鐘雨量', channels: ['DI_0']},
+          { name: '10分鐘雨量', channels: ['DI_0'], type: DEVICE_TYPES.RAIN },
         ]
       },
       { id: 'TDR_T14_T3', name: 'T3', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
@@ -129,8 +131,8 @@ export const deviceMapping = {
         lng: 121.17361,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 12.052 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 11.798 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.052 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 11.798 } },
         ]
       },
       {
@@ -141,8 +143,8 @@ export const deviceMapping = {
         lng: 121.17361,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], initialValues: { AI_2: 12.294 } },
-          { name: 'B軸', channels: ['AI_3'], initialValues: { AI_3: 12.463 } },
+          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 12.294 } },
+          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.463 } },
         ]
       },
       {
@@ -152,8 +154,8 @@ export const deviceMapping = {
         lng: 121.17389,
         type: DEVICE_TYPES.TI,
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], initialValues: { AI_0: 5.684 } },
-          { name: 'B軸', channels: ['AI_1'], initialValues: { AI_1: 12.974 } },
+          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 5.684 } },
+          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.974 } },
         ]
       },
       { id: 'WISE-4010LAN_74FE489299F4',
@@ -162,21 +164,21 @@ export const deviceMapping = {
         lng: 121.173611,
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 9.97 }, geRange: 500 }] },
+          { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE4890BAFC',
         name: 'BE2',
         lat: 24.0896,
         lng: 121.17395,
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 18.155 }, geRange: 500 }] },
+          { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE48941AD9',
         name: 'BE3',
         lat: 24.0890,
         lng: 121.174050,
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: '伸縮量', channels: ['AI_0'], initialValues: { AI_0: 4.82 }, geRange: 500 }] },
+          { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 }, geRange: 500 }] },
       { id: 'TDR_T14A_CH1', name: 'CH1', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14A_CH2', name: 'CH2', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
       { id: 'TDR_T14A_CH4', name: 'CH4', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }

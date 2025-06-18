@@ -4,8 +4,8 @@ import axios from 'axios';
 import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 import html2canvas from 'html2canvas';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { API_BASE, deviceMapping, DEVICE_TYPES } from '../config/config';
-import { format, startOfHour } from 'date-fns';
+import { API_BASE, deviceMapping, DEVICE_TYPES, DEVICE_TYPE_NAMES } from '../config/config';
+import { format, set, startOfHour } from 'date-fns';
 import { formatValue } from '../utils/sensor';
 
 // 獲取通道顏色
@@ -92,9 +92,11 @@ function TrendPage() {
 
   // Effect to update currentDevice when deviceId (from URL or selection) changes
   useEffect(() => {
-    setCurrentDevice(findCurrentDevice(deviceId));
+    const foundDevice = findCurrentDevice(deviceId);
+    setCurrentDevice(foundDevice);
+
     // ✨ 當 deviceId 改變時，如果是 TDR，可能需要重置 selectedTimestamp，除非 URL 中有
-    if (findCurrentDevice(deviceId)?.type === DEVICE_TYPES.TDR) {
+    if (foundDevice ?.type === DEVICE_TYPES.TDR) {
       const tsFromUrl = searchParams.get('timestamp');
       if (!tsFromUrl) setSelectedTimestamp(''); // 如果 URL 沒有 timestamp，則清空
     } else {
@@ -115,14 +117,21 @@ function TrendPage() {
 
     try {
       const deviceIdForApi = currentDevice.originalDeviceId || currentDevice.id;
+      // 獲取當前選中 sensor 的類型，如果沒有 sensor (例如 TDR)，則使用設備主類型
+      const activeSensorType = currentDevice.sensors?.[sensorIndex]?.type || currentDevice.type;
 
       const res = await axios.get(`${API_BASE}/api/history`, {
-        params: { deviceId: deviceIdForApi, startDate, endDate, source: currentDevice.type?.toLowerCase(), rainInterval: selectedRainInterval }
+        params: { 
+          deviceId: deviceIdForApi,
+          startDate,
+          endDate,
+          rainInterval: activeSensorType === DEVICE_TYPES.RAIN ? selectedRainInterval : undefined  
+        }
       });
       const historyRecords = (res.data || []).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       setFullHistoryData(historyRecords);
 
-      if (currentDevice.type === DEVICE_TYPES.TDR) {
+      if (activeSensorType === DEVICE_TYPES.TDR) {
         const timestamps = historyRecords
           .map(entry => entry.timestamp)
           .filter(Boolean)
@@ -138,7 +147,7 @@ function TrendPage() {
         } else {
           setSelectedTimestamp('');
         }
-      } else if (currentDevice.type === DEVICE_TYPES.RAIN) {
+      } else if (activeSensorType === DEVICE_TYPES.RAIN) {
         let cumulativeRainfallBasedOnSelectedInterval = 0; // 用於基於選擇的區間雨量來累加
         
         const processedRain = historyRecords.map(entry => {
@@ -222,7 +231,7 @@ function TrendPage() {
     } finally {
       setLoading(false);
     }
-  }, [deviceId, currentDevice, startDate, endDate, sensorIndex, searchParams]);
+  }, [deviceId, currentDevice, startDate, endDate, sensorIndex, selectedRainInterval, searchParams]);
 
   // Trigger data fetch when critical parameters change
   useEffect(() => {
@@ -338,7 +347,7 @@ function TrendPage() {
       let headers = ['時間'];
       const dataRows = [];
 
-      if (currentDevice.type === DEVICE_TYPES.RAIN) {
+      if (currentDevice.sensors?.[sensorIndex]?.type || currentDevice.type === DEVICE_TYPES.RAIN) {
         // 雨量筒的 CSV 導出
         headers.push(`區間雨量 (${selectedRainInterval})`, '累計雨量'); // 假設 selectedRainInterval 和 accumulated_rainfall 存在
         data.forEach(row => {
@@ -348,7 +357,7 @@ function TrendPage() {
             row.accumulated_rainfall ?? ''
           ]);
         });
-      } else if (currentDevice.type !== DEVICE_TYPES.TDR) { // 其他 WISE 設備 (TI, WATER, GE)
+      } else if (currentDevice.sensors?.[sensorIndex]?.type || currentDevice.type !== DEVICE_TYPES.TDR) { // 其他 WISE 設備 (TI, WATER, GE)
         const sensor = currentDevice.sensors?.[sensorIndex];
         if (sensor && sensor.channels) {
           // 為每個通道創建兩個表頭：一個原始值(EgF)，一個展示值
@@ -359,9 +368,9 @@ function TrendPage() {
             // 為了簡化，我們先用一個通用的 "展示值"
             // 您可以根據 sensor.type 或 chData 特性來決定更精確的單位名
             let displayUnit = '';
-            if (currentDevice.type === DEVICE_TYPES.WATER) displayUnit = ' m';
-            else if (currentDevice.type === DEVICE_TYPES.GE) displayUnit = ' mm';
-            else if (currentDevice.type === DEVICE_TYPES.TI) displayUnit = ' "';
+            if (sensor.type === DEVICE_TYPES.WATER) displayUnit = ' m';
+            else if (sensor.type === DEVICE_TYPES.GE) displayUnit = ' mm';
+            else if (sensor.type === DEVICE_TYPES.TI) displayUnit = ' "';
             // 其他類型可以不加單位或按需添加
 
             headers.push(`${sensor.name} (展示值${displayUnit})`); // 例如 AI_0 (展示值 m)
@@ -419,7 +428,7 @@ function TrendPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const filename = currentDevice.type === DEVICE_TYPES.RAIN
+      const filename = chartSensorType === DEVICE_TYPES.RAIN
         ? `${deviceId}_rainfall_${startDate}_${endDate}.csv`
         : `${currentDevice.name}-${currentDevice.sensors?.[sensorIndex]?.name || 'data'}_${deviceId}_${startDate}_${endDate}.csv`;
       link.setAttribute('download', filename);
@@ -436,7 +445,7 @@ function TrendPage() {
 
   // ✨ 匯出 CSV (TDR)
   const exportTdrCSV = () => {
-    if (!currentDevice || currentDevice.type !== DEVICE_TYPES.TDR || !selectedTimestamp) return;
+    if (!currentDevice || currentDevice?.type !== DEVICE_TYPES.TDR || !selectedTimestamp) return;
     const selectedScan = fullHistoryData.find(scan => scan.timestamp === selectedTimestamp);
     if (!selectedScan || !selectedScan.data) return;
 
@@ -484,7 +493,7 @@ function TrendPage() {
 
   // ✨ 匯出 PNG (TDR) - Chart container ID 可能需要確認
   const exportTdrPNG = async () => {
-    if (!currentDevice || currentDevice.type !== DEVICE_TYPES.TDR || !selectedTimestamp) return;
+    if (!currentDevice || currentDevice?.type !== DEVICE_TYPES.TDR || !selectedTimestamp) return;
     setExportLoading(true);
     try {
       const chartArea = document.getElementById('tdr-chart-container'); // ✨ 注意 ID
@@ -501,6 +510,10 @@ function TrendPage() {
       setExportLoading(false);
     }
   };
+
+  // --- Render Logic ---
+  // ✨ 在渲染時，獲取當前選中 sensor 的類型
+  const chartSensorType = currentDevice?.sensors?.[sensorIndex]?.type || currentDevice?.type;
 
   return (
     <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6">
@@ -557,8 +570,24 @@ function TrendPage() {
             </select>
           </div>
 
+          {/* ✨ 通道組選擇器：僅對擁有多個 sensor 的非 TDR 設備顯示 */}
+          {deviceId && currentDevice && currentDevice.type !== DEVICE_TYPES.TDR && currentDevice.sensors && currentDevice.sensors.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">通道組</label>
+              <select
+                value={sensorIndex}
+                onChange={e => handleSensorIndexChange(e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300"
+              >
+                {currentDevice.sensors?.map((s, i) => (
+                  <option key={i} value={i}>{s.name} ({DEVICE_TYPE_NAMES[s.type] || s.type})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* ✨ 雨量區間選擇器 (僅對雨量筒顯示) */}
-          {deviceId && currentDevice && currentDevice.type === DEVICE_TYPES.RAIN && (
+          {deviceId && currentDevice && chartSensorType === DEVICE_TYPES.RAIN && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">雨量區間</label>
               <select
@@ -576,22 +605,7 @@ function TrendPage() {
             </div>
           )}
 
-          {/* 通道組 (WISE) 或 時間點選擇 (TDR) */}
-          {deviceId && currentDevice && currentDevice.type !== DEVICE_TYPES.TDR && currentDevice.type !== DEVICE_TYPES.RAIN && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">通道組</label>
-              <select
-                value={sensorIndex}
-                onChange={e => handleSensorIndexChange(e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300"
-              >
-                {currentDevice.sensors?.map((s, i) => (
-                  <option key={i} value={i}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
+          {/* TDR 時間點選擇器 */}
           {deviceId && currentDevice && currentDevice.type === DEVICE_TYPES.TDR && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">選擇掃描時間點</label>
@@ -645,14 +659,14 @@ function TrendPage() {
           <div className="mb-5">
             <h2 className="text-xl font-bold text-gray-800">
               {currentDevice.name}-
-              {currentDevice.type === DEVICE_TYPES.TDR
+              {chartSensorType === DEVICE_TYPES.TDR
                 ? ` TDR 曲線 @ ${selectedTimestamp ? new Date(selectedTimestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '請選擇時間點'}`
-                : currentDevice.type === DEVICE_TYPES.RAIN
+                : chartSensorType === DEVICE_TYPES.RAIN
                   ? `${selectedRainInterval} 區間與累計雨量趨勢` // ✨ 雨量筒的圖表標題
                   : currentDevice.sensors?.[sensorIndex]?.name
               }
             </h2>
-            {currentDevice.type !== DEVICE_TYPES.TDR && ( // TDR 的時間信息已在標題中
+            {chartSensorType !== DEVICE_TYPES.TDR && ( // TDR 的時間信息已在標題中
                  <p className="text-sm text-gray-500">
                     {new Date(startDate).toLocaleDateString('zh-TW')} ~ {new Date(endDate).toLocaleDateString('zh-TW')}
                     <span className="ml-2">({(data || []).length} 筆資料)</span>
@@ -661,39 +675,39 @@ function TrendPage() {
           </div>
           
           {/* 圖表容器 - ✨ 給 TDR 圖表一個不同的 ID */}
-          <div id={currentDevice.type === DEVICE_TYPES.TDR ? "tdr-chart-container" : "chart-container"} className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+          <div id={chartSensorType === DEVICE_TYPES.TDR ? "tdr-chart-container" : "chart-container"} className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
             <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
-                  dataKey={currentDevice.type === DEVICE_TYPES.TDR ? "distance_m" : "time"} // ✨ TDR 的 X 軸是 distance_m
-                  type={currentDevice.type === DEVICE_TYPES.TDR ? "number" : "category"}   // ✨ TDR 的 X 軸是數值
-                  domain={currentDevice.type === DEVICE_TYPES.TDR ? ['dataMin', 'dataMax'] : undefined} // ✨ TDR X 軸範圍
+                  dataKey={chartSensorType === DEVICE_TYPES.TDR ? "distance_m" : "time"} // ✨ TDR 的 X 軸是 distance_m
+                  type={chartSensorType === DEVICE_TYPES.TDR ? "number" : "category"}   // ✨ TDR 的 X 軸是數值
+                  domain={chartSensorType === DEVICE_TYPES.TDR ? ['dataMin', 'dataMax'] : undefined} // ✨ TDR X 軸範圍
                   tickFormatter={(tick) =>
-                    currentDevice.type === DEVICE_TYPES.TDR
+                    chartSensorType === DEVICE_TYPES.TDR
                       ? tick // TDR X 軸直接顯示距離數值
                       : format(new Date(tick), 'MM/dd HH:mm')
                   }
-                  label={currentDevice.type === DEVICE_TYPES.TDR ? { value: '距離 (m)', position: 'insideBottomRight', offset: -5 } : undefined}
+                  label={chartSensorType === DEVICE_TYPES.TDR ? { value: '距離 (m)', position: 'insideBottomRight', offset: -5 } : undefined}
                 />
                 <YAxis
                   yAxisId="left"
                   orientation="left"
-                  stroke={getChartLineColor(currentDevice.type, true)} // true for accumulated line
+                  stroke={getChartLineColor(chartSensorType, true)} // true for accumulated line
                   label={{
                     value:
-                      currentDevice.type === DEVICE_TYPES.RAIN ? `累計雨量 (基於${selectedRainInterval}, mm)` :
-                      currentDevice.type === DEVICE_TYPES.TDR ? '反射係數 (Rho)' :
+                      chartSensorType === DEVICE_TYPES.RAIN ? `累計雨量 (基於${selectedRainInterval}, mm)` :
+                      chartSensorType === DEVICE_TYPES.TDR ? '反射係數 (Rho)' :
                       '數值', // 通用標籤
-                    angle: -90, position: 'insideLeft', fill: getChartLineColor(currentDevice.type, true)
+                    angle: -90, position: 'insideLeft', fill: getChartLineColor(chartSensorType, true)
                   }}
-                  domain={currentDevice.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : 
-                          currentDevice.type === DEVICE_TYPES.WATER ? [-55, 0] : 
-                          currentDevice.type === DEVICE_TYPES.TI ? [-3600, 3600] : 
-                          currentDevice.type === DEVICE_TYPES.GE ? [-500, 500] :
+                  domain={currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : 
+                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.WATER ? [-55, 0] : 
+                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.TI ? [-3600, 3600] : 
+                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.GE ? [-500, 500] :
                           undefined}
                 />
-                {currentDevice.type === DEVICE_TYPES.RAIN && data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
+                {chartSensorType === DEVICE_TYPES.RAIN && data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
                   <YAxis 
                     yAxisId="right" 
                     orientation="right" 
@@ -704,27 +718,27 @@ function TrendPage() {
                 )}
                 <Tooltip
                   formatter={(value, name, props) => {
-                    if (currentDevice.type === DEVICE_TYPES.TDR) return [value, 'Rho'];
-                    if (currentDevice.type === DEVICE_TYPES.RAIN) {
+                    if (chartSensorType === DEVICE_TYPES.TDR) return [value, 'Rho'];
+                    if (chartSensorType === DEVICE_TYPES.RAIN) {
                       // ✨ Tooltip 的 name 應該匹配 Line/Bar 的 name 屬性
                       if (props.dataKey === `rainfall_${selectedRainInterval}`) return [value + ' mm', `${selectedRainInterval}雨量`];
                       if (props.dataKey === 'accumulated_rainfall') return [value + ' mm', `累計雨量`];
                     }
-                    if (currentDevice.type === DEVICE_TYPES.WATER) return [value + ' m', '地下水位'];
-                    if (currentDevice.type === DEVICE_TYPES.TI) return [value + ' "', '傾斜量'];
-                    if (currentDevice.type === DEVICE_TYPES.GE) return [value + ' mm', '伸縮量'];
+                    if (chartSensorType === DEVICE_TYPES.WATER) return [value + ' m', '地下水位'];
+                    if (chartSensorType === DEVICE_TYPES.TI) return [value + ' "', '傾斜量'];
+                    if (chartSensorType === DEVICE_TYPES.GE) return [value + ' mm', '伸縮量'];
                     return [Number(value).toFixed(3), name];
                   }}
                   labelFormatter={(label) =>
-                    currentDevice.type === DEVICE_TYPES.TDR
+                    chartSensorType === DEVICE_TYPES.TDR
                       ? `距離: ${label} m`
                       : new Date(label).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
                   }
                 />
                 <Legend />
-                {currentDevice.type === DEVICE_TYPES.TDR ? (
+                {chartSensorType === DEVICE_TYPES.TDR ? (
                   <Line yAxisId="left" key="rho" type="monotone" dataKey="rho" stroke={getChartLineColor(DEVICE_TYPES.TDR)} strokeWidth={2} dot={false} name="反射係數 (Rho)" isAnimationActive={false}/>
-                ) : currentDevice.type === DEVICE_TYPES.RAIN ? (
+                ) : chartSensorType === DEVICE_TYPES.RAIN ? (
                   <>
                     {data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (
                       <Bar yAxisId="left" dataKey={`rainfall_${selectedRainInterval}`} fill={getChartLineColor(DEVICE_TYPES.RAIN, false, true)} name={`${selectedRainInterval}區間雨量`} barSize={10} />
@@ -736,10 +750,10 @@ function TrendPage() {
                 ) : (
                   // 其他 WISE 設備
                   currentDevice.sensors?.[sensorIndex]?.channels.map((ch, index) => (
-                    <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(currentDevice.type, index > 0)} strokeWidth={1} dot={false} isAnimationActive={false}
-                    name={(currentDevice.type === DEVICE_TYPES.WATER) ? '地下水位' :
-                    (currentDevice.type === DEVICE_TYPES.TI) ? '傾斜量' :
-                    (currentDevice.type === DEVICE_TYPES.GE) ? '伸縮量' : ch} />
+                    <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(chartSensorType, index > 0)} strokeWidth={1} dot={false} isAnimationActive={false}
+                    name={(chartSensorType === DEVICE_TYPES.WATER) ? '地下水位' :
+                    (chartSensorType === DEVICE_TYPES.TI) ? '傾斜量' :
+                    (chartSensorType === DEVICE_TYPES.GE) ? '伸縮量' : ch} />
                   ))
                 )}
               </ComposedChart>
@@ -748,7 +762,7 @@ function TrendPage() {
 
           {/* 匯出按鈕 */}
           <div className="mt-4 flex justify-end space-x-2">
-            {currentDevice.type === DEVICE_TYPES.TDR ? (
+            {chartSensorType === DEVICE_TYPES.TDR ? (
               <>
                 <button onClick={exportTdrCSV} disabled={exportLoading} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                   {exportLoading ? '匯出中...' : '匯出 TDR CSV'}
@@ -772,7 +786,7 @@ function TrendPage() {
       ) : (
         <p className="text-gray-500">
           {deviceId && currentDevice ?
-            (currentDevice.type === DEVICE_TYPES.TDR && availableTimestamps.length === 0 && !loading ?
+            (chartSensorType === DEVICE_TYPES.TDR && availableTimestamps.length === 0 && !loading ?
             '此日期範圍內無 TDR 掃描資料' 
             : '無資料可顯示，請調整查詢條件或選擇時間點')
           : '請先選擇裝置'}

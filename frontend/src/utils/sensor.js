@@ -41,7 +41,7 @@ export function isNormalData(device, chData) {
 function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500) {
   switch (type) {
     case DEVICE_TYPES.WATER: {                                  // mA → m
-      const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
+      const ratio = (raw - 4) / 16;
       const waterDepth = ratio * wellDepth;                     // 水深-水佔據井的深度
       const groundwaterLevel = wellDepth - waterDepth;          // 地下水位-距地面幾公尺(愈小代表水愈高)
       return groundwaterLevel; 
@@ -52,8 +52,8 @@ function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500) {
       return deg * 3600;                          // 度 → 秒
     }
     case DEVICE_TYPES.GE: {                       // mA → cm
-      const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
-      return ratio * (geRange ?? 500);
+      const ratio = (raw - 4) / 16;
+      return ratio * geRange;
     }
     default:
       return raw;
