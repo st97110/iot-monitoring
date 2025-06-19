@@ -7,6 +7,7 @@ const typeColors = {
   [DEVICE_TYPES.RAIN]: 'from-indigo-500 to-indigo-600', // 雨量筒
   [DEVICE_TYPES.GE]: 'from-green-500 to-green-600', // 伸縮計
   [DEVICE_TYPES.TDR]: 'from-purple-500 to-purple-600', // TDR
+  [DEVICE_TYPES.FLOW]: 'from-pink-500 to-pink-600', // 流量計
 };
 
 // ======== 設備類型對應邊框顏色 ========
@@ -16,6 +17,7 @@ const typeBorderColors = {
   [DEVICE_TYPES.RAIN]: 'border-indigo-500', // 雨量筒
   [DEVICE_TYPES.GE]: 'border-green-500', // 伸縮計
   [DEVICE_TYPES.TDR]: 'border-purple-500', // TDR
+  [DEVICE_TYPES.FLOW]: 'border-pink-500', // 流量計
 };
 
 // 根據設備資訊取得顏色
@@ -30,15 +32,76 @@ export function getDeviceTypeBorderColor(device) {
   return typeBorderColors[type] || 'border-gray-500';
 }
 
-export function isNormalData(device, chData) {
-  if (device.type === DEVICE_TYPES.RAIN && chData?.rainfall_10m < 10) return true;          // 雨量筒小於 10 顯示為正常
-  else if (device.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 50) return true;       // 伸縮計小於 30 顯示為正常
-  else if (device.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 2 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
-  else if (device.type === DEVICE_TYPES.WATER && chData?.PEgF < -15) return true; // 水位計小於 -15 公尺顯示為正常
-  return false;
+export function isNormalData(deviceConfig, sensor, chData, rainfallIntervalKey) {
+  if (!deviceConfig || !chData) return true; // 如果數據不全，預設為正常避免誤報
+
+  const typeToUse = deviceConfig.type;
+
+  if (typeToUse === DEVICE_TYPES.RAIN) {
+    // 雨量筒的判斷邏輯
+    const rainValue = chData;
+    if (rainValue === undefined || rainValue === null) return true; // 無數據時算正常顯示
+
+    // 使用文件中的「預警(黃燈)」作為卡片上「正常」的上限
+    const alertYellowThresholds = {
+      rainfall_1h: 25,
+      rainfall_3h: 45,
+      rainfall_24h: 145,
+    };
+    return rainValue < (alertYellowThresholds[rainfallIntervalKey] || Infinity);
+  }
+
+  // 其他設備類型，需要 sensorConfig
+  if (!sensor) return true;
+
+  switch (typeToUse) { // 優先用 sensor.type
+    case DEVICE_TYPES.WATER: {
+      // 水位計的 PEgF 通常在 chData.PEgF 或 allEntryData.raw[`${sensor.channels[0]} PEgF`]
+      // 假設 chData 結構是 { PEgF: value }
+      if (chData?.EgF != null && !isNaN(chData?.EgF)) {
+        const waterLevel = rawToPEgF(chData?.EgF, typeToUse, sensor?.wellDepth).toFixed(2)
+        if (waterLevel < -17) return true;
+      }
+      return false;
+    }
+    
+    case DEVICE_TYPES.GE: {
+      // 伸縮計：優先使用 chData.EgF計算 ，如果沒有則使用 chData.Delta
+      let raw = chData?.EgF;
+      let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
+      const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor.geRange);
+      if (pe != null && !isNaN(pe) && initPe != null && !isNaN(initPe)) {
+        const delta = (pe - initPe);
+        if (delta < 10) 
+          return true;
+      }
+      return false;
+    }
+    case DEVICE_TYPES.TI: {
+      // 傾斜儀：類似伸縮計
+      let raw = chData?.EgF;
+      let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg);
+      const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg);
+      if (pe != null && !isNaN(pe) && initPe != null && !isNaN(initPe)) {
+        const delta = (pe - initPe);
+        if (delta < 1800) 
+          return true;
+      }
+      return false;
+    }
+    case DEVICE_TYPES.FLOW: {
+      // 流量計
+      //// TODO
+      //// 尋找一個合適的判定標準
+      return true;
+    }
+    default: { // 其他類型或未知類型，預設為正常
+      return true;
+    }
+  }
 }
 
-function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500) {
+function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500, flowMax = 130) {
   switch (type) {
     case DEVICE_TYPES.WATER: {                                  // mA → m
       const ratio = (raw - 4) / 16;
@@ -55,6 +118,9 @@ function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500) {
       const ratio = (raw - 4) / 16;
       return ratio * geRange;
     }
+    case DEVICE_TYPES.FLOW:                       // mA → L
+      const ratio = flowMax / 16;
+      return ratio * (raw - 4);                   // 4→0, 20→+flowMax
     default:
       return raw;
   }
@@ -106,6 +172,11 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
       const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg);
       return pe != null && !isNaN(pe) && initPe != null && !isNaN(initPe) ? `${(pe - initPe).toFixed(1)} "` : 
             chData?.PEgF != null && !isNaN(chData?.PEgF) ? `${chData?.PEgF.toFixed(1)} "` : 'N/A';
+    }
+    case DEVICE_TYPES.FLOW: {
+      // 流量計：類似水位計
+      const raw = chData?.EgF;
+      return raw != null && !isNaN(raw) ? `${rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange, sensor?.flowMax).toFixed(2)} m³/h` : 'N/A';
     }
     default: { // 其他類型或未知類型，嘗試顯示 EgF
       const v = chData?.EgF;

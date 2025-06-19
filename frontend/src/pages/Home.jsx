@@ -19,55 +19,80 @@ function getRelativeTime(isoString) {
 // 方式1：使用 public 資料夾中的圖片
 const deviceImages = {
   // 根據設備ID或名稱對應照片路徑
-  'TDR_T14_T1': '/stations/t1_tdr_site.jpg',
-  'TDR_T14_T2': '/stations/t2_tdr_site.jpg',
-  'TDR_T14_T3': '/stations/t3_tdr_site.jpg',
-  'TDR_T14_T4': '/stations/t4_tdr_site.jpg',
-  'TDR_T14_AH3': '/stations/ah3_tdr_site.jpg',
-  'TDR_T14A_CH1': '/stations/ch1_tdr_site.jpg',
-  'TDR_T14A_CH2': '/stations/ch2_tdr_site.jpg',
-  // 'TDR_T14A_CH4': '/stations/ch4_tdr_site.jpg',
+  // --- 台14線 (t14) ---
+  // 80K區
+  'TDR_T14_T1': '/images/stations/t14/TDR_T14_T1.jpg', // 原 T1
+  'TDR_T14_T2': '/images/stations/t14/TDR_T14_T2.jpg', // 原 T2
+  // 春陽區
+  'WISE-4010LAN_74FE48941ABE_SITE1': '/images/stations/t14/WISE_84_6K_TI.jpg', // 原 84.6K (假設照片)
+  'WISE-4010LAN_74FE48941ABE_SITE2': '/images/stations/t14/WISE_84_65K_TI.jpg',// 原 84.65K (假設照片)
+  'WISE-4010LAN_00D0C9FAD2E3': '/images/stations/t14/WISE_84_7K_TI.jpg',   // 原 84.7K
+  'TDR_T14_AH3': '/images/stations/t14/TDR_T14_AH3.jpg', // 原 AH3
+  // 90K區
+  'WISE-4010LAN_74FE489299CB': '/images/stations/t14/WISE_W2_WATER.jpg',   // 原 W2
+  'WISE-4060LAN_00D0C9FD4D44': '/images/stations/t14/WISE_H2R_RAIN.jpg',   // 原 H2-R
+  'TDR_T14_T3': '/images/stations/t14/TDR_T14_T3.jpg', // 原 T3
+  'TDR_T14_T4': '/images/stations/t14/TDR_T14_T4.jpg', // 原 T4
+  // 梅峰區
+  'WISE-4010LAN_00D0C9FAD2C9_SITE1': '/images/stations/t14/WISE_14_25K_BT_TI.jpg', // 原 14.25K-BT
+  'WISE-4010LAN_00D0C9FAD2C9_SITE2': '/images/stations/t14/WISE_14_27K_BT_TI.jpg', // 原 14.27K-BT
+  'WISE-4010LAN_00D0C9FAC4F8': '/images/stations/t14/WISE_CH1_BT_TI.jpg',      // 原 CH-1-BT
+  'WISE-4010LAN_74FE489299F4': '/images/stations/t14/WISE_BE1_GE.jpg',        // 原 BE1
+  'WISE-4010LAN_74FE4890BAFC': '/images/stations/t14/WISE_BE2_GE.jpg',        // 原 BE2
+  'WISE-4010LAN_74FE48941AD9': '/images/stations/t14/WISE_BE3_GE.jpg',        // 原 BE3
+  'TDR_T14A_CH1': '/images/stations/t14/TDR_T14A_CH1.jpg', // 原 CH1 TDR
+  'TDR_T14A_CH2': '/images/stations/t14/TDR_T14A_CH2.jpg', // 原 CH2 TDR
+  'TDR_T14A_CH4': '/images/stations/t14/TDR_T14A_CH4.jpg', // 原 CH4 TDR (之前註解掉了)
 
-  // 'W2': '/stations/w2_water_site.jpg',
-  'H2-R': '/stations/t4_rain_site.jpg',
-  '14.25K-BT': '/stations/14.25k_ti_site.jpg',
-  'CH-1-BT': '/stations/ch1_ti_site.jpg',
-  'BE1': '/stations/ch2_be_site.jpg',
-  'BE2': '/stations/ch3_be_site.jpg',
-  // 'WISE-4010LAN_74FE48941AD9': '/stations/ch4_be_site.jpg',
-
-  // 可以繼續添加更多站點...
+  // --- 台8線 (t8) ---
+  // 台8線107K區
+  'TDR_T8_T1': '/images/stations/t8/TDR_T8_T1.jpg',
+  'TDR_T8_T2': '/images/stations/t8/TDR_T8_T2.jpg',
+  'TDR_T8_T4': '/images/stations/t8/TDR_T8_T4.jpg',
+  'TDR_T8_T7': '/images/stations/t8/TDR_T8_T7.jpg',
+  'TDR_T8_T8': '/images/stations/t8/TDR_T8_T8.jpg',
+  'TDR_T8_T9': '/images/stations/t8/TDR_T8_T9.jpg',
+  'WISE-4010LAN_74FE4860F492': '/images/stations/t8/WISE_OW10_WATER.jpg', // OW10 水位計
+  'WISE-4010LAN_00D0C9FAD2C2': '/images/stations/t8/WISE_GE3_GE.jpg',    // GE3 (20m, 80m) 伸縮計
+  'WISE-4010LAN_74FE48595E19': '/images/stations/t8/WISE_BT1_BT3_TI.jpg',// BT1 & BT3 傾斜儀
+  'WISE-4010LAN_74FE486CEDFB': '/images/stations/t8/WISE_OW6_WATER.jpg',  // OW6 水位計
+  'WISE-4010LAN_74FE486B76BB': '/images/stations/t8/WISE_BT2_TI.jpg',    // BT2 傾斜儀
+  'WISE-4010LAN_74FE488F3BA0': '/images/stations/t8/WISE_OW5_WATER.jpg',  // OW5 水位計
+  'WISE-4060LAN_00D0C9E332E8': '/images/stations/t8/WISE_107K_RAIN.jpg', // 107K+600 雨量筒
+  'WISE-4010LAN_74FE486B76AA': '/images/stations/t8/WISE_OW1_GE1_MULTI.jpg', // OW1 水位計 & GE1 伸縮計 (綜合型)
+  'WISE-4010LAN_74FE487F4FE3': '/images/stations/t8/WISE_FL_FLOW.jpg'     // FL1~4 流量計
 };
 
 // 方式2：使用設備類型的預設照片（當找不到特定站點照片時）
-const defaultDeviceImages = {
-  [DEVICE_TYPES.TI]: '/TI.png',
-  [DEVICE_TYPES.WATER]: '/water.png', 
-  [DEVICE_TYPES.RAIN]: '/RAIN.png',
-  [DEVICE_TYPES.GE]: '/GE.png',
-  [DEVICE_TYPES.TDR]: '/TDR.png',
+export const defaultDeviceImages = {
+  [DEVICE_TYPES.TI]: '/images/devices/TI.png',         // 假設預設圖示在 public/images/devices/
+  [DEVICE_TYPES.WATER]: '/images/devices/WATER.png',
+  [DEVICE_TYPES.RAIN]: '/images/devices/RAIN.png',
+  [DEVICE_TYPES.GE]: '/images/devices/GE.png',
+  [DEVICE_TYPES.TDR]: '/images/devices/TDR.png',
+  [DEVICE_TYPES.FLOW]: '/images/devices/FLOW.png',     // 新增流量計預設圖示
+  't8_DEFAULT': '/images/devices/t8_default_station.png',
+  't14_DEFAULT': '/images/devices/t14_default_station.png',
+  'DEFAULT': '/images/devices/default_station.png'
 };
 
 // 根據設備資訊取得站點照片
-function getDeviceImage(deviceConfig) { // 參數改為 deviceConfig 以更清晰
-  // 1. 優先嘗試使用 deviceConfig.name 查找照片
-  if (deviceConfig && deviceConfig.name && deviceImages[deviceConfig.name]) {
-    return deviceImages[deviceConfig.name];
+function getDeviceImage(deviceConfig) { // 參數是完整的 deviceConfig 對象
+  if (!deviceConfig) return defaultDeviceImages['t8_DEFAULT']; // 如果沒有 deviceConfig，返回全局預設
+
+  // 1. 優先嘗試使用 deviceConfig.id (前端唯一邏輯ID) 在 deviceImages 中查找
+  if (deviceImages[deviceConfig.id]) {
+    return deviceImages[deviceConfig.id];
   }
 
-  // 2. 如果用 name 找不到，再嘗試使用 deviceConfig.id 查找照片
-  if (deviceConfig) {
-    if (deviceConfig.originalDeviceId && deviceImages[deviceConfig.originalDeviceId]) {
-      return deviceImages[deviceConfig.originalDeviceId];
-    }
-    else if (deviceConfig.id && deviceImages[deviceConfig.id]) {
-      return deviceImages[deviceConfig.id];
-    }
-  }
-
+  // 2. 如果用 id 找不到，再嘗試使用 deviceConfig.name 在 deviceImages 中查找
+  //    (這種情況比較少，通常 key 應該是唯一的 ID)
+  // if (deviceConfig.name && deviceImages[deviceConfig.name]) {
+  //   return deviceImages[deviceConfig.name];
+  // }
+  
   // 3. 如果都沒有特定照片，使用設備類型的預設照片
-  //    注意：deviceConfig.type 來自於 deviceMapping
-  const type = deviceConfig?.type; // 直接使用 deviceConfig.type
+  const type = deviceConfig.type; // 直接從 deviceConfig 中獲取類型
   if (type && defaultDeviceImages[type]) {
     return defaultDeviceImages[type];
   }
@@ -136,6 +161,16 @@ function Home() {
       (device.originalDeviceId && device.originalDeviceId.toLowerCase().includes(searchTerm.toLowerCase()) ||
        device.id && device.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
+  }
+
+  function getDeaultImage() {
+    if (routeGroup === 'T14') {
+      return defaultDeviceImages['T14_DEFAULT'];
+    }
+    if (routeGroup === 't8') {
+      return defaultDeviceImages['t8_DEFAULT'];
+    }
+    return defaultDeviceImages['DEFAULT'];
   }
 
   return (
@@ -226,6 +261,7 @@ function Home() {
                       const deviceIcon = getDeviceImage(deviceConfigEntry);
                       const statusClass = getStatusColor(data.timestamp);
                       const isRainGauge = deviceConfigEntry.type === DEVICE_TYPES.RAIN;
+                      const defalutImage = getDeaultImage();
 
                       // 全部 sensor 整合到同一張卡片
                       return (
@@ -247,9 +283,16 @@ function Home() {
                                 alt={`${deviceConfigEntry.name} 站點照片`}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  // 如果圖片載入失敗，顯示預設圖片或emoji
-                                  e.target.onerror = null;
-                                  e.target.src = defaultDeviceImages['DEFAULT'];
+                                  // ✨ 當 deviceIcon (特定設備圖片或類型預設圖片) 載入失敗時，
+                                  // ✨ 嘗試載入最終的全局預設圖片。
+                                  // ✨ 避免無限循環：只在當前 src 不是全局預設圖片時才嘗試設置
+                                  if (e.target.src !== defalutImage) {
+                                    e.target.src = defalutImage;
+                                  } else {
+                                    // 全局預設圖片載入失敗
+                                    e.target.style.display = 'none'; // 隱藏圖片
+                                    console.error(`Failed to load default image: ${defalutImage}`);
+                                  }
                                 }}
                               />
                             </div>
@@ -271,26 +314,32 @@ function Home() {
                             {/* 主要數據區域 */}
                               <div className="flex-grow space-y-3"> {/* flex-grow 讓數據區填滿按鈕前的空間 */}
                                 {isRainGauge && (
-                                  <div className="text-center space-y-2">
-                                    <p className="text-xs text-slate-500 mb-1">10分鐘雨量</p>
-                                    <p className="text-xl font-bold text-blue-600">
-                                      {data.rainfall_10m !== undefined && data.rainfall_10m !== null
-                                        ? `${data.rainfall_10m.toFixed(1)}`
-                                        : '-'}
-                                      <span className="text-sm ml-1">mm</span>
-                                    </p>
-                                    <p className="text-slate-500">1小時</p>
-                                    <p className="text-xl font-bold text-blue-600">
-                                      {data.rainfall_1h !== undefined && data.rainfall_1h !== null ? `${data.rainfall_1h.toFixed(1)}` : '-'} mm
-                                    </p>
-                                    <p className="text-slate-500">3小時</p>
-                                    <p className="text-xl font-bold text-blue-600">
-                                      {data.rainfall_3h !== undefined && data.rainfall_3h !== null ? `${data.rainfall_3h.toFixed(1)}` : '-'} mm
-                                    </p>
-                                    <p className="text-slate-500">24小時</p>
-                                    <p className="text-xl font-bold text-blue-600">
-                                      {data.rainfall_24h !== undefined && data.rainfall_24h !== null ? `${data.rainfall_24h.toFixed(1)}` : '-'} mm
-                                    </p>
+                                  <div className="text-center space-y-1"> {/* ✨ 調整 space-y */}
+                                    {[
+                                      // { label: '10分鐘雨量', key: 'rainfall_10m', thresholdKey: 'rainfall_10m' },
+                                      { label: '1小時累積', key: 'rainfall_1h', thresholdKey: 'rainfall_1h' }, // ✨ thresholdKey 與 isNormalData 中定義的對應
+                                      { label: '3小時累積', key: 'rainfall_3h', thresholdKey: 'rainfall_3h' },
+                                      { label: '24小時累積', key: 'rainfall_24h', thresholdKey: 'rainfall_24h' },
+                                    ].map(item => {
+                                      const value = data[item.key];
+                                      // ✨ isNormalData 需要 deviceConfig, sensorConfig (對於雨量筒可能不需要特定 sensorConfig), 和包含雨量數據的 data, 以及當前雨量區間的 key
+                                      // ✨ 對於雨量筒，isNormalData 的第二個參數 sensorConfig 可以傳 null 或一個通用的對象
+                                      const normal = isNormalData(deviceConfigEntry, null, value, item.key);
+                                      console.log('雨量區間:', item.key, '值:', value, '是否正常:', normal);
+                                      const valueColor = normal ? 'text-blue-600' : 'text-red-500 font-bold'; // ✨ 正常藍色，超限紅色加粗
+
+                                      return (
+                                        (value !== undefined && value !== null) ? ( // ✨ 只顯示有數據的雨量區間
+                                          <div key={item.key} className="py-0.5">
+                                            <p className="text-xs text-slate-500">{item.label}</p>
+                                            <p className={`text-xl font-bold ${valueColor}`}>
+                                              {value.toFixed(1)}
+                                              <span className="text-sm ml-1">mm</span>
+                                            </p>
+                                          </div>
+                                        ) : null // ✨ 如果該區間雨量無數據，則不顯示該行
+                                      );
+                                    })}
                                   </div>
                                 )}
 
@@ -302,7 +351,7 @@ function Home() {
                                         {(sensor.channels || []).map((ch) => {
                                           const chData = data.channels?.[ch];
                                           const displayValue = formatValue(deviceConfigEntry, sensor, chData, data);
-                                          const normal = isNormalData(deviceConfigEntry, chData);
+                                          const normal = isNormalData(deviceConfigEntry, sensor, chData);
                                           return (
                                             <div key={ch} className="flex justify-between items-baseline">
                                               <span className={`text-lg font-semibold ${
