@@ -198,17 +198,17 @@ export const deviceMapping = {
     defaultCenter: [24.1920, 121.3025], // ✨ 估算一個中心點
     defaultZoom: 17, // ✨ 假設設備分佈範圍較廣
     devices: [
-      { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T4', name: 'TDR T4 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', lat: 24.1922, lng: 121.30328, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', lat: 24.1929, lng: 121.30168, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T4', name: 'TDR T4 (台8)', lat: 24.19278, lng: 121.30282, area: '台8線107K區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T8_T7', name: 'TDR T7 (台8)', lat: 24.19166, lng: 121.3025, area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', lat: 24.19277, lng: 121.30166, area: '台8線107K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', lat: 24.19165, lng: 121.30325, area: '台8線107K區', type: DEVICE_TYPES.TDR },
       { id: 'TDR_T8_T9', name: 'TDR T9 (台8)', lat: 24.19138, lng: 121.30361, area: '台8線107K區', type: DEVICE_TYPES.TDR },
       {
         id: 'WISE-4010LAN_74FE4860F492',
         name: 'OW10 水位計',
-        lat: 24.19277,
-        lng: 121.30166,
+        lat: 24.19165,
+        lng: 121.30313,
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -218,8 +218,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_00D0C9FAD2C2',
         name: 'GE3 (20m, 80m) 伸縮計',
-        lat: 24.19277,
-        lng: 121.30166,
+        lat: 24.1922,
+        lng: 121.3034,
         area: '台8線107K區',
         type: DEVICE_TYPES.GE,
         sensors: [
@@ -229,23 +229,35 @@ export const deviceMapping = {
       },
       {
         id: 'WISE-4010LAN_74FE48595E19',
-        name: 'BT1 & BT3 傾斜儀',
-        lat: 24.19277,
-        lng: 121.30166,
+        name: 'BT1 傾斜儀',
+        lat: 24.19247,
+        lng: 121.3028,
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
           { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE48595E19_BT3',
+        name: 'BT3 傾斜儀',
+        originalDeviceId: 'WISE-4010LAN_74FE48595E19',
+        lat: 24.19220,
+        lng: 121.30304,
+        area: '台8線107K區',
+        type: DEVICE_TYPES.TI,
+        sensors: [
           { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
         ]
       },
       {
-        id: 'WISE-4010LAN_74FE486CEDFB',
+        id: 'WISE-4010LAN_74FE486CEDFB_OW6',
         name: 'OW6 水位計',
-        lat: 24.19277,
-        lng: 121.30166,
+        originalDeviceId: 'WISE-4010LAN_74FE486CEDFB',
+        lat: 24.1928,
+        lng: 121.3018,
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -255,8 +267,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE486B76BB',
         name: 'BT2 傾斜儀',
-        lat: 24.19277,
-        lng: 121.30166,
+        lat: 24.19256,
+        lng: 121.30189,
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
@@ -267,8 +279,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE488F3BA0',
         name: 'OW5 水位計',
-        lat: 24.19277,
-        lng: 121.30166,
+        lat: 24.1923,
+        lng: 121.3023,
         area: '台8線107K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
@@ -278,8 +290,8 @@ export const deviceMapping = {
       {
         id: 'WISE-4060LAN_00D0C9E332E8',
         name: '107K+600 雨量筒',
-        lat: 24.19277,
-        lng: 121.30166,
+        lat: 24.1934,
+        lng: 121.3025,
         area: '台8線107K區',
         type: DEVICE_TYPES.RAIN,
         sensors: [
@@ -287,13 +299,26 @@ export const deviceMapping = {
         ]
       },
       {
-        id: 'WISE-4010LAN_74FE486B76AA',
-        name: 'OW1 水位計 & GE1 伸縮計',
+        id: 'WISE-4010LAN_74FE486B76AA_OW1',
+        name: 'OW1 水位計',
+        originalDeviceId: 'WISE-4010LAN_74FE486B76AA',
+        lat: 24.19282,
+        lng: 121.30253,
         area: '台8線107K區',
-        lat: 24.19277,
-        lng: 121.30166,
+        type: DEVICE_TYPES.WATER,
         sensors: [
           { name: 'OW1', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -80 },
+        ]
+      },
+      {
+        id: 'WISE-4010LAN_74FE486B76AA_GE1',
+        name: 'GE1 伸縮計',
+        originalDeviceId: 'WISE-4010LAN_74FE486B76AA',
+        lat: 24.19278,
+        lng: 121.30268,
+        area: '台8線107K區',
+        type: DEVICE_TYPES.GE,
+        sensors: [
           { name: 'GE1 (20m)', channels: ['AI_2'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_2: 4.175 } },
           { name: 'GE1 (80m)', channels: ['AI_3'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_3: 4.781 } }
         ]
@@ -301,15 +326,15 @@ export const deviceMapping = {
       {
         id: 'WISE-4010LAN_74FE487F4FE3',
         name: 'FL1~4 流量計',
-        lat: 24.19277,
-        lng: 121.30166,
+        lat: 24.19295,
+        lng: 121.30225,
         area: '台8線107K區',
         type: DEVICE_TYPES.FLOW, // ✨ 使用新的 FLOW 類型
         sensors: [
-          { name: 'FL1', channels: ['AI_0'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL2', channels: ['AI_1'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL3', channels: ['AI_2'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL4', channels: ['AI_3'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ }
+          { name: 'FL1', channels: ['AI_0'], type: DEVICE_TYPES.FLOW, flowMax: 130 },
+          { name: 'FL2', channels: ['AI_1'], type: DEVICE_TYPES.FLOW, flowMax: 130 },
+          { name: 'FL3', channels: ['AI_2'], type: DEVICE_TYPES.FLOW, flowMax: 130 },
+          { name: 'FL4', channels: ['AI_3'], type: DEVICE_TYPES.FLOW, flowMax: 130 }
         ]
       }
     ]

@@ -84,7 +84,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
     // WISE 數據的原始查詢和處理邏輯 (多個欄位在同一個 point) 
     const fluxQuery = `
       from(bucket: "${bucket}")
-        |> range(start: -30d)
+        |> range(start: -20d)
         |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
         |> last()
     `;

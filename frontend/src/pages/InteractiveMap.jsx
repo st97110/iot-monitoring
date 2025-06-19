@@ -7,28 +7,20 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
-
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES } from '../config/config';
+import { isNormalData, formatValue } from '../utils/sensor';
 
 const stations = Object.values(deviceMapping).flatMap(area =>
   area.devices.map(device => ({
-    id: device.mac || device.id,
+    id: device.id,
     name: device.name,
     lat: device.lat,
     lng: device.lng,
-    deviceId: device.mac ? `WISE-4010LAN_${device.mac}` : device.id,
     type: device.type,
-    sensors: device.sensors || []
+    sensors: device.sensors || [],
+    originalDeviceId: device.originalDeviceId || device.id
   }))
 );
-
-function isNormalData(device, chData) {
-    if (device.type === DEVICE_TYPES.RAIN && chData?.rainfall_10m < 10) return true;          // 雨量筒小於 10 顯示為正常
-    else if (device.type === DEVICE_TYPES.GE && Math.abs(chData?.Delta) < 50) return true;       // 伸縮計小於 30 顯示為正常
-    else if (device.type === DEVICE_TYPES.TI && Math.abs(chData?.Delta) < 2 * 3600) return true; // 傾斜儀小於 5 度顯示為正常
-    else if (device.type === DEVICE_TYPES.WATER && chData?.PEgF < -15) return true; // 水位計小於 -15 公尺顯示為正常
-    return false;
-  }
 
 function getIconByType(type, abnormal) {
   let text = '';
@@ -39,7 +31,8 @@ function getIconByType(type, abnormal) {
     case 'GE': text = 'GE'; baseColor = 'bg-green-500'; break;
     case 'WATER': text = 'W'; baseColor = 'bg-cyan-500'; break;
     case 'TDR': text = 'TDR'; baseColor = 'bg-indigo-500'; break;
-    default: text = '?'; baseColor = 'bg-gray-500';
+    case 'FLOW': text = 'FL'; baseColor = 'bg-pink-500'; break;
+    default: text = '?'; baseColor = 'bg-gray-500'; break;
   }
   const border = abnormal ? 'border-2 border-red-500' : '';
   return L.divIcon({
@@ -69,39 +62,43 @@ function InteractiveMap() {
   const mapRef = useRef(null);
   const markerRefs = useRef({});
   const [dataCache, setDataCache] = useState({});
-  const [visibleLayers, setVisibleLayers] = useState({ TI: true, WATER: true, RAIN: true, GE: true, TDR: true });
+  const [visibleLayers, setVisibleLayers] = useState({ TI: true, WATER: true, RAIN: true, GE: true, TDR: true, FLOW: true });
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [highlightIndex, setHighlightIndex] = useState(-1);
 
   // 根據 routeGroup 篩選初始顯示的 stations
   const displayedStations = useMemo(() => {
-    if (!routeGroup) return stations; // 如果沒有 routeGroup (例如直接訪問 /map)，顯示全部
+    if (!routeGroup) return stations;
     return stations.filter(station => {
         // 需要從 deviceMapping 中找到 station.id 對應的配置，再看其 routeGroup
         for (const area of Object.values(deviceMapping)) {
-            const deviceConf = area.devices.find(d => d.id === station.deviceId); // 假設 station.deviceId 是唯一的邏輯 ID
+            const deviceConf = area.devices.find(d => d.id === station.id); // 假設 station.id 是唯一的邏輯 ID
             if (deviceConf && area.routeGroup === routeGroup) {
                 return true;
             }
         }
         return false;
     });
-  }, [routeGroup]);
+  }, [routeGroup, stations]);
 
-  const handleLoadData = async (deviceId) => {
-    if (dataCache[deviceId]) return;
+  const handleLoadData = async (stationConfig) => {
+    const physicalDeviceId = stationConfig.originalDeviceId || stationConfig.id; // 使用物理ID查詢
+    const logicalDeviceId = stationConfig.id; // 用邏輯ID作為 cache key
+
+    if (dataCache[logicalDeviceId]) return;
     try {
-      const res = await axios.get(`${API_BASE}/api/latest?deviceId=${deviceId}`);
-      setDataCache(prev => ({ ...prev, [deviceId]: res.data[deviceId] }));
+      const res = await axios.get(`${API_BASE}/api/latest?deviceId=${physicalDeviceId}`);
+      setDataCache(prev => ({ ...prev, [logicalDeviceId]: res.data[physicalDeviceId] }));
     } catch (err) {
-      console.error('讀取數據失敗', err);
+      console.error(`讀取設備 ${logicalDeviceId} (物理ID: ${physicalDeviceId}) 數據失敗`, err);
+      setDataCache(prev => ({ ...prev, [logicalDeviceId]: { error: 'Failed to load data' } })); // 存儲錯誤狀態
     }
   };
 
   useEffect(() => {
     // 只加載 displayedStations 的數據
-    displayedStations.forEach(station => handleLoadData(station.deviceId));
+    displayedStations.forEach(station => handleLoadData(station));
   }, [displayedStations]); // 當 displayedStations 變化時 (例如 routeGroup 變化)
 
   const bringMarkerToFront = (markerId) => {
@@ -123,7 +120,7 @@ function InteractiveMap() {
       return;
     }
     // 搜索範圍改為 displayedStations
-    const results = displayedStations.filter(st => st.name.toLowerCase().includes(kw) || st.deviceId.toLowerCase().includes(kw));
+    const results = displayedStations.filter(st => st.name.toLowerCase().includes(kw) || st.id.toLowerCase().includes(kw));
     setSearchResults(results.slice(0, 8));
     setHighlightIndex(0);
   };
@@ -170,13 +167,13 @@ function InteractiveMap() {
   // 根據 routeGroup 決定地圖的初始中心點和縮放級別
   const initialCenter = useMemo(() => {
     if (routeGroup === 't14') return [24.05, 121.17]; // 台14線及甲線的中心
-    if (routeGroup === 't8') return [24.1920, 121.3025];  // 台8線的中心 (假設)
+    if (routeGroup === 't8') return [24.1923, 121.3032];  // 台8線的中心 (假設)
     return [24.03, 121.16]; // 預設中心
   }, [routeGroup]);
 
   const initialZoom = useMemo(() => {
     if (routeGroup === 't14') return 12;
-    if (routeGroup === 't8') return 16;
+    if (routeGroup === 't8') return 18;
     return 12;
   }, [routeGroup]);
 
@@ -258,79 +255,82 @@ function InteractiveMap() {
 
         <MarkerClusterGroup disableClusteringAtZoom={18}>
           {/* ✨ 使用 displayedStations 進行渲染 */}
-          {displayedStations.filter(st => visibleLayers[st.type]).map(st => {
-            const latestData = dataCache[st.deviceId];
+          {displayedStations.filter(st => visibleLayers[st.type]).map(stationConfig => {
+            const latestData = dataCache[stationConfig.id];
             let isDeviceAbnormal = false; // ✨ 預設正常
-            if (latestData && latestData.channels && st.sensors && st.sensors.length > 0) {
-              // 檢查該設備的所有感測器和通道，是否有一個是異常的
-                // isNormalData 需要 deviceConfig (這裡的 st 就是) 和 channelData
-                // 我們需要遍歷 st.sensors
-                for (const sensor of st.sensors) {
-                    for (const channelKey of sensor.channels) {
-                        const chData = latestData.channels[channelKey];
-                        if (chData && !isNormalData(st, chData)) { // 假設 isNormalData 接收 device 和 chData
-                            isDeviceAbnormal = true;
-                            break; // 只要有一個異常，整個設備標記異常
-                        }
-                    }
-                    if (isDeviceAbnormal) break;
+            
+            // ✨ 異常判斷邏輯 (使用 stationConfig 和 latestData)
+            if (latestData && !latestData.error && stationConfig.sensors && stationConfig.sensors.length > 0) {
+              if (stationConfig.type === DEVICE_TYPES.RAIN) {
+                if (latestData.rainfall_10m !== undefined && !isNormalData(stationConfig, null, latestData.rainfall_10m, 'rainfall_10m')) { // ✨ isNormalData 需要調整以適應
+                  isDeviceAbnormal = true;
                 }
-            } else if (latestData && st.type === DEVICE_TYPES.RAIN) { // 雨量筒的異常判斷
-                 if (latestData.rainfall_10m !== undefined && !isNormalData(st, { rainfall_10m: latestData.rainfall_10m })) {
-                     isDeviceAbnormal = true;
-                 }
+              } else {
+                for (const sensor of stationConfig.sensors) {
+                  for (const channelKey of sensor.channels) {
+                    const chData = latestData.channels?.[channelKey]; // 從 API 返回的最新數據中獲取通道數據
+                    // ✨ isNormalData 現在需要 deviceConfig, sensor, 和包含原始值的 latestData
+                    if (!isNormalData(stationConfig, sensor, chData, channelKey)) { // 假設 isNormalData 能處理
+                      isDeviceAbnormal = true;
+                      break;
+                    }
+                  }
+                  if (isDeviceAbnormal) break;
+                }
+              }
             }
             
             return (
               <Marker
-                key={st.id} // 這裡的 st.id 應該是唯一的 (來自最初的 stations 陣列)
-                position={[st.lat, st.lng]}
-                icon={getIconByType(st.type, isDeviceAbnormal)} // 使用 isDeviceAbnormal
-                ref={(ref) => (markerRefs.current[st.id] = ref)}
+                key={stationConfig.id} // 這裡的 st.id 應該是唯一的 (來自最初的 stations 陣列)
+                position={[stationConfig.lat, stationConfig.lng]}
+                icon={getIconByType(stationConfig.type, isDeviceAbnormal)} // 使用 isDeviceAbnormal
+                ref={(ref) => (markerRefs.current[stationConfig.id] = ref)}
                 eventHandlers={{
                   click: () => {
-                    handleLoadData(st.deviceId); // st.deviceId 是唯一的邏輯 ID
-                    bringMarkerToFront(st.id);
+                    handleLoadData(stationConfig.id); // st.deviceId 是唯一的邏輯 ID
+                    bringMarkerToFront(stationConfig.id);
                   }
                 }}
               >
                 <Popup className="rounded-lg shadow-lg custom-popup-width"> {/* 可選：自定義Popup寬度 */}
                   <div className="p-1 sm:p-2">
-                    <h3 className="font-bold text-base sm:text-lg mb-1">{st.name}</h3>
+                    <h3 className="font-bold text-base sm:text-lg mb-1">{stationConfig.name}</h3>
                     {/* ✨ 根據 routeGroup 構建正確的趨勢圖連結 */}
-                    <button onClick={() => navigate(`/${routeGroup}/trend?deviceId=${st.deviceId}`)} className="text-blue-600 underline mb-2 block text-xs sm:text-sm">查看詳細</button>
+                    <button onClick={() => navigate(`/${routeGroup}/trend?deviceId=${stationConfig.id}`)} className="text-blue-600 underline mb-2 block text-xs sm:text-sm">查看詳細</button>
                     <hr className="my-1 sm:my-2" />
                     {latestData?.timestamp ? (
                       <div className="text-xs sm:text-sm space-y-0.5">
                         <p>時間：{new Date(latestData.timestamp).toLocaleString('zh-TW', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</p>
-                        {/* ✨ Popup 內容顯示邏輯與 Home.jsx 類似 */}
-                        {st.type === DEVICE_TYPES.RAIN && latestData.rainfall_10m !== null && (
-                            <p className="text-gray-700">10分鐘雨量: {latestData.rainfall_10m.toFixed(1)} mm</p>
+                        
+                        {/* ✨ 使用 formatValue 來顯示 Popup 內容 */}
+                        {stationConfig.type === DEVICE_TYPES.RAIN && latestData.rainfall_10m !== undefined && latestData.rainfall_10m !== null && (
+                          <p className="text-gray-700">
+                              10分鐘雨量: {latestData.rainfall_10m.toFixed(1)} mm
+                          </p>
                         )}
-                        {st.type !== DEVICE_TYPES.RAIN && st.type !== DEVICE_TYPES.TDR && st.sensors?.map((sensor, sIdx) => (
+                        {stationConfig.type !== DEVICE_TYPES.RAIN && stationConfig.type !== DEVICE_TYPES.TDR && stationConfig.sensors?.map((sensor, sIdx) => (
                             sensor.channels.map((ch) => {
-                                const chData = latestData.channels?.[ch];
-                                // 這裡的 displayValue 需要一個類似 Home.jsx 中的 formatValue
-                                // 我們暫時簡化顯示原始 Delta 或 PEgF
-                                let display = '-';
-                                if (chData) {
-                                    if (st.type === DEVICE_TYPES.WATER) display = chData.PEgF != null ? `${chData.PEgF.toFixed(2)} m` : '-';
-                                    else if (st.type === DEVICE_TYPES.GE) display = chData.Delta != null ? `${chData.Delta.toFixed(2)} mm` : '-';
-                                    else if (st.type === DEVICE_TYPES.TI) display = chData.Delta != null ? chData.Delta.toFixed(1) + ' "' : '-'; // TI 用一度的小數位
-                                    else display = chData.EgF != null ? chData.EgF.toFixed(3) : '-';
-                                }
-                                return (
-                                    <p key={`${sIdx}-${ch}`} className="text-gray-700">
-                                        {sensor.name.replace(/\(.*\)/, '').trim()} ({ch.replace('AI_','').replace('DI_','')}) : {display}
-                                    </p>
-                                );
+                              // ✨ 從 latestData (對應API返回的物理設備數據) 的 channels 中獲取特定通道的數據
+                              const chDataFromApi = latestData.channels?.[ch];
+                              // ✨ 調用 formatValue
+                              // formatValue(deviceConfig, sensorConfig, channelDataFromApi, fullApiEntryForTimestamp)
+                              const displayValue = formatValue(stationConfig, sensor, chDataFromApi, latestData);
+                              let display = '-';
+                              return (
+                                  <p key={`${sIdx}-${ch}`} className="text-gray-700">
+                                      {sensor.name.replace(/\(.*\)/, '').trim()} ({ch.replace(/AI_|DI_/, '')}) : {displayValue}
+                                  </p>
+                              );
                             })
                         ))}
-                        {st.type === DEVICE_TYPES.TDR && <p className="text-gray-500 italic">TDR數據請查看詳細</p>}
+                        {stationConfig.type === DEVICE_TYPES.TDR && <p className="text-gray-500 italic">TDR數據請查看詳細</p>}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-xs sm:text-sm">載入中或無即時數據...</p>
-                    )}
+                    <p className="text-gray-500 text-xs sm:text-sm">
+                      {latestData && latestData.error ? '數據加載失敗' : '載入中或無即時數據...'}
+                    </p>
+                  )}
                   </div>
                 </Popup>
               </Marker>
