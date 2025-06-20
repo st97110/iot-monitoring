@@ -24,9 +24,9 @@ const deviceImages = {
   'TDR_T14_T1': '/images/stations/t14/TDR_T14_T1.jpg', // 原 T1
   'TDR_T14_T2': '/images/stations/t14/TDR_T14_T2.jpg', // 原 T2
   // 春陽區
-  'WISE-4010LAN_74FE48941ABE_SITE1': '/images/stations/t14/WISE_84_6K_TI.jpg', // 原 84.6K (假設照片)
-  'WISE-4010LAN_74FE48941ABE_SITE2': '/images/stations/t14/WISE_84_65K_TI.jpg',// 原 84.65K (假設照片)
-  'WISE-4010LAN_00D0C9FAD2E3': '/images/stations/t14/WISE_84_7K_TI.jpg',   // 原 84.7K
+  // 'WISE-4010LAN_74FE48941ABE_SITE1': '/images/stations/t14/WISE_84_6K_TI.jpg', // 原 84.6K (假設照片)
+  // 'WISE-4010LAN_74FE48941ABE_SITE2': '/images/stations/t14/WISE_84_65K_TI.jpg',// 原 84.65K (假設照片)
+  // 'WISE-4010LAN_00D0C9FAD2E3': '/images/stations/t14/WISE_84_7K_TI.jpg',   // 原 84.7K
   'TDR_T14_AH3': '/images/stations/t14/TDR_T14_AH3.jpg', // 原 AH3
   // 90K區
   'WISE-4010LAN_74FE489299CB': '/images/stations/t14/WISE_W2_WATER.jpg',   // 原 W2
@@ -39,10 +39,10 @@ const deviceImages = {
   'WISE-4010LAN_00D0C9FAC4F8': '/images/stations/t14/WISE_CH1_BT_TI.jpg',      // 原 CH-1-BT
   'WISE-4010LAN_74FE489299F4': '/images/stations/t14/WISE_BE1_GE.jpg',        // 原 BE1
   'WISE-4010LAN_74FE4890BAFC': '/images/stations/t14/WISE_BE2_GE.jpg',        // 原 BE2
-  'WISE-4010LAN_74FE48941AD9': '/images/stations/t14/WISE_BE3_GE.jpg',        // 原 BE3
+  // 'WISE-4010LAN_74FE48941AD9': '/images/stations/t14/WISE_BE3_GE.jpg',        // 原 BE3
   'TDR_T14A_CH1': '/images/stations/t14/TDR_T14A_CH1.jpg', // 原 CH1 TDR
   'TDR_T14A_CH2': '/images/stations/t14/TDR_T14A_CH2.jpg', // 原 CH2 TDR
-  'TDR_T14A_CH4': '/images/stations/t14/TDR_T14A_CH4.jpg', // 原 CH4 TDR (之前註解掉了)
+  // 'TDR_T14A_CH4': '/images/stations/t14/TDR_T14A_CH4.jpg', // 原 CH4 TDR (之前註解掉了)
 
   // --- 台8線 (t8) ---
   // 台8線107K區

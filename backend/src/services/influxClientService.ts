@@ -83,10 +83,24 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
   if (key === 'wise') {
     // WISE 數據的原始查詢和處理邏輯 (多個欄位在同一個 point) 
     const fluxQuery = `
-      from(bucket: "${bucket}")
-        |> range(start: -20d)
+      data = from(bucket: "${bucket}")
+        |> range(start: -30d) // 或者一個更短的合理範圍，例如 -2d 或 -7d
         |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
-        |> last()
+
+      // 步驟 1: 找到最新的時間戳
+      latestTime = data
+        |> group()
+        |> last(column: "_time") // 或者 sort |> limit(n:1) |> keep(columns:["_time"])
+        |> findRecord(fn: (key) => true, idx: 0) // 從結果表中取出第一行 (即最新的時間戳記錄)
+
+      // 步驟 2: 使用最新的時間戳篩選原始數據，獲取該時間戳下的所有欄位
+      // 只有當 latestTime._time 存在時才執行
+      if exists latestTime._time then
+        data
+          |> filter(fn: (r) => r._time == latestTime._time) // 篩選出所有欄位在最新時間戳的記錄
+      else
+        // 如果沒有找到最新時間，可以返回一個空的流，或者按您的錯誤處理邏輯
+        from(bucket: "nonexistent") |> range(start: -1s) // 返回空結果
     `;
 
     await new Promise<void>((resolve, reject) => {
@@ -135,8 +149,10 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
       from(bucket: "${bucket}")
         |> range(start: -30d)
         |> filter(fn: (r) => r._measurement == "tdr_raw" and r.device == "${deviceId}")
+        |> group()
+        |> sort(columns: ["_time"], desc: true)
+        |> limit(n: 1)
         |> keep(columns: ["_time"])
-        |> last(column: "_time")
     `;
 
     await new Promise<void>((resolveStep1, rejectStep1) => {
