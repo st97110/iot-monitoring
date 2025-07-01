@@ -347,7 +347,7 @@ function TrendPage() {
       let headers = ['時間'];
       const dataRows = [];
 
-      if (currentDevice.sensors?.[sensorIndex]?.type || currentDevice.type === DEVICE_TYPES.RAIN) {
+      if (currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.RAIN || currentDevice.type === DEVICE_TYPES.RAIN) {
         // 雨量筒的 CSV 導出
         headers.push(`區間雨量 (${selectedRainInterval})`, '累計雨量'); // 假設 selectedRainInterval 和 accumulated_rainfall 存在
         data.forEach(row => {
