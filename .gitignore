@@ -5,12 +5,12 @@ backend/node_modules/
 backend/package-lock.json
 
 # Environment variables
-backend/.env
-backend/.env.local
-backend/.env.*.local
+*.env
+*.env.local
+*.env.*.local
 
 # Logs
-backend/*.log
+*/*.log
 backend/logs/
 backend/src/logs/
 backend/npm-debug.log*

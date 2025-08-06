@@ -135,10 +135,14 @@ function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500, flowMa
  * @returns 格式化後的數值字串
  */
 export function formatValue(deviceConfig, sensor, chData, allEntryData) {
+  // 判斷是否是 geostar (ETI) 數據源
+  const isGeoStarSource = deviceConfig.sourceType === 'geostar'; // 或者 'ETI'
+
   // 優先使用 sensor.type，如果沒有則使用 device.type
   const typeToUse = sensor.type || deviceConfig.type;
+
   // 如果 EgF 為 20 或 4，則顯示 N/A
-  if (chData?.EgF == 20 || chData?.EgF == 4) return 'N/A';
+  if (isGeoStarSource !== true &&chData?.EgF == 20 || chData?.EgF == 4) return 'N/A';
 
   switch (typeToUse) {
     case DEVICE_TYPES.WATER: {
@@ -167,6 +171,11 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
     }
     case DEVICE_TYPES.TI: {
       // 傾斜儀：類似伸縮計
+      if (isGeoStarSource) {
+        const angleValue = chData?.PEgF; // 後端已將 value 映射為 PEgF
+        return angleValue != null && !isNaN(angleValue) ? `${angleValue.toFixed(1)} "` : 'N/A';
+      }
+
       let raw = chData?.EgF;
       let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg);
       const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg);

@@ -1,5 +1,24 @@
 // backend/utils/areaHelper.ts
-import { DEVICE_TYPES, deviceMapping, Device, Sensor } from '../config/config';
+import { DEVICE_TYPES, deviceMapping, Device, Sensor, AreaConfig } from '../config/config';
+
+// ✨ 緩存 deviceId -> deviceConfig 的查找結果，避免重複遍歷
+const deviceConfigCache: Map<string, Device | undefined> = new Map();
+let isCacheBuilt = false;
+
+// 輔助函數：建立緩存
+function buildDeviceConfigCache(): void {
+    if (isCacheBuilt) return;
+    for (const area of Object.values(deviceMapping as Record<string, AreaConfig>)) {
+        if (area && Array.isArray(area.devices)) {
+            for (const device of area.devices) {
+                if (device && device.id) {
+                    deviceConfigCache.set(device.id, device);
+                }
+            }
+        }
+    }
+    isCacheBuilt = true;
+}
 
 /** 由 deviceId 反查區域名稱（找不到回傳 undefined） */
 export function getAreaByDeviceId(deviceId: string): string | undefined {
@@ -11,12 +30,43 @@ export function getAreaByDeviceId(deviceId: string): string | undefined {
   return undefined;
 }
 
-export type SourceKey = 'wise' | 'tdr';
+/**
+ * 根據前端傳來的唯一邏輯 ID，從 deviceMapping 中查找對應的設備配置對象。
+ * 使用緩存以提高性能。
+ * @param logicalId - 前端使用的唯一邏輯設備 ID (例如 "WISE-..._SITE1", "SN_24782")
+ * @returns 找到的設備配置對象 (Device) 或 undefined
+ */
+export function getDeviceConfigById(logicalId: string): Device | undefined {
+    // 確保緩存已建立
+    if (!isCacheBuilt) {
+        buildDeviceConfigCache();
+    }
+    
+    // 從緩存中查找
+    if (deviceConfigCache.has(logicalId)) {
+        return deviceConfigCache.get(logicalId);
+    }
+    
+    // 如果緩存中沒有（理論上不應該，除非動態修改配置），可以選擇重新掃描一次或直接返回 undefined
+    return undefined;
+}
 
+export type SourceKey = 'wise' | 'tdr' | 'geostar' | 'unknown';
+
+/**
+ * 根據前端傳來的唯一邏輯 ID，快速判斷其數據來源類型。
+ * 主要用於需要快速分類的場景。
+ * @param id 前端使用的唯一邏輯設備 ID
+ * @returns 'wise', 'tdr', 'geostar', 或 'unknown'
+ */
 export function getSourceByDeviceId(id: string): SourceKey {
+  if (!id || typeof id !== 'string') {
+      return 'unknown';
+  }
   const upper = id.toUpperCase();
   if (upper.startsWith('WISE-')) return 'wise';
   if (upper.startsWith('TDR_') || upper.startsWith('TDR-')) return 'tdr';
+  if (upper.startsWith('SN_')) return 'geostar';
   throw new Error(`[getSourceByDeviceId] 無法判斷 deviceId=${id} 來源（請補規則）`);
 }
 

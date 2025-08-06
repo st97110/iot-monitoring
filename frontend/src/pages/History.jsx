@@ -9,7 +9,7 @@ function History() {
   const navigate = useNavigate();
 
   const [data, setData] = useState([]);
-  const [deviceId, setDeviceId] = useState(''); // 存儲的是前端選中的唯一邏輯 ID (e.g., ..._SITE1)
+  const [deviceId, setDeviceId] = useState('WISE-4060LAN_00D0C9FD4D44'); // 存儲的是前端選中的唯一邏輯 ID (e.g., ..._SITE1)
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 //  const [limit] = useState(10);
@@ -379,15 +379,23 @@ function History() {
                         const chData = entry.channels?.[ch];
                         // WISE 雨量筒的特殊處理，如果後端已經處理好 rainfall_10m 或類似的，直接用
                         // 否則，可以嘗試從 raw 數據中獲取 'DI_x Cnt'
-                        const isRain = sensor.type === DEVICE_TYPES.RAIN;
                         const displayValue = formatValue(deviceConfig, sensor, chData, entry);
 
-                        let egfText = '-';
-                        let deltaColor = 'text-gray-600';
+                        // ✨ 準備在括號中顯示的「原始值」
+                        let rawValueText = '-';
+                        // ✨ 判斷是否是 geostar 數據源
+                        const isGeoStarSource = deviceConfig.sourceType === 'geostar';
 
-                        if (deviceConfig.type !== DEVICE_TYPES.RAIN && chData) { // 雨量筒不顯示基於初始值的 delta
+                        if (isGeoStarSource) {
+                          // ✨ 對於 geostar，原始值就是 PEgF
+                          const pegf = chData?.PEgF;
+                          rawValueText = pegf !== undefined && pegf !== null ? `${Number(pegf).toFixed(1)} "` : '-';
+                        } else if (deviceConfig.type !== DEVICE_TYPES.RAIN && chData) {
+                          // ✨ 對於標準 WISE，原始值是 EgF
                           const egf = chData.EgF !== undefined ? Number(chData.EgF) : (entry.raw?.[`${ch} EgF`] !== undefined ? Number(entry.raw[`${ch} EgF`]) : undefined);
-                          egfText = `${egf} mA`;
+                          if (egf !== undefined && !isNaN(egf)) {
+                            rawValueText = `${egf.toFixed(3)} mA`;
+                          }
                         }
 
                         return (
@@ -407,8 +415,9 @@ function History() {
                             <td className="px-4 py-3">{ch}</td> {/* 類型/通道 */}
                             <td className="px-4 py-3 text-right font-medium">
                               {displayValue}
-                              {deviceConfig.type !== DEVICE_TYPES.RAIN && ( // 雨量筒不顯示括號里的變化量
-                                <span className={`ml-2 ${deltaColor}`}>({egfText})</span>
+                              {/* ✨ 只有非雨量筒和非 geostar 的設備才顯示括號里的 EgF */}
+                              {deviceConfig.type !== DEVICE_TYPES.RAIN && !isGeoStarSource && (
+                                <span className={`ml-2 text-gray-600`}>({rawValueText})</span>
                               )}
                             </td>
                           </tr>

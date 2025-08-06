@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, useParams, Outlet, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink as RouterNavLink, useLocation, useParams, Outlet, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import History from './pages/History';
 import InteractiveMap from './pages/InteractiveMap';
@@ -55,10 +55,57 @@ const Navigation = () => {
         <div className="hidden md:flex space-x-2">
           {/* ✨ NavLink 的 to 屬性使用 baseNavPath */}
           {/*    對於首頁，如果 baseNavPath 是 /t14，則 to="/t14/" (或 "/t14") */}
-          <NavLink to={`${baseNavPath || '/'}`}>即時資料</NavLink>
-          <NavLink to={`${baseNavPath}/history`}>歷史查詢</NavLink>
-          <NavLink to={`${baseNavPath}/trend`}>趨勢圖</NavLink>
-          <NavLink to={`${baseNavPath}/map`}>互動地圖</NavLink>
+          {/* ✨ 使用 React Router 的 NavLink */}
+          <RouterNavLink
+            to={`${baseNavPath || '/'}`}
+            // ✨ 添加 end 屬性，要求精確匹配
+            end 
+            className={({ isActive }) => // ✨ 使用函數來動態設置 className
+              `px-4 py-2 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? 'bg-white text-blue-700 shadow-md font-medium'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`
+            }
+          >
+            即時資料
+          </RouterNavLink>
+          <RouterNavLink
+            to={`${baseNavPath}/history`}
+            className={({ isActive }) =>
+              `px-4 py-2 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? 'bg-white text-blue-700 shadow-md font-medium'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`
+            }
+          >
+            歷史查詢
+          </RouterNavLink>
+          <RouterNavLink
+            to={`${baseNavPath}/trend`}
+            className={({ isActive }) =>
+            `px-4 py-2 rounded-lg transition-all duration-200 ${
+              isActive
+                ? 'bg-white text-blue-700 shadow-md font-medium'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
+            }`
+            }
+          >
+            趨勢圖
+          </RouterNavLink>
+          <RouterNavLink
+            to={`${baseNavPath}/map`}
+            className={({ isActive }) =>
+            `px-4 py-2 rounded-lg transition-all duration-200 ${
+              isActive
+                ? 'bg-white text-blue-700 shadow-md font-medium'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
+            }`
+            }
+          >
+            互動地圖
+          </RouterNavLink>
         </div>
         
         {/* 行動版選單按鈕 */}
@@ -75,18 +122,18 @@ const Navigation = () => {
       {/* 行動版選單 */}
       {isMenuOpen && (
         <div className="mt-3 md:hidden flex flex-col space-y-2 px-2 pb-3 pt-2">
-          <Link to={`${baseNavPath || '/'}`} className="text-white hover:bg-white/10 px-3 py-2 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+          <RouterNavLink to={`${baseNavPath || '/'}`} end className={({ isActive }) => `px-3 py-2 rounded-lg ${isActive ? 'bg-white/20' : ''} text-white hover:bg-white/10`} onClick={() => setIsMenuOpen(false)}>
             即時資料
-          </Link>
-          <Link to={`${baseNavPath}/history`} className="text-white hover:bg-white/10 px-3 py-2 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+          </RouterNavLink>
+          <RouterNavLink to={`${baseNavPath}/history`} className={({ isActive }) => `px-3 py-2 rounded-lg ${isActive ? 'bg-white/20' : ''} text-white hover:bg-white/10`} onClick={() => setIsMenuOpen(false)}>
             歷史查詢
-          </Link>
-          <Link to={`${baseNavPath}/trend`} className="text-white hover:bg-white/10 px-3 py-2 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+          </RouterNavLink>
+          <RouterNavLink to={`${baseNavPath}/trend`} className={({ isActive }) => `px-3 py-2 rounded-lg ${isActive ? 'bg-white/20' : ''} text-white hover:bg-white/10`} onClick={() => setIsMenuOpen(false)}>
             趨勢圖
-          </Link>
-          <Link to={`${baseNavPath}/map`} className="text-white hover:bg-white/10 px-3 py-2 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+          </RouterNavLink>
+          <RouterNavLink to={`${baseNavPath}/map`} className={({ isActive }) => `px-3 py-2 rounded-lg ${isActive ? 'bg-white/20' : ''} text-white hover:bg-white/10`} onClick={() => setIsMenuOpen(false)}>
             互動地圖
-          </Link>
+          </RouterNavLink>
         </div>
       )}
     </nav>

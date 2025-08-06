@@ -166,6 +166,28 @@ export const deviceMapping = {
           { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.974 } },
         ]
       },
+      {
+        id: 'SN_24782', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '14甲CH3傾斜儀', // 隼星ly-road & sn=24782
+        lat: 24.08945,
+        lng: 121.173611,
+        type: DEVICE_TYPES.TI, // 設備類型
+        sourceType: 'geostar',
+        sensors: [
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['AI_0'], // { 'AI_0': 'ETI-2A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['AI_1'], // { 'AI_1': 'ETI-2B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
+        ]
+      },
       { id: 'WISE-4010LAN_74FE489299F4',
         name: 'BE1',
         lat: 24.08945,

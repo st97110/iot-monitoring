@@ -116,6 +116,7 @@ export interface Sensor {
   name          : string;
   channels      : string[];
   type          : DEVICE_TYPES;
+  sourceChannelMapping?: Record<string, string>;
   initialValues?: Record<string, number>;
   wellDepth?    : number; // For WATER
   fsDeg?        : number; // For TI
@@ -127,7 +128,7 @@ export interface Device {
   id     : string;
   name   : string;
   area?  : string;
-  type?   : DEVICE_TYPES;
+  type?  : DEVICE_TYPES;
   sensors?: Sensor[];
 }
 
@@ -248,6 +249,28 @@ export const deviceMapping: Record<
         sensors: [
           { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
           { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
+        ]
+      },
+      {
+        id: 'SN_24782', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '14甲CH3傾斜儀', // 隼星ly-road & sn=24782
+        area: '梅峰區',
+        type: DEVICE_TYPES.TI, // 設備類型
+        sensors: [
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['TI-2A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_0': 'ETI-2A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['TI-2B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_1': 'ETI-2B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          }
         ]
       },
       { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },

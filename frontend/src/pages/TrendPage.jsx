@@ -333,6 +333,55 @@ function TrendPage() {
     return options;
   }, [routeGroup]); // 依賴 routeGroup
 
+  const yAxisDomain = useMemo(() => {
+    // 僅有數據時才計算
+    if (data.length === 0) {
+        return undefined; 
+    }
+
+    let values = [];
+    if (currentDevice.sensors && currentDevice.sensors[sensorIndex]) {
+      // 其他 WISE 設備，需要從 sensor 配置中獲取所有 channels
+      const channelsToExtract = currentDevice.sensors[sensorIndex].channels;
+      // 使用 flatMap 將所有通道的值合併到一個陣列中
+      values = data.flatMap(d => 
+          channelsToExtract.map(ch => d[ch]).filter(v => typeof v === 'number')
+      );
+    }
+
+    if (values.length === 0) {
+        return undefined; // 沒有有效數據
+    }
+
+    // 找到最大值和最小值
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    
+    // 處理特殊情況：如果所有值都相同
+    if (dataMin === dataMax) {
+        // 給一個小範圍，避免圖表壓縮成一條直線
+        return [dataMin - 1, dataMax + 1];
+    }
+
+    // 計算範圍的擴展
+    const range = dataMax - dataMin;
+    let padding;
+    
+    if (currentDevice.type === DEVICE_TYPES.TI) {
+        // 對於傾斜儀 (角秒，數值可能很大)，使用較小的比例，例如 30%
+        padding = range * 0.3;
+    } else if (currentDevice.type === DEVICE_TYPES.GE) {
+        // 對於伸縮計 (mm，數值較小)，可以使用稍大的比例
+        padding = range * 1;
+    }
+    
+    const domainMin = Math.floor(dataMin - padding); // 向下取整
+    const domainMax = Math.ceil(dataMax + padding);  // 向上取整
+
+    return [domainMin, domainMax];
+
+  }, [data, currentDevice]);
+
   // 處理雨量區間選擇變更
   const handleRainIntervalChange = (interval) => {
     setSelectedRainInterval(interval);
@@ -704,8 +753,8 @@ function TrendPage() {
                   }}
                   domain={currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.RAIN ? [0, 'auto'] : 
                           currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.WATER ? [-55, 0] : 
-                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.TI ? [-3600, 3600] : 
-                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.GE ? [-500, 500] :
+                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.TI ? yAxisDomain : 
+                          currentDevice.sensors?.[sensorIndex]?.type === DEVICE_TYPES.GE ? yAxisDomain :
                           undefined}
                 />
                 {chartSensorType === DEVICE_TYPES.RAIN && data.some(d => d[`rainfall_${selectedRainInterval}`] !== undefined && d[`rainfall_${selectedRainInterval}`] !== null) && (

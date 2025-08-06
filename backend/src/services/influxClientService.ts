@@ -2,7 +2,7 @@
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
-import { isDeviceRainGauge } from '../utils/helper';
+import { isDeviceRainGauge, getDeviceConfigById } from '../utils/helper';
 import { formatInTimeZone } from 'date-fns-tz';
 
 export type SourceKey = 'tdr' | 'wise';
@@ -258,7 +258,22 @@ export async function queryHistoryDataFromInflux(
 
   let fluxQuery: string;
 
-  if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
+  // ✨ 增加對這種新類型設備的特殊處理
+  // 我們可以通過 ID 的前綴來判斷，例如 'SN_'
+  const isEtiTiltmeter = deviceId.startsWith('SN_');
+  const physicalSn = isEtiTiltmeter ? deviceId.replace('SN_', '') : null;
+
+  if (isEtiTiltmeter && physicalSn) {
+    // ✨ 為新傾斜儀構建特定的 Flux 查詢
+    fluxQuery = `
+      from(bucket: "${bucket}")
+        |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
+        |> filter(fn: (r) => r._measurement == "wise_raw" and 
+                              r.device_sn == "${physicalSn}" and 
+                              r._field == "value") // ✨ 過濾 field 為 "value"
+        |> sort(columns: ["_time"], desc: false)
+    `;
+  } else if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
     fluxQuery = `
       from(bucket: "${bucket}")
         |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
@@ -306,10 +321,71 @@ export async function queryHistoryDataFromInflux(
     });
   });
 
-  // 根據來源類型，將原始行組裝成前端需要的結構
-  const groupedHistory: any[] = []; // 儲存組裝後的歷史數據
+  const deviceConfig = getDeviceConfigById(deviceId);
 
-  if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
+  // --- 數據組裝 ---
+  const groupedHistory: any[] = []; // 儲存組裝後的歷史數據
+  
+  if (isEtiTiltmeter) {
+    // ✨ 新傾斜儀的數據組裝邏輯
+    const groupedByTs: Record<string, any> = {};
+    
+    historyRaw.forEach(r => {
+      const ts = r._time as string;
+      const sourceChannelTag = r.channel as string; // 'ETI-2A軸角度' 或 'ETI-2B軸角度'
+      const val = r._value;
+
+      // 如果這個時間戳的 entry 還不存在，則創建它
+      if (!groupedByTs[ts]) {
+        groupedByTs[ts] = {
+          deviceId: deviceId, // 返回前端的邏輯 ID (SN_24782)
+          timestamp: ts,
+          source: 'geostar', // 統一為 'wise'
+          channels: {},   // 初始化為空
+          raw: {}       // 初始化為空
+        };
+      }
+
+      // ✨ 關鍵：反向映射，將 sourceChannelTag 轉換回前端期望的通用 channel key
+      let targetChannelKey: string | undefined;
+      // 遍歷當前設備配置的所有 sensors
+      for (const sensor of deviceConfig?.sensors || []) {
+        // 檢查 sensor.sourceChannelMapping 是否存在
+        if (sensor.sourceChannelMapping) {
+          // 遍歷映射關係
+          for (const [frontendKey, sourceKey] of Object.entries(sensor.sourceChannelMapping)) {
+            if (sourceKey === sourceChannelTag) {
+              targetChannelKey = frontendKey; // 找到了！ 'ETI-2A軸角度' -> 'AI_0'
+              break;
+            }
+          }
+        }
+        if (targetChannelKey) break;
+      }
+
+      if (targetChannelKey) {
+        // ✨ 將數據組裝到同一個時間戳的 entry 中
+        // 確保 channels 下的 channel key (如 AI_0) 的對象被初始化
+        if (!groupedByTs[ts].channels[targetChannelKey]) {
+          groupedByTs[ts].channels[targetChannelKey] = {};
+        }
+        
+        // ✨ 我們將 ETI 的原始 'value' 視為 'PEgF'
+        groupedByTs[ts].channels[targetChannelKey].PEgF = val;
+        
+        // ✨ 同時填充 raw 對象，使其結構與標準 WISE 設備一致
+        groupedByTs[ts].raw[`${targetChannelKey} EgF`] = val;
+      } else {
+        logger.warn(`[InfluxData] ETI 數據：在 ${deviceId} 的配置中找不到對應 source channel tag '${sourceChannelTag}' 的前端 channel key。`);
+      }
+    });
+
+    // 轉換為陣列並排序
+    groupedHistory.push(...Object.values(groupedByTs).sort(
+      (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    ));
+  }
+  else if (key === 'wise' && isDeviceRainGauge(deviceId) && rainInterval) {
     // 如果是聚合後的雨量數據，每個 row 應該直接是 { _time, device, source, rainfall_XX }
     historyRaw.forEach(r => {
         const ts = r._time as string;
