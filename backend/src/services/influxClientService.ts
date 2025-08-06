@@ -39,15 +39,46 @@ export async function queryDeviceListFromInflux(key: SourceKey): Promise<string[
   const queryApi = client.getQueryApi(config.influx.org);
   const bucket = config.influx.buckets[key];
 
-  const fluxQuery = `
-    import "influxdata/influxdb/schema"
-    schema.tagValues(
-      bucket: "${bucket}",
-      tag: "device",
-      predicate: (r) => true,
-      start: -30d
-    )
-  `;
+  let fluxQuery: string;
+
+  if (key === 'wise') {
+    // ✨ 對於 'wise' 數據源，我們需要合併 'device' tag (標準 WISE) 和 'device_sn' tag (ETI)
+    fluxQuery = `
+      import "influxdata/influxdb/schema"
+      
+      standard_wise = schema.tagValues(
+        bucket: "${bucket}",
+        tag: "device",
+        predicate: (r) => r._measurement == "wise_raw" and r.device =~ /^WISE-/, // ✨ 可選：更精確地過濾
+        start: -30d
+      )
+
+      eti_devices = schema.tagValues(
+        bucket: "${bucket}",
+        tag: "device_sn",
+        predicate: (r) => r._measurement == "wise_raw" and r._field == "value", // ✨ ETI 的特徵
+        start: -30d
+      )
+      // ✨ 將 ETI 的 device_sn 加上 "SN_" 前綴，以匹配前端的邏輯 ID
+      |> map(fn: (r) => ({ _value: "SN_" + r._value }))
+
+      // 合併兩個列表
+      union(tables: [standard_wise, eti_devices])
+        |> distinct(column: "_value") // 去重
+        |> sort()
+    `;
+  } else if (key === 'tdr') {
+    // TDR 只查詢 'device' tag
+    fluxQuery = `
+      import "influxdata/influxdb/schema"
+      schema.tagValues(
+        bucket: "${bucket}",
+        tag: "device",
+        predicate: (r) => r._measurement == "tdr_raw", // ✨ 可選：過濾
+        start: -30d
+      )
+    `;
+  }
 
   const devices: string[] = [];
 
@@ -80,7 +111,92 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
 
   let records: any = {}; // 初始化一個空的結果對象
 
-  if (key === 'wise') {
+  // ✨ 增加對這種新類型設備的特殊處理
+  // 我們可以通過 ID 的前綴來判斷，例如 'SN_'
+  const isEtiTiltmeter = deviceId.startsWith('SN_');
+  const physicalSn = isEtiTiltmeter ? deviceId.replace('SN_', '') : null;
+
+  if (isEtiTiltmeter && physicalSn) {
+    // ✨ 為新傾斜儀構建特定的 Flux 查詢
+    const fluxQuery = `
+      data = from(bucket: "${bucket}")
+        |> range(start: -30d) // 或者一個更短的合理範圍，例如 -2d 或 -7d
+        |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device_sn == "${physicalSn}")
+
+      // 步驟 1: 找到最新的時間戳
+      latestTime = data
+        |> group()
+        |> last(column: "_time")
+        |> findRecord(fn: (key) => true, idx: 0) // 從結果表中取出第一行 (即最新的時間戳記錄)
+
+      // 步驟 2: 使用最新的時間戳篩選原始數據，獲取該時間戳下的所有欄位
+      // 只有當 latestTime._time 存在時才執行
+      if exists latestTime._time then
+        data
+          |> filter(fn: (r) => r._time == latestTime._time) // 篩選出所有欄位在最新時間戳的記錄
+      else
+        // 如果沒有找到最新時間，可以返回一個空的流，或者按您的錯誤處理邏輯
+        from(bucket: "nonexistent") |> range(start: -1s) // 返回空結果
+    `;
+
+    const deviceConfig = getDeviceConfigById(deviceId);
+
+    await new Promise<void>((resolve, reject) => {
+      queryApi.queryRows(fluxQuery, {
+        next(row, tableMeta) {
+          const o = tableMeta.toObject(row);
+          const ts = o._time as string;
+          const sourceChannelTag = o.channel as string; // 'ETI-2A軸角度'
+          const val = o._value; // 數值
+
+          // 初始化 records 對象 (只在處理第一行時執行)
+          if (!records.timestamp) {
+            records = {
+              deviceId: deviceId, // 使用邏輯 ID
+              timestamp: ts,
+              source: 'geostar', // 標識來源
+              channels: {},
+              raw: {}
+            };
+          }
+
+          // 反向映射，將 sourceChannelTag 轉換回前端期望的通用 channel key (AI_0)
+          let targetChannelKey: string | undefined;
+          for (const sensor of deviceConfig?.sensors || []) {
+            if (sensor.sourceChannelMapping) {
+              for (const [frontendKey, sourceKey] of Object.entries(sensor.sourceChannelMapping)) {
+                if (sourceKey === sourceChannelTag) {
+                  targetChannelKey = frontendKey;
+                  break;
+                }
+              }
+            }
+            if (targetChannelKey) break;
+          }
+
+          if (targetChannelKey) {
+            // 組裝 channels 對象
+            if (!records.channels[targetChannelKey]) {
+              records.channels[targetChannelKey] = {};
+            }
+            records.channels[targetChannelKey].PEgF = val; // 將 ETI 的 value 視為 PEgF
+
+            // 組裝 raw 對象
+            records.raw[`${targetChannelKey} PEgF`] = val;
+          } else {
+            logger.warn(`[InfluxData Latest] ETI 數據：在 ${deviceId} 的配置中找不到對應 source channel tag '${sourceChannelTag}' 的前端 channel key。`);
+          }
+        },
+        error(error) {
+          logger.error(`[InfluxQuery Latest] 查詢 ETI 設備 ${deviceId} 最新數據點失敗: ${error.message}`);
+          reject(error);
+        },
+        complete: resolve,
+      });
+    });
+
+    return records;
+  } else if (key === 'wise') {
     // WISE 數據的原始查詢和處理邏輯 (多個欄位在同一個 point) 
     const fluxQuery = `
       data = from(bucket: "${bucket}")

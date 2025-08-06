@@ -35,6 +35,7 @@ export function getDeviceTypeBorderColor(device) {
 export function isNormalData(deviceConfig, sensor, chData, rainfallIntervalKey) {
   if (!deviceConfig || !chData) return true; // 如果數據不全，預設為正常避免誤報
 
+  const isGeoStarSource = deviceConfig.sourceType === 'geostar'; // 或者 'ETI'
   const typeToUse = deviceConfig.type;
 
   if (typeToUse === DEVICE_TYPES.RAIN) {
@@ -79,13 +80,18 @@ export function isNormalData(deviceConfig, sensor, chData, rainfallIntervalKey) 
     }
     case DEVICE_TYPES.TI: {
       // 傾斜儀：類似伸縮計
+      if (isGeoStarSource) {
+        const delta = chData?.PEgF; // 後端已將 value 映射為 PEgF
+        if (delta < 1800) return true;
+        return false;
+      }
+
       let raw = chData?.EgF;
       let pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg);
       const initPe = rawToPEgF(sensor.initialValues[`${sensor.channels[0]}`], typeToUse, sensor?.wellDepth, sensor?.fsDeg);
       if (pe != null && !isNaN(pe) && initPe != null && !isNaN(initPe)) {
         const delta = (pe - initPe);
-        if (delta < 1800) 
-          return true;
+        if (delta < 1800) return true;
       }
       return false;
     }

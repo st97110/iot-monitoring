@@ -36,9 +36,8 @@ function resolveSource(
     // ✨ 調用更新後的 getSourceByDeviceId，它能處理 'SN_' 等前綴
     const inferredSource = getSourceByDeviceId(deviceId); // 返回 'wise', 'tdr', 'geostar', 'unknown'
 
-    // ✨ 將後端的詳細數據源類型 ('geostar') 映射回前端的通用數據源類型 ('wise')
     if (inferredSource === 'geostar') {
-      return 'wise'; // ✨ 關鍵：告訴上層調用者，ETI 設備應該按照 'wise' 數據源的邏輯來處理查詢
+      return 'wise'; // ETI 設備按照 'wise' 數據源的邏輯來處理查詢
     }
     if (inferredSource === 'wise' || inferredSource === 'tdr') {
       return inferredSource;
