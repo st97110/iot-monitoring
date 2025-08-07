@@ -178,14 +178,35 @@ export const deviceMapping: Record<
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.317 } },
         ]
       },
+      // {
+      //   id: 'WISE-4010LAN_00D0C9FAD2E3',
+      //   name: '84.7K',
+      //   area: '春陽區',
+      //   type: DEVICE_TYPES.TI,
+      //   sensors: [
+      //     { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
+      //     { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
+      //   ]
+      // },
       {
-        id: 'WISE-4010LAN_00D0C9FAD2E3',
-        name: '84.7K',
-        area: '春陽區',
-        type: DEVICE_TYPES.TI,
+        id: 'SN_3788', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '84.7K', // 隼星ly-friend & sn=3788
+        type: DEVICE_TYPES.TI, // 設備類型
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['ETI-3A軸角度(Y)'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_0': 'ETI-3A軸角度(Y)' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['ETI-3B軸角度(X)'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_1': 'ETI-3B軸角度(X)' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
         ]
       },
       { id: 'TDR_T14_AH3', name: 'AH3 TDR', type: DEVICE_TYPES.TDR }
@@ -241,14 +262,36 @@ export const deviceMapping: Record<
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
         ]
       },
+      // {
+      //   id: 'WISE-4010LAN_00D0C9FAC4F8',
+      //   name: '14甲CH1傾斜儀',
+      //   area: '梅峰區',
+      //   type: DEVICE_TYPES.TI,
+      //   sensors: [
+      //     { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
+      //     { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
+      //   ]
+      // },
       {
-        id: 'WISE-4010LAN_00D0C9FAC4F8',
-        name: '14甲CH1傾斜儀',
+        id: 'SN_6721', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '14甲CH1傾斜儀', // 隼星ly-mayhill & sn=6721
         area: '梅峰區',
-        type: DEVICE_TYPES.TI,
+        type: DEVICE_TYPES.TI, // 設備類型
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
-          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['TI-1A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_0': 'TI-1A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['TI-1B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_1': 'TI-1B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
         ]
       },
       {
@@ -269,7 +312,7 @@ export const deviceMapping: Record<
             channels: ['TI-2B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
             sourceChannelMapping: { 'AI_1': 'ETI-2B軸角度' },
             type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_0': 0 },
+            initialValues: { 'AI_1': 0 },
           }
         ]
       },

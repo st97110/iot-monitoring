@@ -81,15 +81,37 @@ export const deviceMapping = {
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.317 } },
         ]
       },
+      // {
+      //   id: 'WISE-4010LAN_00D0C9FAD2E3',
+      //   name: '84.7K',
+      //   lat: 24.0302,
+      //   lng: 121.16,
+      //   type: DEVICE_TYPES.TI,
+      //   sensors: [
+      //     { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.56 } },
+      //     { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.911 } },
+      //   ]
+      // },
       {
-        id: 'WISE-4010LAN_00D0C9FAD2E3',
-        name: '84.7K',
+        id: 'SN_3788', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '84.7K', // 隼星ly-friend & sn=3788
         lat: 24.0302,
         lng: 121.16,
-        type: DEVICE_TYPES.TI,
+        type: DEVICE_TYPES.TI, // 設備類型
+        sourceType: 'geostar',
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.56 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.911 } },
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['AI_0'], // { 'AI_0': 'ETI-3A軸角度(X)' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['AI_1'], // { 'AI_1': 'ETI-3B軸角度(Y)' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
         ]
       },
       { id: 'TDR_T14_AH3', name: 'AH3', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
@@ -155,15 +177,37 @@ export const deviceMapping = {
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.463 } },
         ]
       },
+      // {
+      //   id: 'WISE-4010LAN_00D0C9FAC4F8',
+      //   name: 'CH-1-BT',
+      //   lat: 24.0898,
+      //   lng: 121.17389,
+      //   type: DEVICE_TYPES.TI,
+      //   sensors: [
+      //     { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 5.684 } },
+      //     { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.974 } },
+      //   ]
+      // },
       {
-        id: 'WISE-4010LAN_00D0C9FAC4F8',
-        name: 'CH-1-BT',
+        id: 'SN_6721', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '14甲CH1傾斜儀', // 隼星ly-mayhill & sn=6721
         lat: 24.0898,
-        lng: 121.17389,
-        type: DEVICE_TYPES.TI,
+        lng: 121.1738,
+        type: DEVICE_TYPES.TI, // 設備類型
+        sourceType: 'geostar',
         sensors: [
-          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 5.684 } },
-          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.974 } },
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['AI_0'], // { 'AI_0': 'TI-1A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['AI_1'], // { 'AI_1': 'TI-1B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
         ]
       },
       {
