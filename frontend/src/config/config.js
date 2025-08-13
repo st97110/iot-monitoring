@@ -47,8 +47,8 @@ export const deviceMapping = {
     defaultCenter: [24.01778, 121.12875], // 取 T1 和 T2 的大致中間點
     defaultZoom: 17, // 稍微放大一點，因為設備點比較近
     devices: [
-      { id: 'TDR_T14_T1', name: 'T1', lat: 24.0175, lng: 121.128056, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T2', name: 'T2', lat: 24.018056, lng: 121.129444, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T1', name: 'T1', lat: 24.0175, lng: 121.128056, area: '80K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T2', name: 'T2', lat: 24.018056, lng: 121.129444, area: '80K區', type: DEVICE_TYPES.TDR }
     ],
   },
   '春陽區': {
@@ -63,6 +63,7 @@ export const deviceMapping = {
         originalDeviceId: 'WISE-4010LAN_74FE48941ABE',
         lat: 24.0301,
         lng: 121.16,
+        area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.259 } },
@@ -75,6 +76,7 @@ export const deviceMapping = {
         originalDeviceId: 'WISE-4010LAN_74FE48941ABE',
         lat: 24.0301,
         lng: 121.16,
+        area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.388 } },
@@ -86,6 +88,7 @@ export const deviceMapping = {
       //   name: '84.7K',
       //   lat: 24.0302,
       //   lng: 121.16,
+      //   area: '春陽區',
       //   type: DEVICE_TYPES.TI,
       //   sensors: [
       //     { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.56 } },
@@ -97,6 +100,7 @@ export const deviceMapping = {
         name: '84.7K', // 隼星ly-friend & sn=3788
         lat: 24.0302,
         lng: 121.16,
+        area: '春陽區',
         type: DEVICE_TYPES.TI, // 設備類型
         sourceType: 'geostar',
         sensors: [
@@ -114,7 +118,7 @@ export const deviceMapping = {
           }
         ]
       },
-      { id: 'TDR_T14_AH3', name: 'AH3', lat: 24.029722, lng: 121.161389, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_AH3', name: 'AH3', lat: 24.029722, lng: 121.161389, area: '春陽區', type: DEVICE_TYPES.TDR }
     ]
   },
   '90K區': {
@@ -128,6 +132,7 @@ export const deviceMapping = {
         name: 'W2',
         lat: 24.025278,
         lng: 121.18385,
+        area: '90K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
           { name: '地下水位', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
@@ -138,13 +143,14 @@ export const deviceMapping = {
         name: 'H2-R',
         lat: 24.0267,
         lng: 121.184,
+        area: '90K區',
         type: DEVICE_TYPES.RAIN,
         sensors: [
           { name: '10分鐘雨量', channels: ['DI_0'], type: DEVICE_TYPES.RAIN },
         ]
       },
-      { id: 'TDR_T14_T3', name: 'T3', lat: 24.0252, lng: 121.183611, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T4', name: 'T4', lat: 24.0267, lng: 121.1838, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T3', name: 'T3', lat: 24.0252, lng: 121.183611, area: '90K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T4', name: 'T4', lat: 24.0267, lng: 121.1838, area: '90K區', type: DEVICE_TYPES.TDR }
     ]
   },
   '梅峰區': {
@@ -159,6 +165,7 @@ export const deviceMapping = {
         originalDeviceId: 'WISE-4010LAN_00D0C9FAD2C9',
         lat: 24.08995,
         lng: 121.17361,
+        area: '梅峰區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.052 } },
@@ -171,6 +178,7 @@ export const deviceMapping = {
         originalDeviceId: 'WISE-4010LAN_00D0C9FAD2C9',
         lat: 24.08995,
         lng: 121.17361,
+        area: '梅峰區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 12.294 } },
@@ -182,6 +190,7 @@ export const deviceMapping = {
       //   name: 'CH-1-BT',
       //   lat: 24.0898,
       //   lng: 121.17389,
+      //   area: '梅峰區',
       //   type: DEVICE_TYPES.TI,
       //   sensors: [
       //     { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 5.684 } },
@@ -193,6 +202,7 @@ export const deviceMapping = {
         name: '14甲CH1傾斜儀', // 隼星ly-mayhill & sn=6721
         lat: 24.0898,
         lng: 121.1738,
+        area: '梅峰區',
         type: DEVICE_TYPES.TI, // 設備類型
         sourceType: 'geostar',
         sensors: [
@@ -215,6 +225,7 @@ export const deviceMapping = {
         name: '14甲CH3傾斜儀', // 隼星ly-road & sn=24782
         lat: 24.08945,
         lng: 121.173611,
+        area: '梅峰區',
         type: DEVICE_TYPES.TI, // 設備類型
         sourceType: 'geostar',
         sensors: [
@@ -236,6 +247,7 @@ export const deviceMapping = {
         name: 'BE1',
         lat: 24.08945,
         lng: 121.173611,
+        area: '梅峰區',
         type: DEVICE_TYPES.GE,
         sensors: [
           { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },
@@ -243,6 +255,7 @@ export const deviceMapping = {
         name: 'BE2',
         lat: 24.0896,
         lng: 121.17395,
+        area: '梅峰區',
         type: DEVICE_TYPES.GE,
         sensors: [
           { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 }] },
@@ -250,12 +263,13 @@ export const deviceMapping = {
         name: 'BE3',
         lat: 24.0890,
         lng: 121.174050,
+        area: '梅峰區',
         type: DEVICE_TYPES.GE,
         sensors: [
           { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 }, geRange: 500 }] },
-      { id: 'TDR_T14A_CH1', name: 'CH1', lat: 24.0898, lng: 121.1738, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH2', name: 'CH2', lat: 24.0896, lng: 121.1741, type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH4', name: 'CH4', lat: 24.089, lng: 121.1739, type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14A_CH1', name: 'CH1', lat: 24.0898, lng: 121.1738, area: '梅峰區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14A_CH2', name: 'CH2', lat: 24.0896, lng: 121.1741, area: '梅峰區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14A_CH4', name: 'CH4', lat: 24.089, lng: 121.1739, area: '梅峰區', type: DEVICE_TYPES.TDR }
     ]
   },
   '台8線107K區': {

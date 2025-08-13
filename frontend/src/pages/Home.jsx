@@ -105,7 +105,7 @@ function getDeviceImage(deviceConfig) { // 參數是完整的 deviceConfig 對�
 function getStatusColor(timestamp) {
   const diffHours = (new Date() - new Date(timestamp)) / (1000 * 60 * 60);
   if (diffHours > 24) return 'text-red-500';
-  if (diffHours > 6) return 'text-yellow-500';
+  if (diffHours > 1) return 'text-yellow-500';
   return 'text-green-500';
 }
 

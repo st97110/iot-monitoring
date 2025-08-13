@@ -43,13 +43,28 @@ export function isNormalData(deviceConfig, sensor, chData, rainfallIntervalKey) 
     const rainValue = chData;
     if (rainValue === undefined || rainValue === null) return true; // 無數據時算正常顯示
 
-    // 使用文件中的「預警(黃燈)」作為卡片上「正常」的上限
-    const alertYellowThresholds = {
-      rainfall_1h: 40,
-      rainfall_3h: 110,
-      rainfall_24h: 200,
-    };
-    return rainValue < (alertYellowThresholds[rainfallIntervalKey] || Infinity);
+    if (deviceConfig.area === '台8線107K區') {
+      // 台8線107K區的雨量筒,使用文件中的「預警(紅燈)」作為卡片上「正常」的上限
+      const alertRedThresholds = {
+        rainfall_1h: 25,
+        rainfall_3h: 45,
+        rainfall_24h: 145,
+      };
+      return rainValue < (alertRedThresholds[rainfallIntervalKey] || Infinity);
+    }
+
+    if (deviceConfig.area === '90K區') {
+      const alertYellowThresholds = {
+        rainfall_10m: 15,
+        rainfall_1h: 40,
+        rainfall_3h: 110,
+        rainfall_24h: 200,
+      };
+      return rainValue < (alertYellowThresholds[rainfallIntervalKey] || Infinity);
+    }
+
+    // 上面的條件都不符合時 通常不會發生才對
+    return true;
   }
 
   // 其他設備類型，需要 sensorConfig
