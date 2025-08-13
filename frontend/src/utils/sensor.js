@@ -45,9 +45,9 @@ export function isNormalData(deviceConfig, sensor, chData, rainfallIntervalKey) 
 
     // 使用文件中的「預警(黃燈)」作為卡片上「正常」的上限
     const alertYellowThresholds = {
-      rainfall_1h: 25,
-      rainfall_3h: 45,
-      rainfall_24h: 145,
+      rainfall_1h: 40,
+      rainfall_3h: 110,
+      rainfall_24h: 200,
     };
     return rainValue < (alertYellowThresholds[rainfallIntervalKey] || Infinity);
   }
