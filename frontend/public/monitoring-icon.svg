@@ -1,0 +1,22 @@
+<!-- monitoring-icon.svg -->
+<svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3478C5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- 背景圓形 -->
+  <circle cx="50" cy="50" r="48" fill="url(#grad1)"/>
+  
+  <!-- 抽象的山形/橋形 (白色) -->
+  <path d="M15 75 Q 35 50, 50 65 T 85 75 L 85 80 L 15 80 Z" fill="#FFFFFF" opacity="0.8"/>
+  
+  <!-- 監測信號/波形 (淡藍色，疊加在山形上) -->
+  <path d="M20 55 Q 30 45, 40 55 T 60 55 Q 70 65, 80 55" stroke="#DFF0FF" stroke-width="5" fill="none" stroke-linecap="round"/>
+  
+  <!-- 小圓點表示數據點 -->
+  <circle cx="20" cy="55" r="4" fill="#FFFFFF"/>
+  <circle cx="50" cy="55" r="4" fill="#FFFFFF"/>
+  <circle cx="80" cy="55" r="4" fill="#FFFFFF"/>
+</svg>
