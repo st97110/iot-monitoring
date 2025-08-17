@@ -170,8 +170,8 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
       // 水位計的 PEgF 通常在 chData.PEgF 或 allEntryData.raw[`${sensor.channels[0]} PEgF`]
       // 假設 chData 結構是 { PEgF: value }
       if (deviceConfig.area === '90K區') {
-        const waterDepth = (chData?.EgF - 0.48) * 1.92;
-        const groundwaterLevel = waterDepth - 35.1;
+        const waterDepth = (chData?.EgF - 4) * 2.5;
+        const groundwaterLevel = waterDepth - 33.45;
         return chData?.EgF != null && !isNaN(chData?.EgF) ? `${groundwaterLevel.toFixed(2)} m` : 'N/A';
       }
       return chData?.EgF != null && !isNaN(chData?.EgF) ? `${rawToPEgF(chData?.EgF, typeToUse, sensor?.wellDepth).toFixed(2)} m` : 
