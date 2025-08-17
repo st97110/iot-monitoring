@@ -222,7 +222,7 @@ export const deviceMapping: Record<
         area: '90K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
+          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -35 },  // 公式寫在前端(I0-0.48)*1.92-35.1 m
         ]
       },
       {

@@ -135,7 +135,7 @@ export const deviceMapping = {
         area: '90K區',
         type: DEVICE_TYPES.WATER,
         sensors: [
-          { name: '地下水位', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -50 },
+          { name: '地下水位', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -35 }, // 公式(I0-0.48)*1.92-35.1 m
         ]
       },
       {

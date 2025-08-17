@@ -128,7 +128,7 @@ function rawToPEgF(raw, type, wellDepth = -50, fsDeg = 15, geRange = 500, flowMa
       const ratio = (raw - 4) / 16;
       const waterDepth = ratio * wellDepth;                     // 水深-水佔據井的深度
       const groundwaterLevel = wellDepth - waterDepth;          // 地下水位-距地面幾公尺(愈小代表水愈高)
-      return groundwaterLevel; 
+      return groundwaterLevel;
     }
     case DEVICE_TYPES.TI: {                       // mA → arc‑sec
       const fs  = fsDeg ?? 15;                    // ±FS°
@@ -169,6 +169,11 @@ export function formatValue(deviceConfig, sensor, chData, allEntryData) {
     case DEVICE_TYPES.WATER: {
       // 水位計的 PEgF 通常在 chData.PEgF 或 allEntryData.raw[`${sensor.channels[0]} PEgF`]
       // 假設 chData 結構是 { PEgF: value }
+      if (deviceConfig.area === '90K區') {
+        const waterDepth = (chData?.EgF - 0.48) * 1.92;
+        const groundwaterLevel = waterDepth - 35.1;
+        return chData?.EgF != null && !isNaN(chData?.EgF) ? `${groundwaterLevel.toFixed(2)} m` : 'N/A';
+      }
       return chData?.EgF != null && !isNaN(chData?.EgF) ? `${rawToPEgF(chData?.EgF, typeToUse, sensor?.wellDepth).toFixed(2)} m` : 
             chData?.PEgF != null && !isNaN(chData?.PEgF) ? `${chData?.PEgF.toFixed(2)} m` : 'N/A';
     }
