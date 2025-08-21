@@ -126,7 +126,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
       // 步驟 1: 找到最新的時間戳
       latestTime = data
         |> group()
-        |> last(column: "_time")
+        |> sort(columns: ["_time"], desc: true)
         |> findRecord(fn: (key) => true, idx: 0) // 從結果表中取出第一行 (即最新的時間戳記錄)
 
       // 步驟 2: 使用最新的時間戳篩選原始數據，獲取該時間戳下的所有欄位
