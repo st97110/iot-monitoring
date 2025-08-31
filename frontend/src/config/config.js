@@ -250,7 +250,7 @@ export const deviceMapping = {
         area: '梅峰區',
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 9.97 }, geRange: 500 }] },
+          { name: '伸縮量', channels: ['AI_1'], type: DEVICE_TYPES.GE, initialValues: { AI_1: 9.97 }, geRange: 500 }] },
       { id: 'WISE-4010LAN_74FE4890BAFC',
         name: 'BE2',
         lat: 24.0896,
