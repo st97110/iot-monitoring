@@ -58,9 +58,8 @@ export const deviceMapping = {
     defaultZoom: 17, // 這些點也比較集中
     devices: [
       {
-        id: 'WISE-4010LAN_74FE48941ABE_SITE1',
+        id: 'WISE-4010LAN_74FE48941ABE',
         name: '84.6K',
-        originalDeviceId: 'WISE-4010LAN_74FE48941ABE',
         lat: 24.0301,
         lng: 121.16,
         area: '春陽區',
@@ -71,33 +70,31 @@ export const deviceMapping = {
         ]
       },
       {
-        id: 'WISE-4010LAN_74FE48941ABE_SITE2',
-        name: '84.65K',
-        originalDeviceId: 'WISE-4010LAN_74FE48941ABE',
-        lat: 24.0301,
+        id: 'SN_6963', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '84.65K', // 準星ly-tiltmeter & sn=6963
+        lat: 24.0302,
         lng: 121.16,
         area: '春陽區',
-        type: DEVICE_TYPES.TI,
+        type: DEVICE_TYPES.TI, // 設備類型
+        sourceType: 'geostar',
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.388 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.317 } },
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['AI_0'], // { 'AI_0': 'TI-13A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['AI_1'], // { 'AI_1': 'TI-13B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
         ]
       },
-      // {
-      //   id: 'WISE-4010LAN_00D0C9FAD2E3',
-      //   name: '84.7K',
-      //   lat: 24.0302,
-      //   lng: 121.16,
-      //   area: '春陽區',
-      //   type: DEVICE_TYPES.TI,
-      //   sensors: [
-      //     { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.56 } },
-      //     { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 10.911 } },
-      //   ]
-      // },
       {
         id: 'SN_3788', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: '84.7K', // 隼星ly-friend & sn=3788
+        name: '84.7K', // 準星ly-friend & sn=3788
         lat: 24.0302,
         lng: 121.16,
         area: '春陽區',

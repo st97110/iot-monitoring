@@ -168,29 +168,38 @@ export const deviceMapping: Record<
     devices: [
       {
         id: 'WISE-4010LAN_74FE48941ABE',
-        name: '84.6K, 84.65K',
+        name: '84.6K',
         area: '春陽區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
           { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.388 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.317 } },
         ]
       },
-      // {
-      //   id: 'WISE-4010LAN_00D0C9FAD2E3',
-      //   name: '84.7K',
-      //   area: '春陽區',
-      //   type: DEVICE_TYPES.TI,
-      //   sensors: [
-      //     { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 11.56 } },
-      //     { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 10.911 } },
-      //   ]
-      // },
+      {
+        id: 'SN_6963', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: '84.65K', // 準星ly-tiltmeter & sn=6963
+        type: DEVICE_TYPES.TI, // 設備類型
+        sensors: [
+          { 
+            name: 'A軸角度', // 感測器 A 軸
+            channels: ['TI-13A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_0': 'TI-13A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 },
+          },
+          { 
+            name: 'B軸角度', // 感測器 B 軸
+            channels: ['TI-13B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_1': 'TI-13B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 },
+          }
+        ]
+      },
       {
         id: 'SN_3788', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: '84.7K', // 隼星ly-friend & sn=3788
+        name: '84.7K', // 準星ly-friend & sn=3788
         type: DEVICE_TYPES.TI, // 設備類型
         sensors: [
           { 
