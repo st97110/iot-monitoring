@@ -259,14 +259,6 @@ export const deviceMapping: Record<
         sensors: [
           { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
           { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.27K',
-        area: '梅峰區',
-        type: DEVICE_TYPES.TI,
-        sensors: [
           { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
           { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
         ]
