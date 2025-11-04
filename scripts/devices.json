@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "T8-WISE": [
+      "WISE-4010LAN_74FE4860F492",
+      "WISE-4010LAN_00D0C9FAD2C2",
+      "WISE-4010LAN_74FE48595E19",
+      "WISE-4010LAN_74FE486CEDFB",
+      "WISE-4010LAN_74FE486B76BB",
+      "WISE-4010LAN_74FE488F3BA0",
+      "WISE-4060LAN_00D0C9E332E8",
+      "WISE-4010LAN_74FE486B76AA",
+      "WISE-4010LAN_74FE487F4FE3"
+    ],
+    "T8-TDR": [
+      "//", "如果有台8線的TDR儀器，將它們的ID加到這裡",
+      "//", "TDR-XXXXX",
+      "//", "TDR-YYYYY"
+    ],
+    "OTHER-WISE": [
+      "//", "如果有其他地區的WISE儀器，未來可以加到這裡"
+    ]
+  },
+  "devices": {
+    "WISE-4010LAN_74FE4860F492": {
+      "name": "台8線 OW10 水位計",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE4860F492"
+    },
+    "WISE-4010LAN_00D0C9FAD2C2": {
+      "name": "台8線 GE3 (20m, 80m) 伸縮計",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_00D0C9FAD2C2"
+    },
+    "WISE-4010LAN_74FE48595E19": {
+      "name": "台8線 BT1 & BT3 傾斜儀",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE48595E19"
+    },
+    "WISE-4010LAN_74FE486CEDFB": {
+      "name": "台8線 OW6 水位計",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE486CEDFB"
+    },
+    "WISE-4010LAN_74FE486B76BB": {
+      "name": "台8線 BT2 傾斜儀",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE486B76BB"
+    },
+    "WISE-4010LAN_74FE488F3BA0": {
+      "name": "台8線 OW5 水位計",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE488F3BA0"
+    },
+    "WISE-4060LAN_00D0C9E332E8": {
+      "name": "台8線 107K+600 雨量筒",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4060LAN_00D0C9E332E8"
+    },
+    "WISE-4010LAN_74FE486B76AA": {
+      "name": "台8線 OW1 水位計 & GE1 伸縮計",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE486B76AA"
+    },
+    "WISE-4010LAN_74FE487F4FE3": {
+      "name": "台8線 FL1~4 流量計",
+      "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE487F4FE3"
+    }
+  }
+}

@@ -1,17 +1,17 @@
 name: Download Backup Data
 
-# 使用 workflow_dispatch 來允許手動觸發
 on:
   workflow_dispatch:
     inputs:
-      data_type:
-        description: '請選擇要下載的數據類型'
+      instrument_group:
+        description: '請選擇要下載的儀器組'
         required: true
         type: choice
         options:
-        - WISE
-        - TDR
-        default: 'WISE'
+        - T8-WISE   # 台8線 WISE 儀器
+        - T8-TDR    # 台8線 TDR 儀器
+        # - OTHER-WISE # 未來可以擴展
+        default: 'T8-WISE'
 
 jobs:
   download-and-package:
@@ -26,20 +26,14 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install python-dateutil # 在這裡安裝依賴
-
       - name: Run download script
-        id: download_script # 給這個步驟一個 ID，以便引用它的輸出
+        id: download_script
         run: |
-          python scripts/download_data.py ${{ github.event.inputs.data_type }}
+          python scripts/download_data.py ${{ github.event.inputs.instrument_group }}
 
       - name: Upload backup as artifact
-        # 使用 if 條件，只有在 download_script 步驟成功生成了 zip 文件時才上傳
         if: steps.download_script.outputs.zip_filename
         uses: actions/upload-artifact@v4
         with:
-          name: backup-data-${{ github.event.inputs.data_type }}
+          name: backup-data-${{ github.event.inputs.instrument_group }}
           path: ${{ steps.download_script.outputs.zip_filename }}
