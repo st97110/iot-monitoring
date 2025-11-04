@@ -26,6 +26,17 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install Python dependencies
+        run: pip install python-dateutil
+
+      # --- 新增的關鍵步驟 ---
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          name: id_ed25519 # 或者 id_rsa，取決於你的金鑰類型
+          known_hosts: 'just-a-placeholder-so-we-dont-run-ssh-keyscan' # 我們已經手動信任了，所以這裡隨便填
+
       - name: Run download script
         id: download_script
         run: |
