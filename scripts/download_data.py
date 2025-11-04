@@ -7,7 +7,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 # --- 配置 ---
-CONFIG_FILE_PATH = 'config/devices.json' # 指向新的配置文件
+CONFIG_FILE_PATH = './devices.json' # 指向新的配置文件
 INFLUXDB_CT_HOST = 'root@192.168.68.101'
 LOCAL_TEMP_DIR = 'temp_download'
 
