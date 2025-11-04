@@ -1,0 +1,40 @@
+name: Download Backup Data
+
+# 使用 workflow_dispatch 來允許手動觸發
+on:
+  workflow_dispatch:
+    inputs:
+      data_type:
+        description: '請選擇要下載的數據類型'
+        required: true
+        type: choice
+        options:
+        - WISE
+        - TDR
+        default: 'WISE'
+
+jobs:
+  download-and-package:
+    runs-on: self-hosted # 指定在您的自建 Runner 上運行
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run download script
+        id: download_script # 給這個步驟一個 ID，以便引用它的輸出
+        run: |
+          python scripts/download_data.py ${{ github.event.inputs.data_type }}
+
+      - name: Upload backup as artifact
+        # 使用 if 條件，只有在 download_script 步驟成功生成了 zip 文件時才上傳
+        if: steps.download_script.outputs.zip_filename
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-data-${{ github.event.inputs.data_type }}
+          path: ${{ steps.download_script.outputs.zip_filename }}
