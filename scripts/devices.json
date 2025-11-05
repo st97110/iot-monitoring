@@ -23,38 +23,47 @@
   "devices": {
     "WISE-4010LAN_74FE4860F492": {
       "name": "台8線 OW10 水位計",
+      "folder_name": "OW10",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE4860F492"
     },
     "WISE-4010LAN_00D0C9FAD2C2": {
       "name": "台8線 GE3 (20m, 80m) 伸縮計",
+      "folder_name": "GE3",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_00D0C9FAD2C2"
     },
     "WISE-4010LAN_74FE48595E19": {
       "name": "台8線 BT1 & BT3 傾斜儀",
+      "folder_name": "BT1&BT3",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE48595E19"
     },
     "WISE-4010LAN_74FE486CEDFB": {
       "name": "台8線 OW6 水位計",
+      "folder_name": "OW6",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE486CEDFB"
     },
     "WISE-4010LAN_74FE486B76BB": {
       "name": "台8線 BT2 傾斜儀",
+      "folder_name": "BT2",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE486B76BB"
     },
     "WISE-4010LAN_74FE488F3BA0": {
       "name": "台8線 OW5 水位計",
+      "folder_name": "OW5",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE488F3BA0"
     },
     "WISE-4060LAN_00D0C9E332E8": {
       "name": "台8線 107K+600 雨量筒",
+      "folder_name": "雨量筒",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4060LAN_00D0C9E332E8"
     },
     "WISE-4010LAN_74FE486B76AA": {
       "name": "台8線 OW1 水位計 & GE1 伸縮計",
+      "folder_name": "OW1&GE1",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE486B76AA"
     },
     "WISE-4010LAN_74FE487F4FE3": {
       "name": "台8線 FL1~4 流量計",
+      "folder_name": "FL1~4",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE487F4FE3"
     }
   }
