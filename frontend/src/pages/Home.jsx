@@ -36,7 +36,7 @@ const deviceImages = {
   // 梅峰區
   'WISE-4010LAN_00D0C9FAD2C9_SITE1': '/images/stations/t14/WISE_14_25K_BT_TI.jpg', // 原 14.25K-BT
   'WISE-4010LAN_00D0C9FAD2C9_SITE2': '/images/stations/t14/WISE_14_27K_BT_TI.jpg', // 原 14.27K-BT
-  'WISE-4010LAN_00D0C9FAC4F8': '/images/stations/t14/CH1_BT_TI.jpg',      // 原 CH-1-BT
+  'SN_6721': '/images/stations/t14/CH1_BT_TI.jpg',      // CH-1-BT
   'WISE-4010LAN_74FE489299F4': '/images/stations/t14/WISE_BE1_GE.jpg',        // 原 BE1
   'WISE-4010LAN_74FE4890BAFC': '/images/stations/t14/WISE_BE2_GE.jpg',        // 原 BE2
   // 'WISE-4010LAN_74FE48941AD9': '/images/stations/t14/WISE_BE3_GE.jpg',        // 原 BE3
