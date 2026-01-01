@@ -27,7 +27,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install Python dependencies
-        run: pip install python-dateutil
+        run: pip install python-dateutil pandas
 
       # --- 新增的關鍵步驟 ---
       - name: Install SSH Key
