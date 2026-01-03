@@ -210,27 +210,38 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
                 }
             }
 
-            // 2. 如果日期目錄是「昨天以前的」並且現在是空的 (也沒有 writed 或其他子目錄/檔案了)，則刪除該日期目錄
-            if (dateDir < yesterday) { // 比較 YYYYMMDD 字串
-                // 再次檢查目錄是否為空，因為 processFilesBatch 可能移動了所有檔案
-                const remainingFilesInDir = await fs.readdir(currentDateDirPath );
+            // 2. 如果日期目錄是「昨天以前的」並且現在是空的，代表資料已經存到備份目錄，合併備份目錄中的檔案，並刪除正式目錄中該日期空目錄
+            if (dateDir < yesterday) {
+                const remainingFilesInDir = await fs.readdir(currentDateDirPath);
                 if (remainingFilesInDir.length === 0) {
-                    logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天以前的目錄 ${dateDir} 已處理完畢且為空，準備刪除。`);
-                    await fs.rm(currentDateDirPath , { recursive: true, force: true });
+                    logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天以前的目錄 ${dateDir} 已處理完畢且為空，準備合併備份並刪除。`);
+                    
+                    // ✨ 合併WISE備份目錄的檔案
+                    if (source === 'wise') {
+                        const backupDir = config.folder.wiseBackupDir;
+                        const logType = 'signal_log';
+                        const deviceBackupPath = path.join(backupDir, deviceId, logType, dateDir);
+                        if (await fs.pathExists(deviceBackupPath)) {
+                            await mergeDailyBackupFiles(deviceBackupPath, dateDir, deviceId, source);
+                        }
+                    }
+                    
+                    // 刪除原始空目錄
+                    await fs.rm(currentDateDirPath, { recursive: true, force: true });
                     logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 已刪除昨天以前的空目錄 ${dateDir}。`);
                 } else {
-                    logger.warn(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天以前的目錄 ${dateDir} 處理後仍有 ${remainingFilesInDir.length} 個檔案/目錄，將保留。可能原因：部分檔案處理失敗未移動，或有非數據檔案。`);
+                    logger.warn(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天以前的目錄 ${dateDir} 處理後仍有 ${remainingFilesInDir.length} 個檔案/目錄，將保留。`);
                 }
             } else if (dateDir === yesterday) {
                  // 對於昨天的目錄，如果處理後也空了，也刪除 (只保留今天的)
-                 const remainingFilesInYesterday = await fs.readdir(currentDateDirPath );
+                 const remainingFilesInYesterday = await fs.readdir(currentDateDirPath);
                  if (remainingFilesInYesterday.length === 0) {
                      logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 昨天的目錄 ${dateDir} 已處理完畢且為空，準備刪除。`);
                      await fs.rm(currentDateDirPath , { recursive: true, force: true });
                      logger.info(`[掃描清理] 設備 ${deviceId} (來源: ${source}) 已刪除昨天的空目錄 ${dateDir}。`);
                  }
             }
-            // 今天 (today) 的目錄通常不刪除，除非有特殊清理策略
+            // 今天 (today) 的目錄通常不刪除，除非有特殊清理策略            
 
         } catch (error: any) {
             if (error.code === 'ENOENT') {
@@ -242,6 +253,105 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
         logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 目錄 ${dateDir} 處理完畢。`);
     }
     logger.info(`[掃描] 設備 ${deviceId} (來源: ${source}) 所有日期目錄處理完成。`);
+}
+
+/**
+ * ✨ 新增：合併備份目錄中的檔案
+ */
+async function mergeDailyBackupFiles(
+    dailyBackupPath: string,
+    dateDir: string,
+    deviceId: string,
+    source: 'wise'
+): Promise<void> {
+    try {
+        const files = (await fs.readdir(dailyBackupPath))
+            .filter(f => {
+                const lower = f.toLowerCase();
+                return (source === 'wise' && lower.endsWith('.csv'))
+            })
+            .sort((a, b) => a.localeCompare(b));
+
+        if (files.length === 0) {
+            logger.warn(`[日終合併] 設備 ${deviceId} 的 ${dateDir} 備份目錄為空`);
+            return;
+        }
+
+        const mergedFileName = `${dateDir}.'csv'`;
+        
+        // 如果已經是合併後的單一檔案，跳過
+        if (files.length === 1 && files[0] === mergedFileName) {
+            logger.debug(`[日終合併] 設備 ${deviceId} 的 ${dateDir} 已是合併狀態，跳過`);
+            return;
+        }
+
+        // 建立臨時合併檔案
+        const tempMergedPath = path.join(dailyBackupPath, `${mergedFileName}.tmp`);
+        const finalMergedPath = path.join(dailyBackupPath, mergedFileName);
+        
+        const writeStream = fs.createWriteStream(tempMergedPath);
+        
+        let isFirstFile = true;
+        let totalBytes = 0;
+        
+        for (const filename of files) {
+            const filePath = path.join(dailyBackupPath, filename);
+            const content = await fs.readFile(filePath, 'utf-8');
+            totalBytes += content.length;
+            
+            if (source === 'wise') {
+                // CSV: 只保留第一個檔案的 header
+                const lines = content.split('\n').filter(line => line.trim());
+                if (isFirstFile) {
+                    writeStream.write(lines.join('\n'));
+                } else {
+                    // 跳過 header (第一行)
+                    if (lines.length > 1) {
+                        writeStream.write('\n' + lines.slice(1).join('\n'));
+                    }
+                }
+            } else {
+                // JSON: 直接串接
+                writeStream.write(content);
+                if (!content.endsWith('\n')) {
+                    writeStream.write('\n');
+                }
+            }
+            
+            isFirstFile = false;
+        }
+
+        // 等待寫入完成
+        await new Promise<void>((resolve, reject) => {
+            writeStream.end((err: any) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        // 原子性重命名
+        await fs.rename(tempMergedPath, finalMergedPath);
+
+        // 刪除所有原始小檔案
+        for (const filename of files) {
+            if (filename !== mergedFileName) {
+                await fs.remove(path.join(dailyBackupPath, filename));
+            }
+        }
+
+        const mergedSize = (totalBytes / 1024 / 1024).toFixed(2);
+        logger.info(`[日終合併] ✓ 設備 ${deviceId} 的 ${dateDir}: ${files.length} 個檔案 → 1 個檔案 (${mergedSize} MB)`);
+        
+    } catch (error: any) {
+        logger.error(`[日終合併] ✗ 設備 ${deviceId} 的 ${dateDir} 合併失敗: ${error.message}`);
+        // 清理可能的臨時檔案
+        try {
+            const tempFile = path.join(dailyBackupPath, `${dateDir}.${source === 'wise' ? 'csv' : 'json'}.tmp`);
+            if (await fs.pathExists(tempFile)) {
+                await fs.remove(tempFile);
+            }
+        } catch {}
+    }
 }
 
 async function processFilesBatch(
@@ -431,4 +541,4 @@ async function processFilesBatch(
         // 所有檔案都被掃描了，但沒有產生任何點
         logger.info(`[處理批次] 設備 ${deviceId} (源: ${source}, 日期: ${dateDirName}) 在路徑 ${currentDataPath} 的 ${files.length} 個檔案中沒有產生可寫入的資料點，但檔案已被處理並移動。`);
     }
-}
+}   
