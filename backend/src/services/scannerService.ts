@@ -220,7 +220,7 @@ async function scanDeviceAllData(rootPathForSource: string, deviceId: string, so
                     if (source === 'wise') {
                         const backupDir = config.folder.wiseBackupDir;
                         const logType = 'signal_log';
-                        const deviceBackupPath = path.join(backupDir, deviceId, logType, dateDir);
+                        const deviceBackupPath = path.join(backupDir, logType, deviceId, dateDir);
                         if (await fs.pathExists(deviceBackupPath)) {
                             await mergeDailyBackupFiles(deviceBackupPath, dateDir, deviceId, source);
                         }
