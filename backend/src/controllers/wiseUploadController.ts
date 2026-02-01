@@ -7,7 +7,7 @@ import { config } from '../config/config';
 // WISE 模組上傳日誌，尚未儲存到 DB
 export async function uploadWiseLog(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { macAddress, logType, date, filename } = req.params;
+    const { macAddress, logType, date, filename } = req.params as { [key: string]: string };
 
     // 確認 logType 合法
     if (logType !== 'signal_log' && logType !== 'system_log') {
