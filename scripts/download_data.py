@@ -412,15 +412,15 @@ def download_file_device(
 
     folder_name = str(device_info.get("folder_name", device_id))
     remote_path_pattern = f"{remote_path}/{last_month_str}*"
-    remote_source = f"{INFLUXDB_CT_HOST}:'{remote_path_pattern}'"
+    remote_source = f"{INFLUXDB_CT_HOST}:{remote_path_pattern}"
     local_target_dir = os.path.join(LOCAL_TEMP_DIR, folder_name)
     os.makedirs(local_target_dir, exist_ok=True)
 
     print(f"Downloading file device {device_id}...")
     try:
         subprocess.run(
-            f"scp -r {remote_source} {local_target_dir}",
-            shell=True,
+            ["scp", "-r", remote_source, local_target_dir],
+            shell=False,
             check=True,
             capture_output=True,
             text=True,
