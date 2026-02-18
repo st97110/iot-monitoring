@@ -27,7 +27,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install Python dependencies
-        run: pip install python-dateutil
+        run: pip install python-dateutil influxdb-client
 
       # --- 新增的關鍵步驟 ---
       - name: Install SSH Key
@@ -39,6 +39,12 @@ jobs:
 
       - name: Run download script
         id: download_script
+        env:
+          TZ: Asia/Taipei
+          INFLUX_URL: ${{ secrets.INFLUX_URL }}
+          INFLUX_ORG: ${{ secrets.INFLUX_ORG }}
+          INFLUX_TOKEN_WISE: ${{ secrets.INFLUX_TOKEN_WISE }}
+          INFLUX_BUCKET_WISE: ${{ secrets.INFLUX_BUCKET_WISE }}
         run: |
           python scripts/download_data.py ${{ github.event.inputs.instrument_group }}
 

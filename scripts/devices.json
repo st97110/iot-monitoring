@@ -4,6 +4,7 @@
       "WISE-4010LAN_74FE4860F492",
       "WISE-4010LAN_00D0C9FAD2C2",
       "WISE-4010LAN_74FE48595E19",
+      "SN_6955",
       "WISE-4010LAN_74FE486CEDFB",
       "WISE-4010LAN_74FE486B76BB",
       "WISE-4010LAN_74FE488F3BA0",
@@ -32,9 +33,20 @@
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_00D0C9FAD2C2"
     },
     "WISE-4010LAN_74FE48595E19": {
-      "name": "台8線 BT1 & BT3 傾斜儀",
-      "folder_name": "BT1&BT3",
+      "name": "台8線 BT1 傾斜儀",
+      "folder_name": "BT1",
       "remote_path": "/srv/mondata/wise_backup_data/signal_log/WISE-4010LAN_74FE48595E19"
+    },
+    "SN_6955": {
+      "name": "台8線 BT3 準星傾斜儀",
+      "storage": "db_only",
+      "folder_name": "BT3_準星",
+      "influx": {
+        "measurement": "wise_raw",
+        "tag_filters": {
+          "device_sn": "6955"
+        }
+      }
     },
     "WISE-4010LAN_74FE486CEDFB": {
       "name": "台8線 OW6 水位計",
