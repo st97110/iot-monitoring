@@ -40,7 +40,7 @@
     "SN_6955": {
       "name": "台8線 BT3 準星傾斜儀",
       "storage": "db_only",
-      "folder_name": "BT3_準星",
+      "folder_name": "BT3",
       "influx": {
         "measurement": "wise_raw",
         "tag_filters": {

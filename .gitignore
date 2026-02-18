@@ -46,3 +46,4 @@ backend/.dockerignore
 backend/*.tar
 backend/*.7z
 backend/*.zip
+.DS_Store

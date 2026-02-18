@@ -2,8 +2,10 @@ import argparse
 import csv
 import json
 import os
+import re
 import shutil
 import subprocess
+from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from zoneinfo import ZoneInfo
@@ -23,6 +25,10 @@ INFLUX_REQUIRED_ENV_VARS = (
     "INFLUX_TOKEN_WISE",
     "INFLUX_BUCKET_WISE",
 )
+
+DAY_DIR_REGEX = re.compile(r"^\d{8}$")
+DAY_FILE_REGEX = re.compile(r"^(\d{8})\.csv$", re.IGNORECASE)
+DATE_PREFIX_REGEX = re.compile(r"^(\d{8})")
 
 
 def normalize_storage(device_info: Dict[str, Any]) -> str:
@@ -46,9 +52,8 @@ def get_timezone() -> ZoneInfo:
         return ZoneInfo(DEFAULT_TIMEZONE)
 
 
-def get_last_month_window() -> Tuple[str, str, str]:
-    tz = get_timezone()
-    now = datetime.now(tz)
+def get_last_month_window(timezone: ZoneInfo) -> Tuple[str, str, str]:
+    now = datetime.now(timezone)
     current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     last_month_start = current_month_start - relativedelta(months=1)
     return (
@@ -145,10 +150,194 @@ def write_raw_csv(csv_path: str, rows: List[Dict[str, Any]]) -> None:
     ordered_keys.extend(sorted(all_keys - set(ordered_keys)))
 
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    with open(csv_path, "w", encoding="utf-8", newline="") as f:
+    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=ordered_keys, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def parse_iso_datetime(raw_value: Any) -> Optional[datetime]:
+    if raw_value is None:
+        return None
+
+    iso_str = str(raw_value).strip()
+    if not iso_str:
+        return None
+    if iso_str.endswith("Z"):
+        iso_str = f"{iso_str[:-1]}+00:00"
+
+    try:
+        return datetime.fromisoformat(iso_str)
+    except Exception:
+        return None
+
+
+def split_rows_by_day(rows: List[Dict[str, Any]], timezone: ZoneInfo) -> Dict[str, List[Dict[str, Any]]]:
+    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    skipped = 0
+
+    for row in rows:
+        dt = parse_iso_datetime(row.get("_time"))
+        if not dt:
+            skipped += 1
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+
+        day_key = dt.astimezone(timezone).strftime("%Y%m%d")
+        grouped[day_key].append(row)
+
+    if skipped > 0:
+        print(f"  -> Skipped {skipped} rows without valid _time.")
+
+    return grouped
+
+
+def write_daily_csvs(
+    base_folder: str,
+    grouped_rows: Dict[str, List[Dict[str, Any]]],
+) -> List[str]:
+    generated_paths: List[str] = []
+    os.makedirs(base_folder, exist_ok=True)
+
+    for day_key in sorted(grouped_rows.keys()):
+        rows = grouped_rows[day_key]
+        rows.sort(key=lambda row: str(row.get("_time", "")))
+        output_path = os.path.join(base_folder, f"{day_key}.csv")
+        write_raw_csv(output_path, rows)
+        generated_paths.append(output_path)
+
+    return generated_paths
+
+
+def infer_day_key_from_file(
+    device_root: str,
+    file_path: str,
+    timezone: ZoneInfo,
+) -> Optional[str]:
+    rel_parts = os.path.relpath(file_path, device_root).split(os.sep)
+    for part in rel_parts:
+        if DAY_DIR_REGEX.match(part):
+            return part
+
+    filename = os.path.basename(file_path)
+    match = DATE_PREFIX_REGEX.match(filename)
+    if match:
+        return match.group(1)
+
+    try:
+        ts = os.path.getmtime(file_path)
+        return datetime.fromtimestamp(ts, timezone).strftime("%Y%m%d")
+    except Exception:
+        return None
+
+
+def collect_source_csv_files(device_root: str) -> List[str]:
+    source_files: List[str] = []
+    for root, _, files in os.walk(device_root):
+        for filename in files:
+            if not filename.lower().endswith(".csv"):
+                continue
+
+            full_path = os.path.join(root, filename)
+            rel_path = os.path.relpath(full_path, device_root)
+
+            # Skip already-aggregated root-level YYYYMMDD.csv
+            if os.sep not in rel_path and DAY_FILE_REGEX.match(filename):
+                continue
+
+            source_files.append(full_path)
+
+    source_files.sort()
+    return source_files
+
+
+def collect_existing_daily_csv_files(device_root: str) -> List[str]:
+    existing: List[str] = []
+    for filename in os.listdir(device_root):
+        if DAY_FILE_REGEX.match(filename):
+            full_path = os.path.join(device_root, filename)
+            if os.path.isfile(full_path):
+                existing.append(full_path)
+    existing.sort()
+    return existing
+
+
+def merge_csv_files(source_files: List[str], output_file: str) -> Tuple[bool, int]:
+    header_written = False
+    data_line_count = 0
+
+    with open(output_file, "w", encoding="utf-8-sig", newline="") as out_f:
+        for source in source_files:
+            with open(source, "r", encoding="utf-8-sig", errors="ignore") as in_f:
+                is_first_line = True
+                for raw_line in in_f:
+                    line = raw_line.rstrip("\r\n")
+                    if not line:
+                        continue
+
+                    if is_first_line:
+                        is_first_line = False
+                        if not header_written:
+                            out_f.write(f"{line}\n")
+                            header_written = True
+                        continue
+
+                    out_f.write(f"{line}\n")
+                    data_line_count += 1
+
+    return header_written, data_line_count
+
+
+def aggregate_file_device_to_daily_csv(device_root: str, timezone: ZoneInfo) -> List[str]:
+    source_files = collect_source_csv_files(device_root)
+    existing_daily_files = collect_existing_daily_csv_files(device_root)
+
+    if not source_files and existing_daily_files:
+        print(
+            f"  -> Daily CSV already present, skip aggregation: "
+            f"{len(existing_daily_files)} files"
+        )
+        return existing_daily_files
+
+    if not source_files:
+        return []
+
+    grouped_by_day: Dict[str, List[str]] = defaultdict(list)
+    unknown_day_files = 0
+
+    for source_file in source_files:
+        day_key = infer_day_key_from_file(device_root, source_file, timezone)
+        if not day_key:
+            unknown_day_files += 1
+            continue
+        grouped_by_day[day_key].append(source_file)
+
+    if unknown_day_files > 0:
+        print(f"  -> Skipped {unknown_day_files} files: unable to infer day key.")
+
+    generated_paths: List[str] = []
+    for day_key in sorted(grouped_by_day.keys()):
+        output_path = os.path.join(device_root, f"{day_key}.csv")
+        success, data_lines = merge_csv_files(grouped_by_day[day_key], output_path)
+        if success:
+            generated_paths.append(output_path)
+            print(
+                f"  -> Aggregated {day_key}: {len(grouped_by_day[day_key])} files -> "
+                f"{os.path.basename(output_path)} ({data_lines} rows)"
+            )
+
+    keep_files = {os.path.abspath(path) for path in generated_paths}
+    for entry in os.listdir(device_root):
+        entry_path = os.path.join(device_root, entry)
+        abs_entry_path = os.path.abspath(entry_path)
+
+        if os.path.isdir(entry_path):
+            shutil.rmtree(entry_path)
+        elif abs_entry_path not in keep_files:
+            os.remove(entry_path)
+
+    return generated_paths
 
 
 def export_db_only_device(
@@ -160,6 +349,7 @@ def export_db_only_device(
     query_api: Any,
     influx_org: str,
     default_bucket: str,
+    timezone: ZoneInfo,
 ) -> bool:
     influx_cfg = device_info.get("influx")
     if not isinstance(influx_cfg, dict):
@@ -195,16 +385,25 @@ def export_db_only_device(
         return False
 
     rows = [to_serializable_row(record.values) for record in records]
-    csv_path = os.path.join(LOCAL_TEMP_DIR, folder_name, f"{last_month_str}_db.csv")
-    write_raw_csv(csv_path, rows)
-    print(f"  -> DB export written: {csv_path} ({len(rows)} rows)")
-    return True
+    grouped_rows = split_rows_by_day(rows, timezone)
+    if not grouped_rows:
+        print(f"  -> No DB rows with valid _time for {device_id}.")
+        return False
+
+    device_folder = os.path.join(LOCAL_TEMP_DIR, folder_name)
+    generated_paths = write_daily_csvs(device_folder, grouped_rows)
+    print(
+        f"  -> DB export written for {device_id}: "
+        f"{len(generated_paths)} daily files, {len(rows)} total rows."
+    )
+    return len(generated_paths) > 0
 
 
 def download_file_device(
     device_id: str,
     device_info: Dict[str, Any],
     last_month_str: str,
+    timezone: ZoneInfo,
 ) -> bool:
     remote_path = device_info.get("remote_path")
     if not remote_path:
@@ -236,6 +435,12 @@ def download_file_device(
         os.rmdir(local_target_dir)
         return False
 
+    generated_paths = aggregate_file_device_to_daily_csv(local_target_dir, timezone)
+    if not generated_paths:
+        print(f"  -> No aggregated daily CSV produced for {device_id}.")
+        shutil.rmtree(local_target_dir, ignore_errors=True)
+        return False
+
     return True
 
 
@@ -253,7 +458,8 @@ def download_by_group(group_name: str) -> Optional[str]:
         print(f"Error: group '{group_name}' not found in config.")
         return None
 
-    last_month_str, start_iso, stop_iso = get_last_month_window()
+    timezone = get_timezone()
+    last_month_str, start_iso, stop_iso = get_last_month_window(timezone)
     print(f"Target month: {last_month_str} ({start_iso} -> {stop_iso})")
 
     resolved_devices: List[Tuple[str, Dict[str, Any]]] = []
@@ -310,6 +516,7 @@ def download_by_group(group_name: str) -> Optional[str]:
                         query_api=query_api,
                         influx_org=influx_org,
                         default_bucket=influx_bucket,
+                        timezone=timezone,
                     )
                     if success:
                         db_success_count += 1
@@ -321,6 +528,7 @@ def download_by_group(group_name: str) -> Optional[str]:
                 device_id=device_id,
                 device_info=device_info,
                 last_month_str=last_month_str,
+                timezone=timezone,
             )
             if success:
                 file_success_count += 1
