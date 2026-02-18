@@ -356,14 +356,34 @@ export const deviceMapping: Record<
       },
       {
         id: 'WISE-4010LAN_74FE48595E19',
-        name: 'BT1 & BT3 傾斜儀',
+        name: 'BT1 傾斜儀',
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
         sensors: [
           { name: 'BT1 A軸 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
-          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } },
-          { name: 'BT3 A軸 (AI2)', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 10.794 } },
-          { name: 'BT3 B軸 (AI3)', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.283 } }
+          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } }
+        ]
+      },
+      {
+        id: 'SN_6955', // 前端使用的唯一邏輯 ID (基於序列號)
+        name: 'BT3 傾斜儀', // 準星ly-tiltmeter & sn=6955
+        area: '台8線107K區',
+        type: DEVICE_TYPES.TI,
+        sensors: [
+          {
+            name: 'BT3 A軸角度',
+            channels: ['TI-5A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_0': 'TI-5A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_0': 0 }
+          },
+          {
+            name: 'BT3 B軸角度',
+            channels: ['TI-5B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
+            sourceChannelMapping: { 'AI_1': 'TI-5B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { 'AI_1': 0 }
+          }
         ]
       },
       {

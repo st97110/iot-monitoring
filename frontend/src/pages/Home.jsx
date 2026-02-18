@@ -56,6 +56,7 @@ const deviceImages = {
   'WISE-4010LAN_74FE4860F492': '/images/stations/t8/WISE_OW10_WATER.jpg', // OW10 水位計
   'WISE-4010LAN_00D0C9FAD2C2': '/images/stations/t8/WISE_GE3_GE.jpg',    // GE3 (20m, 80m) 伸縮計
   'WISE-4010LAN_74FE48595E19': '/images/stations/t8/WISE_BT1_BT3_TI.jpg',// BT1 & BT3 傾斜儀
+  'SN_6955': '/images/stations/t8/WISE_BT1_BT3_TI.jpg',                   // BT3 準星傾斜儀
   'WISE-4010LAN_74FE486CEDFB': '/images/stations/t8/WISE_OW6_WATER.jpg',  // OW6 水位計
   'WISE-4010LAN_74FE486B76BB': '/images/stations/t8/WISE_BT2_TI.jpg',    // BT2 傾斜儀
   'WISE-4010LAN_74FE488F3BA0': '/images/stations/t8/WISE_OW5_WATER.jpg',  // OW5 水位計

@@ -317,16 +317,16 @@ export const deviceMapping = {
         ]
       },
       {
-        id: 'WISE-4010LAN_74FE48595E19_BT3',
+        id: 'SN_6955',
         name: 'BT3 傾斜儀',
-        originalDeviceId: 'WISE-4010LAN_74FE48595E19',
         lat: 24.19220,
         lng: 121.30304,
         area: '台8線107K區',
         type: DEVICE_TYPES.TI,
+        sourceType: 'geostar',
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 30, initialValues: { AI_2: 10.794 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 30, initialValues: { AI_3: 12.283 } }
+          { name: 'A軸角度', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { 'AI_0': 0 } },
+          { name: 'B軸角度', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { 'AI_1': 0 } }
         ]
       },
       {
