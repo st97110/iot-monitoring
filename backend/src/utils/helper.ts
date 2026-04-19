@@ -106,11 +106,13 @@ interface sensor {
 }
 
 export interface SensorCtx {
-  type       : DEVICE_TYPES;       // WATER | TI | GE | RAIN
+  type       : DEVICE_TYPES;       // WATER | TI | GE | RAIN | BATTERY
   raw        : number;             // 4–20 mA 或 Cnt
   wellDepth ?: number;             // 水位計滿量程 (m)
   fsDeg     ?: number;             // 傾斜儀 ±FS°（15/30）
   geRange   ?: number;             // 伸縮計滿量程 (cm)
+  scaleMin  ?: number;             // 電池類：4mA 對應工程值
+  scaleMax  ?: number;             // 電池類：20mA 對應工程值
 }
 
 /** raw EgF/Cnt → 工程值 PEgF */
@@ -130,6 +132,12 @@ function rawToPEgF(ctx: SensorCtx): number {
     case DEVICE_TYPES.GE: {                // mA → cm
       const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
       return ratio * (ctx.geRange ?? 50);
+    }
+    case DEVICE_TYPES.BATTERY: {           // mA → 線性工程值（V / A / %）
+      const lo = ctx.scaleMin ?? 0;
+      const hi = ctx.scaleMax ?? 100;
+      const ratio = (Math.min(Math.max(raw, 4), 20) - 4) / 16;
+      return lo + ratio * (hi - lo);
     }
     case DEVICE_TYPES.RAIN:                // 保留計數
     default:
@@ -164,6 +172,8 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
         wellDepth : sensor.wellDepth,
         fsDeg     : sensor.fsDeg,
         geRange   : sensor.geRange,
+        scaleMin  : sensor.scaleMin,
+        scaleMax  : sensor.scaleMax,
       });
 
       // ① 真實值欄位：AI_0 PEgF

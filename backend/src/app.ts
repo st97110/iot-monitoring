@@ -7,7 +7,11 @@ import deviceRoutes from './routes/deviceRoutes';
 import dataRoutes from './routes/dataRoutes';
 import tdrRoutes from './routes/tdrRoutes';
 import wiseUploadRoutes from './routes/wiseUploadRoutes';
+import batteryRoutes from './routes/batteryRoutes';
 import { logger } from './utils/logger';
+
+// 內部檢視頁面：不公開，靠 path 隱藏；要換網址就改這行
+const BATTERY_VIEW_PATH = process.env.BATTERY_VIEW_PATH || '/view/80k-battery-f2a9c4';
 
 const app: Application = express();
 
@@ -27,6 +31,7 @@ app.use('/api', deviceRoutes);
 app.use('/api', dataRoutes);
 app.use('/api/tdr', tdrRoutes);
 app.use('/upload_log', wiseUploadRoutes);
+app.use(BATTERY_VIEW_PATH, batteryRoutes);
 
 // 健康檢查
 app.get('/', (req: Request, res: Response) => {

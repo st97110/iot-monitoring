@@ -122,6 +122,9 @@ export interface Sensor {
   fsDeg?        : number; // For TI
   geRange?      : number; // For GE
   flowRateFactor?: number; // For FLOW
+  scaleMin?     : number; // For BATTERY：4mA 對應的工程值（例：電壓 0V、電流 -50A）
+  scaleMax?     : number; // For BATTERY：20mA 對應的工程值（例：電壓 30V、電流 +50A）
+  unit?         : string; // For BATTERY 顯示用（'V', 'A', '%' …）
 }
 
 export interface Device {
@@ -142,6 +145,7 @@ export enum DEVICE_TYPES {
   GE = 'GE',         // 伸縮計
   TDR = 'TDR',       // TDR
   FLOW = 'FLOW',     // FLOW
+  BATTERY = 'BATTERY', // 太陽能+電池站點（電壓/電流/SOC）
 }
 
 export interface AreaConfig { // 可以為 Area 創建一個 interface
@@ -159,7 +163,21 @@ export const deviceMapping: Record<
     routeGroup: 't14',
     devices: [
       { id: 'TDR_T14_T1', name: 'T1 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80K區', type: DEVICE_TYPES.TDR }
+      { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
+      {
+        id: 'WISE-4010LAN_74FE48ADBD13',
+        name: '80K 太陽能電池監測',
+        area: '80K區',
+        type: DEVICE_TYPES.BATTERY,
+        // TODO：請依實機接線補齊 channel。以下為常見 12V/24V 太陽能+電池站點的範例，
+        // 每個 channel 的 scaleMin/scaleMax 請對照變送器銘牌。
+        sensors: [
+          { name: '電池電壓', channels: ['AI_0'], type: DEVICE_TYPES.BATTERY, scaleMin: 0,   scaleMax: 30, unit: 'V' },
+          { name: '電池電流', channels: ['AI_1'], type: DEVICE_TYPES.BATTERY, scaleMin: -50, scaleMax: 50, unit: 'A' },
+          { name: '太陽能板電壓', channels: ['AI_2'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 50, unit: 'V' },
+          { name: '太陽能板電流', channels: ['AI_3'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 20, unit: 'A' },
+        ]
+      }
     ],
   },
   '春陽區': {
