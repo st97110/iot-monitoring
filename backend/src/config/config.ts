@@ -169,13 +169,9 @@ export const deviceMapping: Record<
         name: '80K 太陽能電池監測',
         area: '80K區',
         type: DEVICE_TYPES.BATTERY,
-        // TODO：請依實機接線補齊 channel。以下為常見 12V/24V 太陽能+電池站點的範例，
-        // 每個 channel 的 scaleMin/scaleMax 請對照變送器銘牌。
         sensors: [
-          { name: '電池電壓', channels: ['AI_0'], type: DEVICE_TYPES.BATTERY, scaleMin: 0,   scaleMax: 30, unit: 'V' },
-          { name: '電池電流', channels: ['AI_1'], type: DEVICE_TYPES.BATTERY, scaleMin: -50, scaleMax: 50, unit: 'A' },
-          { name: '太陽能板電壓', channels: ['AI_2'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 50, unit: 'V' },
-          { name: '太陽能板電流', channels: ['AI_3'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 20, unit: 'A' },
+          // 只有 AI_0 一路，常見 12V/24V 系統預設 0–30V，實機若不同請改 scaleMax
+          { name: '電池電壓', channels: ['AI_0'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 30, unit: 'V' },
         ]
       }
     ],

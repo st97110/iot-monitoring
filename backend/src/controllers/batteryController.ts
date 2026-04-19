@@ -17,12 +17,15 @@ export async function getBatteryLatestJson(req: Request, res: Response, next: Ne
 
     const sensors = (cfg.sensors ?? []).map(s => {
       const ch = s.channels[0];
-      const val = raw?.raw?.[`${ch} PEgF`];
+      const pegf = raw?.raw?.[`${ch} PEgF`];  // 換算後（例：V）
+      const egf  = raw?.raw?.[`${ch} EgF`];   // 原始訊號（4–20 mA）
       return {
         name: s.name,
-        unit: s.unit ?? '',
-        value: typeof val === 'number' && isFinite(val) ? val : null,
         channel: ch,
+        unit: s.unit ?? '',
+        value: typeof pegf === 'number' && isFinite(pegf) ? pegf : null,
+        rawUnit: 'mA',
+        rawValue: typeof egf === 'number' && isFinite(egf) ? egf : null,
       };
     });
 
@@ -55,18 +58,18 @@ export async function getBatteryHistoryJson(req: Request, res: Response, next: N
     rows.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const cutoffMs = Date.now() - hours * 3600 * 1000;
-    const series = (cfg.sensors ?? []).map(s => {
+    const inRange = rows.filter((r: any) => new Date(r.timestamp).getTime() >= cutoffMs);
+
+    const pickPoints = (ch: string, metric: 'PEgF' | 'EgF') => inRange
+      .map((r: any) => ({ t: r.timestamp, v: r.raw?.[`${ch} ${metric}`] }))
+      .filter((p: any) => typeof p.v === 'number' && isFinite(p.v));
+
+    const series = (cfg.sensors ?? []).flatMap(s => {
       const ch = s.channels[0];
-      const key = `${ch} PEgF`;
-      return {
-        name: s.name,
-        unit: s.unit ?? '',
-        channel: ch,
-        points: rows
-          .filter((r: any) => new Date(r.timestamp).getTime() >= cutoffMs)
-          .map((r: any) => ({ t: r.timestamp, v: r.raw?.[key] }))
-          .filter((p: any) => typeof p.v === 'number' && isFinite(p.v)),
-      };
+      return [
+        { name: `${s.name} (換算)`, unit: s.unit ?? '', channel: ch, kind: 'converted', points: pickPoints(ch, 'PEgF') },
+        { name: `${s.name} (原始)`, unit: 'mA',          channel: ch, kind: 'raw',       points: pickPoints(ch, 'EgF')  },
+      ];
     });
 
     res.json({ hours, series });
@@ -96,6 +99,7 @@ const PAGE_HTML = `<!DOCTYPE html>
   .card-label { font-size: 17px; color: #606770; margin-bottom: 6px; }
   .card-value { font-size: 40px; font-weight: 700; line-height: 1.1; }
   .card-unit { font-size: 20px; color: #606770; margin-left: 6px; font-weight: 400; }
+  .card-raw { font-size: 15px; color: #909090; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; }
   .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 14px; margin-left: 8px; }
   .ok { background: #d4edda; color: #155724; }
   .warn { background: #fff3cd; color: #856404; }
@@ -154,6 +158,7 @@ async function refreshLatest() {
       '<div class="card">' +
         '<div class="card-label">' + s.name + '</div>' +
         '<div class="card-value">' + fmtVal(s.value, s.unit) + '</div>' +
+        '<div class="card-raw">原始訊號：' + fmtVal(s.rawValue, s.rawUnit) + '</div>' +
       '</div>'
     )).join('');
     document.getElementById('cards').innerHTML = html || '<div class="card">尚無資料</div>';
@@ -183,6 +188,7 @@ async function refreshHistory() {
       borderWidth: 2,
       tension: 0.2,
       spanGaps: true,
+      yAxisID: s.kind === 'raw' ? 'yRaw' : 'y',
     }));
 
     const ctx = document.getElementById('chart').getContext('2d');
@@ -197,6 +203,8 @@ async function refreshHistory() {
         interaction: { mode: 'index', intersect: false },
         scales: {
           x: { ticks: { maxTicksLimit: 8, autoSkip: true } },
+          y:    { position: 'left',  title: { display: true, text: '換算 (V)' } },
+          yRaw: { position: 'right', title: { display: true, text: '原始 (mA)' }, grid: { drawOnChartArea: false } },
         },
         plugins: { legend: { position: 'bottom', labels: { font: { size: 13 } } } },
       }
