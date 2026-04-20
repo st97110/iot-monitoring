@@ -1,12 +1,21 @@
-// 前端 config：純粹 re-export shared 的 deviceMapping/型別，
-// 外加前端專用的 API_BASE 和 UI 標籤
+// 前端 config：re-export shared 的 deviceMapping/型別，外加前端專用的 API_BASE 和 UI 標籤
+// 注意：前端看到的 deviceMapping 會濾掉 `internal: true` 的裝置，
+// 讓一般使用者看不到內部站點（例如 T2 電池），但 backend 和 /view/... 仍正常運作。
 
-// Re-export 共用內容（單一資料來源）
+// Re-export 共用型別
 export { DEVICE_TYPES, getPhysicalId } from '../../../shared/deviceTypes';
 export type { Sensor, Device, AreaConfig } from '../../../shared/deviceTypes';
-export { deviceMapping } from '../../../shared/deviceMapping';
 
-import { DEVICE_TYPES } from '../../../shared/deviceTypes';
+import { DEVICE_TYPES, AreaConfig } from '../../../shared/deviceTypes';
+import { deviceMapping as rawDeviceMapping } from '../../../shared/deviceMapping';
+
+// 過濾掉內部裝置後的版本
+export const deviceMapping: Record<string, AreaConfig> = Object.fromEntries(
+  Object.entries(rawDeviceMapping).map(([key, area]) => [
+    key,
+    { ...area, devices: area.devices.filter(d => !d.internal) },
+  ]),
+);
 
 // API base URL (Vite 會在 build 時替換 import.meta.env)
 export const API_BASE: string = import.meta.env.PROD

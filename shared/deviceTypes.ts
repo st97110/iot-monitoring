@@ -56,6 +56,12 @@ export interface Device {
    * backend 掃描資料時會用實體 ID，查 config 時會 fallback 到 originalDeviceId。
    */
   originalDeviceId?: string;
+  /**
+   * 是否為內部裝置：設為 true 時前端（Home/History/Trend/Map）不顯示，
+   * 但 backend scanner 與專用 API endpoint 仍正常運作。
+   * 用途：不想讓一般使用者看到的站點（例如家用的電池監測）。
+   */
+  internal?: boolean;
 }
 
 export interface AreaConfig {

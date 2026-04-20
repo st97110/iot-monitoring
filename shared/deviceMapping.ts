@@ -22,6 +22,7 @@ export const deviceMapping: Record<string, AreaConfig> = {
         lng: 121.129444,
         area: '80K區',
         type: DEVICE_TYPES.BATTERY,
+        internal: true,  // 內部裝置：只在 /view/80k-battery-* 顯示，一般前端不顯示
         sensors: [
           // 24V 系統預設 0–30V，實機若不同請改 scaleMax
           { name: '電池電壓', channels: ['AI_0'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 30, unit: 'V' },
