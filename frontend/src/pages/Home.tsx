@@ -67,13 +67,13 @@ const deviceImages: Record<string, string> = {
 };
 
 const defaultDeviceImages: Record<string, string> = {
-  [DEVICE_TYPES.TI]: '/images/devices/TI.png',
-  [DEVICE_TYPES.WATER]: '/images/devices/WATER.png',
-  [DEVICE_TYPES.RAIN]: '/images/devices/RAIN.png',
-  [DEVICE_TYPES.GE]: '/images/devices/GE.png',
-  [DEVICE_TYPES.TDR]: '/images/devices/TDR.png',
-  [DEVICE_TYPES.FLOW]: '/images/devices/FLOW.png',
-  [DEVICE_TYPES.BATTERY]: '/images/devices/BATTERY.png',
+  [DEVICE_TYPES.TI]: '/images/devices/TI.svg',
+  [DEVICE_TYPES.WATER]: '/images/devices/WATER.svg',
+  [DEVICE_TYPES.RAIN]: '/images/devices/RAIN.svg',
+  [DEVICE_TYPES.GE]: '/images/devices/GE.svg',
+  [DEVICE_TYPES.TDR]: '/images/devices/TDR.svg',
+  [DEVICE_TYPES.FLOW]: '/images/devices/FLOW.svg',
+  [DEVICE_TYPES.BATTERY]: '/images/devices/BATTERY.svg',
   't8_DEFAULT': '/images/devices/t8_default_station.png',
   't14_DEFAULT': '/images/devices/t14_default_station.png',
   'DEFAULT': '/images/devices/default_station.png',

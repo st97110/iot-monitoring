@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="battBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="battFill" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="white" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.75"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#battBg)"/>
+  <!-- battery body outline -->
+  <rect x="50" y="70" width="140" height="120" rx="10" fill="none" stroke="white" stroke-width="8"/>
+  <!-- battery positive terminal (tip) -->
+  <rect x="190" y="108" width="16" height="44" rx="3" fill="white"/>
+  <!-- fill (about 80%) -->
+  <rect x="62" y="82" width="108" height="96" rx="4" fill="url(#battFill)"/>
+  <!-- lightning bolt (charge indicator) -->
+  <path d="M 132 92 L 100 146 L 120 146 L 108 180 L 142 126 L 122 126 Z"
+        fill="#D97706" stroke="#B45309" stroke-width="1" stroke-linejoin="round"/>
+  <!-- solar suggestion: sun rays in top-left corner -->
+  <g opacity="0.85">
+    <circle cx="218" cy="44" r="10" fill="white"/>
+    <line x1="218" y1="20" x2="218" y2="28" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="218" y1="60" x2="218" y2="68" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="194" y1="44" x2="202" y2="44" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="234" y1="44" x2="242" y2="44" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="200" y1="26" x2="206" y2="32" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="230" y1="56" x2="236" y2="62" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

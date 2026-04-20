@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="tdrBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#tdrBg)"/>
+  <!-- sky / ground split (ground line) -->
+  <line x1="30" y1="90" x2="226" y2="90" stroke="white" stroke-width="3" opacity="0.55"/>
+  <!-- hatch marks for ground surface -->
+  <path d="M 40 90 L 30 104 M 70 90 L 60 104 M 100 90 L 90 104 M 130 90 L 120 104 M 160 90 L 150 104 M 190 90 L 180 104 M 220 90 L 210 104"
+        stroke="white" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+  <!-- cable connector at top -->
+  <rect x="112" y="30" width="32" height="22" rx="4" fill="white"/>
+  <circle cx="128" cy="41" r="4" fill="#7C3AED"/>
+  <!-- cable going into ground -->
+  <line x1="128" y1="52" x2="128" y2="218" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <!-- signal waves radiating from subsurface probe -->
+  <circle cx="128" cy="160" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.85"/>
+  <circle cx="128" cy="160" r="42" fill="none" stroke="white" stroke-width="2.5" opacity="0.55"/>
+  <circle cx="128" cy="160" r="62" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
+  <!-- probe tip -->
+  <circle cx="128" cy="218" r="9" fill="white"/>
+</svg>

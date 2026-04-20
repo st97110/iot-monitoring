@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="tiBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#tiBg)"/>
+  <!-- ground line -->
+  <line x1="40" y1="200" x2="216" y2="200" stroke="white" stroke-width="3" opacity="0.5"/>
+  <!-- vertical reference (dashed) -->
+  <line x1="128" y1="60" x2="128" y2="200" stroke="white" stroke-width="2" opacity="0.35" stroke-dasharray="6 6"/>
+  <!-- angle arc -->
+  <path d="M 128 130 A 70 70 0 0 1 180 170" fill="none" stroke="white" stroke-width="3" opacity="0.55" stroke-linecap="round"/>
+  <!-- tilted rod -->
+  <line x1="128" y1="200" x2="192" y2="68" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  <!-- top marker ball -->
+  <circle cx="192" cy="68" r="10" fill="white"/>
+  <!-- base -->
+  <rect x="108" y="194" width="40" height="14" rx="3" fill="white"/>
+  <!-- angle label dot -->
+  <circle cx="128" cy="200" r="4" fill="white"/>
+</svg>
