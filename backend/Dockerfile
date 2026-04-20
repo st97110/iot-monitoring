@@ -7,7 +7,8 @@ FROM node:20-bookworm AS build
 WORKDIR /build
 
 # 維持 repo 的目錄結構：/build/{backend, shared}，tsconfig.json 的 rootDir=".." 才能正確定位
-COPY backend/package.json backend/package-lock.json backend/tsconfig.json ./backend/
+# 注意：package-lock.json 被 gitignore，不存在於 build context；build 階段 npm install 會自動產出
+COPY backend/package.json backend/tsconfig.json ./backend/
 COPY backend/src ./backend/src
 COPY shared ./shared
 
