@@ -370,27 +370,31 @@ function applyStatus(cls, word, pillText, bannerMsg) {
   }
 }
 
+// WISE 預設每小時上傳一次，所以 <75 分都算正常，超過 2.5 小時才算連線中斷
+const STALE_WARN_MIN = 75;
+const STALE_BAD_MIN  = 150;
+
 // 狀態判定：時間新鮮度 + 電量百分比，取較差那個
 function computeStatus(iso, pct) {
-  let staleCls = 'ok', staleText = '即時', staleBanner = null;
+  let staleCls = 'ok', staleText = '正常', staleBanner = null;
   if (!iso) { staleCls = 'bad'; staleText = '無資料'; staleBanner = '目前沒有接收到任何資料'; }
   else {
     const ageMin = (Date.now() - new Date(iso).getTime()) / 60000;
-    if (ageMin > 60)      { staleCls = 'bad';  staleText = Math.round(ageMin) + ' 分鐘未更新'; staleBanner = '已超過 1 小時沒有新資料，可能連線中斷'; }
-    else if (ageMin > 20) { staleCls = 'warn'; staleText = Math.round(ageMin) + ' 分鐘前'; staleBanner = '資料更新延遲中'; }
-    else if (ageMin < 1)  { staleCls = 'ok';   staleText = '即時'; }
-    else                  { staleCls = 'ok';   staleText = Math.round(ageMin) + ' 分鐘前'; }
+    if (ageMin > STALE_BAD_MIN)       { staleCls = 'bad';  staleText = Math.round(ageMin) + ' 分鐘未更新'; staleBanner = '已超過 ' + Math.round(STALE_BAD_MIN/60 * 10)/10 + ' 小時沒有新資料，可能連線中斷'; }
+    else if (ageMin > STALE_WARN_MIN) { staleCls = 'warn'; staleText = Math.round(ageMin) + ' 分鐘前'; staleBanner = '資料更新延遲中'; }
+    else if (ageMin < 1)              { staleCls = 'ok';   staleText = '剛剛'; }
+    else                              { staleCls = 'ok';   staleText = Math.round(ageMin) + ' 分鐘前'; }
   }
 
   let chargeCls = 'ok', chargeWord = '電力正常', chargeBanner = null;
   if (pct == null) { chargeCls = 'idle'; chargeWord = '等待資料'; }
   else if (pct < 30) { chargeCls = 'bad';  chargeWord = '電力不足'; chargeBanner = '電池電量偏低，請儘速檢查'; }
-  else if (pct < 55) { chargeCls = 'warn'; chargeWord = '電力偏低'; chargeBanner = chargeBanner || '電池電量偏低，建議關注'; }
+  else if (pct < 55) { chargeCls = 'warn'; chargeWord = '電力偏低'; chargeBanner = '電池電量偏低，建議關注'; }
 
   // 取較嚴重的
   const sev = { ok: 0, idle: 1, warn: 2, bad: 3 };
   const worse = sev[staleCls] >= sev[chargeCls] ? staleCls : chargeCls;
-  // 連線異常時狀態字顯示「連線異常」比「電力正常」更準
+  // 連線異常時狀態字顯示「連線中斷/延遲更新」
   const word = (staleCls === 'bad' || staleCls === 'warn') && sev[staleCls] > sev[chargeCls]
     ? (staleCls === 'bad' ? '連線中斷' : '延遲更新')
     : chargeWord;
@@ -439,24 +443,46 @@ let chart = null;
 async function refreshHistory() {
   try {
     const r = await fetch(API_HISTORY + '?hours=24', { cache: 'no-store' });
-    if (!r.ok) return;
+    if (!r.ok) { console.warn('[battery] history HTTP', r.status); return; }
     const d = await r.json();
 
-    const base = (d.series || []).find(s => (s.points || []).length > 0);
-    if (!base) return;
+    const series = d.series || [];
+    const base = series.find(s => (s.points || []).length > 0);
+    const totalPoints = series.reduce((n, s) => n + ((s.points || []).length), 0);
+
+    const wrap = document.querySelector('.chart-wrap');
+    let empty = document.getElementById('chart-empty');
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'chart-empty';
+      empty.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:15px;';
+      wrap.appendChild(empty);
+    }
+
+    if (!base) {
+      empty.textContent = '尚未有 24 小時內的紀錄';
+      empty.style.display = 'flex';
+      if (chart) { chart.destroy(); chart = null; }
+      return;
+    }
+    empty.style.display = 'none';
+
     const labels = base.points.map(p => fmtHM(p.t));
+    // 點少的時候要顯示圓點（否則 line chart 看不到）
+    const pointRadius = totalPoints <= 20 ? 4 : 0;
 
     const COLORS = { converted: '#0ea5e9', raw: '#f59e0b' };
-    const datasets = (d.series || []).map(s => {
+    const datasets = series.map(s => {
       const color = COLORS[s.kind] || '#64748b';
       return {
         label: s.name + (s.unit ? ' (' + s.unit + ')' : ''),
         data: s.points.map(p => p.v),
         borderColor: color,
-        backgroundColor: color + '20',
+        backgroundColor: color + '33',
         fill: s.kind === 'converted',
-        pointRadius: 0,
-        pointHoverRadius: 4,
+        pointRadius,
+        pointHoverRadius: Math.max(pointRadius + 2, 5),
+        pointBackgroundColor: color,
         borderWidth: 2.5,
         tension: 0.35,
         spanGaps: true,
@@ -478,12 +504,14 @@ async function refreshHistory() {
           yRaw: { position: 'right', title: { display: true, text: '原始 (mA)', color: '#f59e0b', font: { weight: 600 } }, ticks: { color: '#64748b' }, grid: { drawOnChartArea: false } },
         },
         plugins: {
-          legend: { position: 'bottom', labels: { font: { size: 13 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+          legend: { position: 'bottom', labels: { font: { size: 14 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
           tooltip: { backgroundColor: '#0f172a', titleColor: '#f1f5f9', bodyColor: '#e2e8f0', titleFont: { weight: 600 }, padding: 10, borderColor: '#334155', borderWidth: 1, cornerRadius: 8 },
         },
       }
     });
-  } catch (e) { /* 靜默 */ }
+  } catch (e) {
+    console.error('[battery] history error:', e);
+  }
 }
 
 function tick() { refreshLatest(); refreshHistory(); }
