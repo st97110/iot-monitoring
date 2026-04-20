@@ -62,8 +62,8 @@ function TrendPage() {
   const [compareDeviceIds, setCompareDeviceIds] = useState<string[]>(
     (searchParams.get('compare') || '').split(',').filter(Boolean),
   );
-  // 比較裝置的顏色
-  const COMPARE_COLORS = ['#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+  // 疊圖模式時的統一調色盤（主裝置用 [0]、比較用 [1..]，避免跟 type 色撞色）
+  const OVERLAY_PALETTE = ['#2563EB', '#DC2626', '#D97706', '#7C3AED', '#DB2777', '#0891B2'];
 
   const findCurrentDevice = useCallback((idToFind: string): Device | null => {
     if (!idToFind) return null;
@@ -574,7 +574,7 @@ function TrendPage() {
                 const cmp = findCurrentDevice(cid);
                 if (!cmp) return null;
                 return (
-                  <span key={cid} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white" style={{ backgroundColor: COMPARE_COLORS[i % COMPARE_COLORS.length] }}>
+                  <span key={cid} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white" style={{ backgroundColor: OVERLAY_PALETTE[(i + 1) % OVERLAY_PALETTE.length] }}>
                     {cmp.name}
                     <button onClick={() => removeCompareDevice(cid)} className="hover:bg-white/30 rounded-full w-4 h-4 flex items-center justify-center text-[10px]" title="移除">✕</button>
                   </span>
@@ -687,20 +687,30 @@ function TrendPage() {
                   </>
                 ) : (
                   <>
-                    {/* 主裝置的線 */}
-                    {currentDevice.sensors?.[sensorIndex]?.channels.map((ch: string, index: number) => (
-                      <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(chartSensorType, index > 0)} strokeWidth={2} dot={false} isAnimationActive={false}
-                        name={`${currentDevice.name} ${ch}`} connectNulls />
-                    ))}
-                    {/* 疊圖：其他比較裝置的線 */}
+                    {/* 主裝置的線（疊圖模式時用統一調色盤 [0]、加粗以強調；單裝置模式沿用 type 色） */}
+                    {currentDevice.sensors?.[sensorIndex]?.channels.map((ch: string, index: number) => {
+                      const primaryColor = compareDeviceIds.length > 0
+                        ? OVERLAY_PALETTE[0]
+                        : getChartLineColor(chartSensorType, index > 0);
+                      return (
+                        <Line yAxisId="left" key={ch} type="monotone" dataKey={ch}
+                          stroke={primaryColor}
+                          strokeWidth={compareDeviceIds.length > 0 ? 2.5 : 2}
+                          strokeDasharray={index > 0 ? '4 2' : '0'}
+                          dot={false} isAnimationActive={false}
+                          name={`${currentDevice.name} ${ch}`} connectNulls />
+                      );
+                    })}
+                    {/* 疊圖：其他比較裝置的線（用調色盤 [1..]） */}
                     {compareDeviceIds.map((cid, i) => {
                       const cmp = findCurrentDevice(cid);
                       if (!cmp) return null;
                       const cmpSensor = cmp.sensors?.[0];
-                      const color = COMPARE_COLORS[i % COMPARE_COLORS.length];
+                      const color = OVERLAY_PALETTE[(i + 1) % OVERLAY_PALETTE.length];
                       return (cmpSensor?.channels || []).map((ch: string, chIdx: number) => (
                         <Line yAxisId="left" key={`${cid}__${ch}`} type="monotone" dataKey={`${cid}__${ch}`}
-                          stroke={color} strokeWidth={1.5} strokeDasharray={chIdx === 0 ? '0' : '4 2'}
+                          stroke={color} strokeWidth={1.75}
+                          strokeDasharray={chIdx === 0 ? '0' : '4 2'}
                           dot={false} isAnimationActive={false} name={`${cmp.name} ${ch}`} connectNulls />
                       ));
                     })}
