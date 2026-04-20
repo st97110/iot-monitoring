@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { queryLatestDataFromInflux, queryHistoryDataFromInflux } from '../services/influxClientService';
+import { formatInTimeZone } from 'date-fns-tz';
+import { safeGetLatestData } from '../services/safeGetLatest';
+import { safeGetHistoryData } from '../services/safeGetHistory';
 import { getDeviceConfigById } from '../utils/helper';
 import { logger } from '../utils/logger';
 
 const BATTERY_DEVICE_ID = 'WISE-4010LAN_74FE48ADBD13';
+const TIMEZONE = 'Asia/Taipei';
 
-export async function getBatteryLatestJson(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getBatteryLatestJson(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const cfg = getDeviceConfigById(BATTERY_DEVICE_ID);
     if (!cfg) {
@@ -13,12 +16,15 @@ export async function getBatteryLatestJson(req: Request, res: Response, next: Ne
       return;
     }
 
-    const raw = await queryLatestDataFromInflux('wise', BATTERY_DEVICE_ID);
+    // 沿用 /api/latest 的路徑：safeGetLatestData -> getLatestDataFromDB -> queryLatestDataFromInflux
+    // 回傳格式為 { [deviceId]: { timestamp, raw, channels } }
+    const result = await safeGetLatestData('wise', BATTERY_DEVICE_ID);
+    const record = result?.[BATTERY_DEVICE_ID] ?? null;
 
     const sensors = (cfg.sensors ?? []).map(s => {
       const ch = s.channels[0];
-      const pegf = raw?.raw?.[`${ch} PEgF`];  // 換算後（例：V）
-      const egf  = raw?.raw?.[`${ch} EgF`];   // 原始訊號（4–20 mA）
+      const pegf = record?.raw?.[`${ch} PEgF`];  // 換算後（例：V）
+      const egf  = record?.raw?.[`${ch} EgF`];   // 原始訊號（4–20 mA）
       return {
         name: s.name,
         channel: ch,
@@ -32,7 +38,7 @@ export async function getBatteryLatestJson(req: Request, res: Response, next: Ne
     res.json({
       deviceId: BATTERY_DEVICE_ID,
       deviceName: cfg.name,
-      timestamp: raw?.timestamp ?? null,
+      timestamp: record?.timestamp ?? null,
       sensors,
     });
   } catch (err: any) {
@@ -50,11 +56,13 @@ export async function getBatteryHistoryJson(req: Request, res: Response, next: N
       return;
     }
 
+    // 沿用 /api/history 的 YYYY-MM-DD 本地日期字串格式（server TZ = Asia/Taipei）
+    // safeGetHistoryData 會把日期當本地時區的 00:00 / 23:59:59 來查
     const now = new Date();
-    const endDate = now.toISOString().slice(0, 10);
-    const startDate = new Date(now.getTime() - hours * 3600 * 1000).toISOString().slice(0, 10);
+    const endDate = formatInTimeZone(now, TIMEZONE, 'yyyy-MM-dd');
+    const startDate = formatInTimeZone(new Date(now.getTime() - hours * 3600 * 1000), TIMEZONE, 'yyyy-MM-dd');
 
-    const rows = await queryHistoryDataFromInflux('wise', BATTERY_DEVICE_ID, startDate, endDate);
+    const rows = await safeGetHistoryData('wise', BATTERY_DEVICE_ID, startDate, endDate, '10m');
     rows.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     const cutoffMs = Date.now() - hours * 3600 * 1000;
