@@ -1,10 +1,10 @@
 // TrendPage.tsx
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Brush } from 'recharts';
 import html2canvas from 'html2canvas';
 import { useSearchParams, useParams } from 'react-router-dom';
-import { API_BASE, deviceMapping, DEVICE_TYPES, DEVICE_TYPE_NAMES, Device } from '../config/config';
+import { API_BASE, deviceMapping, DEVICE_TYPES, DEVICE_TYPE_NAMES, Device, Sensor } from '../config/config';
 import { format } from 'date-fns';
 import { formatValue } from '../utils/sensor';
 import type { HistoryResponse, WiseLatestRecord } from '../types/api';
@@ -57,6 +57,13 @@ function TrendPage() {
   const [availableTimestamps, setAvailableTimestamps] = useState<string[]>([]);
   const [fullHistoryData, setFullHistoryData] = useState<HistoryResponse>([]);
   const [selectedRainInterval, setSelectedRainInterval] = useState<string>(searchParams.get('rainInterval') || '10m');
+
+  // 疊圖比較用的其他裝置（逗號分隔存在 URL）
+  const [compareDeviceIds, setCompareDeviceIds] = useState<string[]>(
+    (searchParams.get('compare') || '').split(',').filter(Boolean),
+  );
+  // 比較裝置的顏色
+  const COMPARE_COLORS = ['#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
 
   const findCurrentDevice = useCallback((idToFind: string): Device | null => {
     if (!idToFind) return null;
@@ -153,22 +160,22 @@ function TrendPage() {
           setData([]); setLoading(false); return;
         }
 
+        const toNumericValue = (dev: Device, s: Sensor, entry: WiseLatestRecord, ch: string): number | null => {
+          const chData = entry.channels?.[ch];
+          const displayValueString = formatValue(dev, s, chData, entry);
+          if (typeof displayValueString !== 'string' || displayValueString === '無資料' || displayValueString === 'N/A') return null;
+          const match = displayValueString.match(/^(-?\d+(\.\d+)?)/);
+          return match && match[1] ? parseFloat(match[1]) : null;
+        };
+
         const processed = historyRecords.map((entry: WiseLatestRecord) => {
           const row: ChartRow = { time: entry.timestamp };
           let hasValidChannelData = false;
 
           if (entry.channels || entry.raw) {
             for (const ch of sensor.channels) {
-              const chData = entry.channels?.[ch];
-              const displayValueString = formatValue(currentDevice, sensor, chData, entry);
-              let numericValue: number | null = null;
-
-              if (typeof displayValueString === 'string' && displayValueString !== '無資料' && displayValueString !== 'N/A') {
-                const match = displayValueString.match(/^(-?\d+(\.\d+)?)/);
-                if (match && match[1]) numericValue = parseFloat(match[1]);
-              }
-
-              if (numericValue !== null && !isNaN(numericValue)) {
+              const numericValue = toNumericValue(currentDevice, sensor, entry, ch);
+              if (numericValue !== null) {
                 row[ch] = numericValue;
                 hasValidChannelData = true;
               } else {
@@ -179,6 +186,35 @@ function TrendPage() {
           return hasValidChannelData ? row : null;
         }).filter((row): row is ChartRow => row !== null && !!row.time);
 
+        // ============ 疊圖：同步抓其他比較裝置的歷史資料並合進 row ============
+        if (compareDeviceIds.length > 0) {
+          const byTime: Record<string, ChartRow> = {};
+          for (const row of processed) byTime[row.time] = row;
+
+          await Promise.all(compareDeviceIds.map(async (cmpId) => {
+            const cmpDevice = findCurrentDevice(cmpId);
+            if (!cmpDevice) return;
+            const cmpSensor = cmpDevice.sensors?.[0];
+            if (!cmpSensor) return;
+            try {
+              const cmpRes = await axios.get<HistoryResponse>(`${API_BASE}/api/history`, {
+                params: { deviceId: cmpDevice.originalDeviceId || cmpDevice.id, startDate, endDate },
+              });
+              (cmpRes.data || []).forEach((entry: WiseLatestRecord) => {
+                if (!entry.timestamp) return;
+                const row = byTime[entry.timestamp];
+                if (!row) return;  // 時間點對不上就略過（不新增時間軸，避免圖表被拉長）
+                for (const ch of cmpSensor.channels) {
+                  const v = toNumericValue(cmpDevice, cmpSensor, entry, ch);
+                  row[`${cmpId}__${ch}`] = v;
+                }
+              });
+            } catch (e) {
+              console.warn(`比較裝置 ${cmpId} 抓取失敗`, e);
+            }
+          }));
+        }
+
         setData(processed);
       }
     } catch (err) {
@@ -187,7 +223,7 @@ function TrendPage() {
     } finally {
       setLoading(false);
     }
-  }, [deviceId, currentDevice, startDate, endDate, sensorIndex, selectedRainInterval, searchParams]);
+  }, [deviceId, currentDevice, startDate, endDate, sensorIndex, selectedRainInterval, searchParams, compareDeviceIds, findCurrentDevice]);
 
   useEffect(() => { handleSearch(); }, [handleSearch]);
 
@@ -247,16 +283,21 @@ function TrendPage() {
     updateUrlParams({ startDate: newStart, endDate: newEnd });
   };
 
+  const [deviceSearchTerm, setDeviceSearchTerm] = useState<string>('');
+
   const filterDeviceOptions = useMemo(() => {
     if (!routeGroup) return [];
+    const kw = deviceSearchTerm.trim().toLowerCase();
     const options: { areaKey: string; areaName: string; devices: Device[] }[] = [];
     Object.entries(deviceMapping).forEach(([areaKey, areaConfig]) => {
-      if (areaConfig.routeGroup === routeGroup) {
-        options.push({ areaKey, areaName: areaConfig.name, devices: areaConfig.devices });
-      }
+      if (areaConfig.routeGroup !== routeGroup) return;
+      const filtered = kw
+        ? areaConfig.devices.filter(d => d.name.toLowerCase().includes(kw) || d.id.toLowerCase().includes(kw))
+        : areaConfig.devices;
+      if (filtered.length > 0) options.push({ areaKey, areaName: areaConfig.name, devices: filtered });
     });
     return options;
-  }, [routeGroup]);
+  }, [routeGroup, deviceSearchTerm]);
 
   const yAxisDomain = useMemo<[number, number] | undefined>(() => {
     if (data.length === 0 || !currentDevice) return undefined;
@@ -284,6 +325,30 @@ function TrendPage() {
   };
 
   const chartSensorType = currentDevice?.sensors?.[sensorIndex]?.type || currentDevice?.type;
+
+  // ============ 疊圖：可比較的裝置清單（相同 sensor.type，且不含自己或已選過的） ============
+  const availableCompareDevices = useMemo<Device[]>(() => {
+    if (!currentDevice || !routeGroup) return [];
+    const primaryType = currentDevice.sensors?.[sensorIndex]?.type || currentDevice.type;
+    if (!primaryType || primaryType === DEVICE_TYPES.TDR || primaryType === DEVICE_TYPES.RAIN) return [];
+    const excluded = new Set([deviceId, ...compareDeviceIds]);
+    return Object.values(deviceMapping)
+      .filter(area => area.routeGroup === routeGroup)
+      .flatMap(area => area.devices)
+      .filter(d => !excluded.has(d.id) && (d.sensors?.[0]?.type === primaryType || d.type === primaryType));
+  }, [currentDevice, sensorIndex, routeGroup, deviceId, compareDeviceIds]);
+
+  const addCompareDevice = (id: string) => {
+    if (!id || compareDeviceIds.includes(id)) return;
+    const next = [...compareDeviceIds, id];
+    setCompareDeviceIds(next);
+    updateUrlParams({ compare: next.join(',') });
+  };
+  const removeCompareDevice = (id: string) => {
+    const next = compareDeviceIds.filter(x => x !== id);
+    setCompareDeviceIds(next);
+    updateUrlParams({ compare: next.length ? next.join(',') : null });
+  };
 
   const exportToCSV = () => {
     if (data.length === 0 || !currentDevice) return;
@@ -490,6 +555,40 @@ function TrendPage() {
               value={endDate} onChange={e => handleEndDateChange(e.target.value)} />
           </div>
         </div>
+
+        {/* 疊圖：只對非 TDR / 非 RAIN 的裝置開放 */}
+        {deviceId && currentDevice && chartSensorType !== DEVICE_TYPES.TDR && chartSensorType !== DEVICE_TYPES.RAIN && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">疊圖比較（相同類型的其他站點）</label>
+            <div className="flex flex-wrap items-center gap-2">
+              {compareDeviceIds.map((cid, i) => {
+                const cmp = findCurrentDevice(cid);
+                if (!cmp) return null;
+                return (
+                  <span key={cid} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white" style={{ backgroundColor: COMPARE_COLORS[i % COMPARE_COLORS.length] }}>
+                    {cmp.name}
+                    <button onClick={() => removeCompareDevice(cid)} className="hover:bg-white/30 rounded-full w-4 h-4 flex items-center justify-center text-[10px]" title="移除">✕</button>
+                  </span>
+                );
+              })}
+              {availableCompareDevices.length > 0 && (
+                <select
+                  value=""
+                  onChange={e => { if (e.target.value) addCompareDevice(e.target.value); }}
+                  className="border border-gray-300 px-2 py-1 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300"
+                >
+                  <option value="">＋ 加入比較裝置</option>
+                  {availableCompareDevices.map(d => (
+                    <option key={d.id} value={d.id}>{d.name} ({d.id})</option>
+                  ))}
+                </select>
+              )}
+              {availableCompareDevices.length === 0 && compareDeviceIds.length === 0 && (
+                <span className="text-xs text-gray-400">同區域無其他相同類型的裝置可比較</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -578,12 +677,30 @@ function TrendPage() {
                     )}
                   </>
                 ) : (
-                  currentDevice.sensors?.[sensorIndex]?.channels.map((ch: string, index: number) => (
-                    <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(chartSensorType, index > 0)} strokeWidth={1} dot={false} isAnimationActive={false}
-                      name={(chartSensorType === DEVICE_TYPES.WATER) ? '地下水位' :
-                        (chartSensorType === DEVICE_TYPES.TI) ? '傾斜量' :
-                          (chartSensorType === DEVICE_TYPES.GE) ? '伸縮量' : ch} />
-                  ))
+                  <>
+                    {/* 主裝置的線 */}
+                    {currentDevice.sensors?.[sensorIndex]?.channels.map((ch: string, index: number) => (
+                      <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(chartSensorType, index > 0)} strokeWidth={2} dot={false} isAnimationActive={false}
+                        name={`${currentDevice.name} ${ch}`} />
+                    ))}
+                    {/* 疊圖：其他比較裝置的線 */}
+                    {compareDeviceIds.map((cid, i) => {
+                      const cmp = findCurrentDevice(cid);
+                      if (!cmp) return null;
+                      const cmpSensor = cmp.sensors?.[0];
+                      const color = COMPARE_COLORS[i % COMPARE_COLORS.length];
+                      return (cmpSensor?.channels || []).map((ch: string, chIdx: number) => (
+                        <Line yAxisId="left" key={`${cid}__${ch}`} type="monotone" dataKey={`${cid}__${ch}`}
+                          stroke={color} strokeWidth={1.5} strokeDasharray={chIdx === 0 ? '0' : '4 2'}
+                          dot={false} isAnimationActive={false} name={`${cmp.name} ${ch}`} connectNulls />
+                      ));
+                    })}
+                  </>
+                )}
+                {/* 時間軸縮放（非 TDR 適用） */}
+                {chartSensorType !== DEVICE_TYPES.TDR && data.length > 5 && (
+                  <Brush dataKey="time" height={28} stroke="#6366F1" travellerWidth={10}
+                    tickFormatter={(tick: any) => { try { return format(new Date(tick), 'MM/dd HH:mm'); } catch { return ''; } }} />
                 )}
               </ComposedChart>
             </ResponsiveContainer>
