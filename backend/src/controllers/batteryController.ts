@@ -128,8 +128,10 @@ const PAGE_HTML = `<!DOCTYPE html>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-const API_LATEST = './latest';
-const API_HISTORY = './history';
+// 從當前路徑推出 API 位置（避免網址少結尾 / 導致 ./latest 解析到上層）
+const BASE = location.pathname.replace(/\\/+$/, '');
+const API_LATEST = BASE + '/latest';
+const API_HISTORY = BASE + '/history';
 
 function pad(n) { return String(n).padStart(2, '0'); }
 function fmtTime(iso) {
