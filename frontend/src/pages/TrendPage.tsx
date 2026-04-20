@@ -186,7 +186,7 @@ function TrendPage() {
           return hasValidChannelData ? row : null;
         }).filter((row): row is ChartRow => row !== null && !!row.time);
 
-        // ============ 疊圖：同步抓其他比較裝置的歷史資料並合進 row ============
+        // ============ 疊圖：抓其他比較裝置的歷史，合併所有時間戳到同一條 x 軸 ============
         if (compareDeviceIds.length > 0) {
           const byTime: Record<string, ChartRow> = {};
           for (const row of processed) byTime[row.time] = row;
@@ -202,8 +202,11 @@ function TrendPage() {
               });
               (cmpRes.data || []).forEach((entry: WiseLatestRecord) => {
                 if (!entry.timestamp) return;
+                // 時間戳不存在就新增一列（可能該比較裝置上傳時間與主裝置不同步）
+                if (!byTime[entry.timestamp]) {
+                  byTime[entry.timestamp] = { time: entry.timestamp };
+                }
                 const row = byTime[entry.timestamp];
-                if (!row) return;  // 時間點對不上就略過（不新增時間軸，避免圖表被拉長）
                 for (const ch of cmpSensor.channels) {
                   const v = toNumericValue(cmpDevice, cmpSensor, entry, ch);
                   row[`${cmpId}__${ch}`] = v;
@@ -213,9 +216,15 @@ function TrendPage() {
               console.warn(`比較裝置 ${cmpId} 抓取失敗`, e);
             }
           }));
-        }
 
-        setData(processed);
+          // 按時間排序
+          const merged = Object.values(byTime).sort(
+            (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+          );
+          setData(merged);
+        } else {
+          setData(processed);
+        }
       }
     } catch (err) {
       console.error('取得趨勢資料錯誤:', err);
@@ -681,7 +690,7 @@ function TrendPage() {
                     {/* 主裝置的線 */}
                     {currentDevice.sensors?.[sensorIndex]?.channels.map((ch: string, index: number) => (
                       <Line yAxisId="left" key={ch} type="monotone" dataKey={ch} stroke={getChartLineColor(chartSensorType, index > 0)} strokeWidth={2} dot={false} isAnimationActive={false}
-                        name={`${currentDevice.name} ${ch}`} />
+                        name={`${currentDevice.name} ${ch}`} connectNulls />
                     ))}
                     {/* 疊圖：其他比較裝置的線 */}
                     {compareDeviceIds.map((cid, i) => {
