@@ -1,7 +1,7 @@
 // services/dataToInfluxService.ts
 import { Point, writePoints } from './influxClientService';
-import { DEVICE_TYPES, deviceMapping } from '../config/config';
-import { toPEgF, getSensorsByDeviceId } from '../utils/helper';
+import { DEVICE_TYPES } from '../config/config';
+import { toPEgF, getSensorsByDeviceId, getDeviceConfigById } from '../utils/helper';
 import { logger } from '../utils/logger';
 
 /**
@@ -30,15 +30,8 @@ export interface TdrPayload {
 export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Point[] {
   const points: Point[] = [];
 
-  // 首先，獲取當前設備的類型
-  let currentDeviceType: DEVICE_TYPES | undefined;
-  for (const area of Object.values(deviceMapping)) {
-    const devCfg = area.devices.find(d => d.id === deviceId);
-    if (devCfg) {
-      currentDeviceType = devCfg.type;
-      break;
-    }
-  }
+  // 取得設備類型（支援實體 / 虛擬 ID）
+  const currentDeviceType: DEVICE_TYPES | undefined = getDeviceConfigById(deviceId)?.type;
 
   for (const record of records) {
       if (!record.timestamp || !record.raw) continue;

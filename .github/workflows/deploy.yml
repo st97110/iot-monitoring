@@ -13,11 +13,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. 切到 backend 資料夾，build image
+      # 2. 用 repo 根目錄當 build context，才能把 shared/ 也包進 image
       - name: Build Docker image
-        working-directory: ./backend
         run: |
-          docker build -t backend:latest .
+          docker build -f backend/Dockerfile -t backend:latest .
 
       # 3. 把 image 存成 tar
       - name: Save image to TAR

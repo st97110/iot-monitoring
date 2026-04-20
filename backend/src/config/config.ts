@@ -1,7 +1,18 @@
 // backend/config/config.ts
+// 環境變數 / 伺服器設定在這裡；設備型別與 deviceMapping 已抽到 shared/，由此處 re-export
 import path from 'path';
-import { logger } from '../utils/logger'; // ⚡️記得要有 logger
+import { logger } from '../utils/logger';
 import 'dotenv/config';
+
+// Re-export 共用型別與 mapping，讓既有 import 路徑 (../config/config) 不用改
+export {
+  DEVICE_TYPES,
+  getPhysicalId,
+  type Sensor,
+  type Device,
+  type AreaConfig,
+} from '../../../shared/deviceTypes';
+export { deviceMapping } from '../../../shared/deviceMapping';
 
 export interface InfluxTokens {
   tdr: string;
@@ -21,10 +32,10 @@ export interface InfluxConfig {
 }
 
 export interface FolderPaths {
-  wiseDataDir: string;      // WISE原始資料夾
-  tdrDataDir: string;       // TDR原始資料夾
-  wiseBackupDir: string;    // WISE已寫入DB的備份資料夾
-  tdrBackupDir: string;     // TDR已寫入DB的備份資料夾
+  wiseDataDir: string;
+  tdrDataDir: string;
+  wiseBackupDir: string;
+  tdrBackupDir: string;
 }
 
 export interface Config {
@@ -35,54 +46,39 @@ export interface Config {
   influx: InfluxConfig;
 }
 
-
-/**
- * 取環境變數，若不存在且沒有預設值，就直接 throw
- */
+/** 取環境變數，若不存在且沒有預設值就 throw */
 function getEnv(name: string, fallback?: string): string {
   const value = process.env[name];
-
-  if (value !== undefined && value !== '') {
-    return value;
-  }
-
+  if (value !== undefined && value !== '') return value;
   if (fallback !== undefined) {
     logger.warn(`[Config] 環境變數 ${name} 未設定，使用預設值: ${fallback}`);
     return fallback;
   }
-
   throw new Error(`[Config] 缺少必要的環境變數：${name}`);
 }
 
-/**
- * 取環境變數並轉成數字
- */
+/** 取環境變數並轉成數字 */
 function getEnvInt(name: string, fallback?: number): number {
   const value = process.env[name];
-
   if (value !== undefined && value !== '') {
     const parsed = parseInt(value, 10);
-    if (isNaN(parsed)) {
-      throw new Error(`[Config] 環境變數 ${name} 必須是數字，但得到: ${value}`);
-    }
+    if (isNaN(parsed)) throw new Error(`[Config] 環境變數 ${name} 必須是數字，但得到: ${value}`);
     return parsed;
   }
-
   if (fallback !== undefined) {
     logger.warn(`[Config] 環境變數 ${name} 未設定，使用預設值: ${fallback}`);
     return fallback;
   }
-
   throw new Error(`[Config] 缺少必要的環境變數：${name}`);
 }
 
 export const config: Config = {
   port: getEnvInt('PORT', 3000),
   folder: {
-    wiseDataDir: getEnv('WISE_DATA_DIR', path.resolve(__dirname, '../wise_data')),         // 例如：原始 wise_data/
-    tdrDataDir: getEnv('TDR_DATA_DIR', path.resolve(__dirname, '../tdr_data')),             // 例如：原始 tdr_data/
-    wiseBackupDir: getEnv('WISE_BACKUP_DIR', path.resolve(__dirname, '../backup/wise_backup')),    // DB寫入後的 wise備份
-    tdrBackupDir: getEnv('TDR_BACKUP_DIR', path.resolve(__dirname, '../backup/tdr_backup')),        // DB寫入後的 tdr備份
+    wiseDataDir: getEnv('WISE_DATA_DIR', path.resolve(__dirname, '../wise_data')),
+    tdrDataDir: getEnv('TDR_DATA_DIR', path.resolve(__dirname, '../tdr_data')),
+    wiseBackupDir: getEnv('WISE_BACKUP_DIR', path.resolve(__dirname, '../backup/wise_backup')),
+    tdrBackupDir: getEnv('TDR_BACKUP_DIR', path.resolve(__dirname, '../backup/tdr_backup')),
   },
   scanInterval: getEnvInt('SCAN_INTERVAL', 600),
   nodeEnv: getEnv('NODE_ENV', 'development'),
@@ -96,11 +92,10 @@ export const config: Config = {
     buckets: {
       tdr: getEnv('INFLUX_BUCKET_TDR'),
       wise: getEnv('INFLUX_BUCKET_WISE'),
-    }
-  }
+    },
+  },
 };
 
-// 啟動時 Log 設定資訊（只在非 production 顯示）
 if (config.nodeEnv !== 'production') {
   logger.info(`[Config] 使用環境: ${config.nodeEnv}`);
   logger.info(`[Config] 伺服器 Port: ${config.port}`);
@@ -111,354 +106,3 @@ if (config.nodeEnv !== 'production') {
   logger.info(`[Config] Influx URL: ${config.influx.url}`);
   logger.info(`[Config] Influx Org: ${config.influx.org}`);
 }
-
-export interface Sensor {
-  name          : string;
-  channels      : string[];
-  type          : DEVICE_TYPES;
-  sourceChannelMapping?: Record<string, string>;
-  initialValues?: Record<string, number>;
-  wellDepth?    : number; // For WATER
-  fsDeg?        : number; // For TI
-  geRange?      : number; // For GE
-  flowRateFactor?: number; // For FLOW
-  scaleMin?     : number; // For BATTERY：4mA 對應的工程值（例：電壓 0V、電流 -50A）
-  scaleMax?     : number; // For BATTERY：20mA 對應的工程值（例：電壓 30V、電流 +50A）
-  unit?         : string; // For BATTERY 顯示用（'V', 'A', '%' …）
-}
-
-export interface Device {
-  id     : string;
-  name   : string;
-  area?  : string;
-  type?  : DEVICE_TYPES;
-  sensors?: Sensor[];
-}
-
-
-// 裝置類型代碼（type）
-export enum DEVICE_TYPES {
-  ALL = '',
-  TI = 'TI',         // 傾斜儀（TIltmeter）
-  WATER = 'WATER',   // 水位計
-  RAIN = 'RAIN',     // 雨量筒
-  GE = 'GE',         // 伸縮計
-  TDR = 'TDR',       // TDR
-  FLOW = 'FLOW',     // FLOW
-  BATTERY = 'BATTERY', // 太陽能+電池站點（電壓/電流/SOC）
-}
-
-export interface AreaConfig { // 可以為 Area 創建一個 interface
-  name: string;
-  routeGroup: 't14' | 't8'; // ✨ 新增：標識區域屬於哪個路線群組
-  devices: Device[];
-}
-
-export const deviceMapping: Record<
-  string,
-  AreaConfig
-> = {
-  '80K區': {
-    name: '80K區',
-    routeGroup: 't14',
-    devices: [
-      { id: 'TDR_T14_T1', name: 'T1 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
-      {
-        id: 'WISE-4010LAN_74FE48ADBD13',
-        name: 'T2 電池電壓',
-        area: '80K區',
-        type: DEVICE_TYPES.BATTERY,
-        sensors: [
-          // 只有 AI_0 一路，常見 12V/24V 系統預設 0–30V，實機若不同請改 scaleMax
-          { name: '電池電壓', channels: ['AI_0'], type: DEVICE_TYPES.BATTERY, scaleMin: 0, scaleMax: 30, unit: 'V' },
-        ]
-      }
-    ],
-  },
-  '春陽區': {
-    name: '春陽區',
-    routeGroup: 't14',
-    devices: [
-      {
-        id: 'WISE-4010LAN_74FE48941ABE',
-        name: '84.6K',
-        area: '春陽區',
-        type: DEVICE_TYPES.TI,
-        sensors: [
-          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.259 } },
-          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.865 } },
-        ]
-      },
-      {
-        id: 'SN_6963', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: '84.65K', // 準星ly-tiltmeter & sn=6963
-        type: DEVICE_TYPES.TI, // 設備類型
-        sensors: [
-          { 
-            name: 'A軸角度', // 感測器 A 軸
-            channels: ['TI-13A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_0': 'TI-13A軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_0': 0 },
-          },
-          { 
-            name: 'B軸角度', // 感測器 B 軸
-            channels: ['TI-13B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_1': 'TI-13B軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_1': 0 },
-          }
-        ]
-      },
-      {
-        id: 'SN_3788', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: '84.7K', // 準星ly-friend & sn=3788
-        type: DEVICE_TYPES.TI, // 設備類型
-        sensors: [
-          { 
-            name: 'A軸角度', // 感測器 A 軸
-            channels: ['ETI-3A軸角度(Y)'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_0': 'ETI-3A軸角度(Y)' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_0': 0 },
-          },
-          { 
-            name: 'B軸角度', // 感測器 B 軸
-            channels: ['ETI-3B軸角度(X)'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_1': 'ETI-3B軸角度(X)' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_1': 0 },
-          }
-        ]
-      },
-      { id: 'TDR_T14_AH3', name: 'AH3 TDR', type: DEVICE_TYPES.TDR }
-    ]
-  },
-  '90K區': {
-    name: '90K區',
-    routeGroup: 't14',
-    devices: [
-      {
-        id: 'WISE-4010LAN_74FE489299CB',
-        name: '90K 地下水位計W2',
-        area: '90K區',
-        type: DEVICE_TYPES.WATER,
-        sensors: [
-          { name: '地下水位計W2', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -35 },  // 公式寫在前端(I0-4)*2.5-33.45 m
-        ]
-      },
-      {
-        id: 'WISE-4060LAN_00D0C9FD4D44',
-        name: '91.5K雨量筒',
-        area: '90K區',
-        type: DEVICE_TYPES.RAIN,
-        sensors: [
-          { name: '91.5K雨量筒', channels: ['DI_0'], type: DEVICE_TYPES.RAIN,  },
-        ]
-      },
-      { id: 'TDR_T14_T3', name: 'T3 TDR', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14_T4', name: 'T4 TDR', type: DEVICE_TYPES.TDR }
-    ]
-  },    
-  '梅峰區': {
-    name: '梅峰區',
-    routeGroup: 't14',
-    devices: [
-      {
-        id: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.25K',
-        area: '梅峰區',
-        type: DEVICE_TYPES.TI,
-        sensors: [
-          { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 12.052 } },
-          { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 11.798 } },
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, initialValues: { AI_2: 12.294 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, initialValues: { AI_3: 12.463 } },
-        ]
-      },
-      // {
-      //   id: 'WISE-4010LAN_00D0C9FAC4F8',
-      //   name: '14甲CH1傾斜儀',
-      //   area: '梅峰區',
-      //   type: DEVICE_TYPES.TI,
-      //   sensors: [
-      //     { name: 'A軸', channels: ['AI_0'], type: DEVICE_TYPES.TI, initialValues: { AI_0: 5.684 } },
-      //     { name: 'B軸', channels: ['AI_1'], type: DEVICE_TYPES.TI, initialValues: { AI_1: 12.974 } },
-      //   ]
-      // },
-      {
-        id: 'SN_6721', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: '14甲CH1傾斜儀', // 隼星ly-mayhill & sn=6721
-        area: '梅峰區',
-        type: DEVICE_TYPES.TI, // 設備類型
-        sensors: [
-          { 
-            name: 'A軸角度', // 感測器 A 軸
-            channels: ['TI-1A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_0': 'TI-1A軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_0': 0 },
-          },
-          { 
-            name: 'B軸角度', // 感測器 B 軸
-            channels: ['TI-1B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_1': 'TI-1B軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_1': 0 },
-          }
-        ]
-      },
-      {
-        id: 'SN_24782', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: '14甲CH3傾斜儀', // 隼星ly-road & sn=24782
-        area: '梅峰區',
-        type: DEVICE_TYPES.TI, // 設備類型
-        sensors: [
-          { 
-            name: 'A軸角度', // 感測器 A 軸
-            channels: ['TI-2A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_0': 'ETI-2A軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_0': 0 },
-          },
-          { 
-            name: 'B軸角度', // 感測器 B 軸
-            channels: ['TI-2B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_1': 'ETI-2B軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_1': 0 },
-          }
-        ]
-      },
-      { id: 'WISE-4010LAN_74FE489299F4', name: 'GE1', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_1'], type: DEVICE_TYPES.GE, initialValues: { AI_1: 9.97 }, geRange: 500 }] },
-      { id: 'WISE-4010LAN_74FE4890BAFC', name: 'GE2', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 }] },
-      { id: 'WISE-4010LAN_74FE48941AD9', name: 'GE3', area: '梅峰區', type: DEVICE_TYPES.GE, sensors: [{ name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 4.82 }, geRange: 500 }] },
-      { id: 'TDR_T14A_CH1', name: 'CH1 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH2', name: 'CH2 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T14A_CH4', name: 'CH4 TDR', area: '梅峰區', type: DEVICE_TYPES.TDR }
-    ]
-  },
-  '台8線107K區': {
-    name: '台8線107K區',
-    routeGroup: 't8',
-    devices: [
-      { id: 'TDR_T8_T1', name: 'TDR T1 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T2', name: 'TDR T2 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T4', name: 'TDR T4 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T7', name: 'TDR T7 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T8', name: 'TDR T8 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      { id: 'TDR_T8_T9', name: 'TDR T9 (台8)', area: '台8線107K區', type: DEVICE_TYPES.TDR },
-      {
-        id: 'WISE-4010LAN_74FE4860F492',
-        name: 'OW10 水位計',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.WATER,
-        sensors: [
-          { name: 'OW10 (AI3)', channels: ['AI_3'], type: DEVICE_TYPES.WATER, wellDepth: -40 }
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_00D0C9FAD2C2',
-        name: 'GE3 (20m, 80m) 伸縮計',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.GE,
-        sensors: [
-          { name: 'GE3 20m (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_0: 4.984 } },
-          { name: 'GE3 80m (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_1: 5.457 } }
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_74FE48595E19',
-        name: 'BT1 傾斜儀',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.TI,
-        sensors: [
-          { name: 'BT1 A軸 (AI0)', channels: ['AI_0'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_0: 12.073 } },
-          { name: 'BT1 B軸 (AI1)', channels: ['AI_1'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_1: 12.063 } }
-        ]
-      },
-      {
-        id: 'SN_6955', // 前端使用的唯一邏輯 ID (基於序列號)
-        name: 'BT3 傾斜儀', // 準星ly-tiltmeter & sn=6955
-        area: '台8線107K區',
-        type: DEVICE_TYPES.TI,
-        sensors: [
-          {
-            name: 'BT3 A軸角度',
-            channels: ['TI-5A軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_0': 'TI-5A軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_0': 0 }
-          },
-          {
-            name: 'BT3 B軸角度',
-            channels: ['TI-5B軸角度'], // 使用 InfluxDB 中的 `channel` tag 值
-            sourceChannelMapping: { 'AI_1': 'TI-5B軸角度' },
-            type: DEVICE_TYPES.TI,
-            initialValues: { 'AI_1': 0 }
-          }
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_74FE486CEDFB',
-        name: 'OW6 水位計',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.WATER,
-        sensors: [
-          { name: 'OW6', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -40 }
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_74FE486B76BB',
-        name: 'BT2 傾斜儀',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.TI,
-        sensors: [
-          { name: 'BT2 A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 11.189 } },
-          { name: 'BT2 B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 11.896 } }
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_74FE488F3BA0',
-        name: 'OW5 水位計',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.WATER,
-        sensors: [
-          { name: 'OW5', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -40 }
-        ]
-      },
-      {
-        id: 'WISE-4060LAN_00D0C9E332E8',
-        name: '107K+600 雨量筒',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.RAIN,
-        sensors: [
-          { name: '10分鐘雨量', channels: ['DI_0'], type: DEVICE_TYPES.RAIN } // 雨量筒通常用 DI_0 Cnt
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_74FE486B76AA',
-        name: 'OW1 水位計 & GE1 伸縮計',
-        area: '台8線107K區',
-        sensors: [
-          { name: 'OW1', channels: ['AI_1'], type: DEVICE_TYPES.WATER, wellDepth: -80 },
-          { name: 'GE1 (20m)', channels: ['AI_2'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_2: 4.554 } },
-          { name: 'GE1 (80m)', channels: ['AI_3'], type: DEVICE_TYPES.GE, geRange: 500, initialValues: { AI_3: 5.246 } }
-        ]
-      },
-      {
-        id: 'WISE-4010LAN_74FE487F4FE3',
-        name: 'FL1~4 流量計',
-        area: '台8線107K區',
-        type: DEVICE_TYPES.FLOW, // ✨ 使用新的 FLOW 類型
-        sensors: [
-          { name: 'FL1', channels: ['AI_0'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL2', channels: ['AI_1'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL3', channels: ['AI_2'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ },
-          { name: 'FL4', channels: ['AI_3'], type: DEVICE_TYPES.FLOW /* flowRateFactor: X (請補充) */ }
-        ]
-      }
-    ]
-  },
-};

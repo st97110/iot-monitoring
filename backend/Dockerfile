@@ -1,34 +1,36 @@
+# Docker build context 必須是 repo 根目錄（不是 backend/），
+# 才能同時 COPY backend/ 與 shared/。
+# GitHub Actions 也要改成 `docker build -f backend/Dockerfile .`
+
 # --- build stage ---
 FROM node:20-bookworm AS build
-WORKDIR /app
+WORKDIR /build
 
-# 安裝依賴
-COPY package.json tsconfig.json ./
+# 維持 repo 的目錄結構：/build/{backend, shared}，tsconfig.json 的 rootDir=".." 才能正確定位
+COPY backend/package.json backend/package-lock.json backend/tsconfig.json ./backend/
+COPY backend/src ./backend/src
+COPY shared ./shared
+
+WORKDIR /build/backend
 RUN npm install
 
-# 複製原始碼（現在都集中在 src/）
-COPY src ./src
-
-# 編譯 TypeScript -> JavaScript
 RUN npm run build
+# 產出位置：/build/backend/dist/{backend/src, shared}
 
 # --- production stage ---
 FROM node:20-bookworm
 WORKDIR /app
 
-# 建立 app 使用者
 RUN useradd -m app
 
-# --- 複製檔案還是用 root ---
-COPY --from=build /app/package*.json ./
+COPY --from=build /build/backend/package*.json ./
 RUN npm ci --omit=dev
-COPY --from=build /app/dist ./dist
+COPY --from=build /build/backend/dist ./dist
 
-# <== 在這裡補 logs 目錄並調權限
-RUN mkdir -p /app/dist/logs && chown -R app:app /app
+RUN mkdir -p /app/dist/backend/src/logs && chown -R app:app /app
 
-# 之後才切身分
 USER app
 EXPOSE 3000
 HEALTHCHECK CMD curl -f http://localhost:3000/ || exit 1
-CMD ["node", "dist/server.js"]
+# 因為 rootDir=".." 讓 dist 裡多了一層 backend/src，要用完整路徑啟動
+CMD ["node", "dist/backend/src/server.js"]

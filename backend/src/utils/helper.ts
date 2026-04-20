@@ -1,33 +1,48 @@
 // backend/utils/areaHelper.ts
-import { DEVICE_TYPES, deviceMapping, Device, Sensor, AreaConfig } from '../config/config';
+import { DEVICE_TYPES, deviceMapping, Device, Sensor, AreaConfig, getPhysicalId } from '../config/config';
 
-// ✨ 緩存 deviceId -> deviceConfig 的查找結果，避免重複遍歷
-const deviceConfigCache: Map<string, Device | undefined> = new Map();
+/**
+ * 統一查找邏輯：支援「實體 ID」與「虛擬 ID」雙向。
+ *
+ * - 前端會用虛擬 ID（例：`WISE-4010LAN_74FE486B76AA_OW1`），帶 originalDeviceId 指回實體
+ * - 後端掃描 wise_data/ 時拿到的是實體 ID（資料夾名）
+ *
+ * 查詢時：先試 exact match（虛擬 ID），若無命中就用實體 ID 撈所有指回它的虛擬裝置。
+ */
+
+// 一個實體 ID 可能對應 1 到 N 個虛擬裝置
+const byExactId: Map<string, Device> = new Map();
+const byPhysicalId: Map<string, Device[]> = new Map();
 let isCacheBuilt = false;
 
-// 輔助函數：建立緩存
 function buildDeviceConfigCache(): void {
     if (isCacheBuilt) return;
     for (const area of Object.values(deviceMapping as Record<string, AreaConfig>)) {
-        if (area && Array.isArray(area.devices)) {
-            for (const device of area.devices) {
-                if (device && device.id) {
-                    deviceConfigCache.set(device.id, device);
-                }
-            }
+        for (const device of area.devices ?? []) {
+            if (!device?.id) continue;
+            byExactId.set(device.id, device);
+            const phys = getPhysicalId(device);
+            const list = byPhysicalId.get(phys) ?? [];
+            list.push(device);
+            byPhysicalId.set(phys, list);
         }
     }
     isCacheBuilt = true;
 }
 
+/** 找出對應此 ID 的所有 Device（實體 ID 可能對應多個虛擬裝置；虛擬 ID 就是自己一個） */
+function findDevices(id: string): Device[] {
+    if (!isCacheBuilt) buildDeviceConfigCache();
+    const exact = byExactId.get(id);
+    if (exact) return [exact];
+    return byPhysicalId.get(id) ?? [];
+}
+
 /** 由 deviceId 反查區域名稱（找不到回傳 undefined） */
 export function getAreaByDeviceId(deviceId: string): string | undefined {
-  for (const area of Object.values(deviceMapping)) {
-    if (area.devices.some(d =>
-      (d.id  && deviceId === d.id)
-    )) return area.name;
-  }
-  return undefined;
+  const devs = findDevices(deviceId);
+  if (devs.length === 0) return undefined;
+  return devs[0].area;
 }
 
 /**
@@ -37,18 +52,13 @@ export function getAreaByDeviceId(deviceId: string): string | undefined {
  * @returns 找到的設備配置對象 (Device) 或 undefined
  */
 export function getDeviceConfigById(logicalId: string): Device | undefined {
-    // 確保緩存已建立
-    if (!isCacheBuilt) {
-        buildDeviceConfigCache();
-    }
-    
-    // 從緩存中查找
-    if (deviceConfigCache.has(logicalId)) {
-        return deviceConfigCache.get(logicalId);
-    }
-    
-    // 如果緩存中沒有（理論上不應該，除非動態修改配置），可以選擇重新掃描一次或直接返回 undefined
-    return undefined;
+    if (!isCacheBuilt) buildDeviceConfigCache();
+    // 先找虛擬 ID 直接命中
+    const exact = byExactId.get(logicalId);
+    if (exact) return exact;
+    // 若傳入實體 ID，回第一個指回它的虛擬裝置（多個時任選一個，多半是 type 相同）
+    const phys = byPhysicalId.get(logicalId);
+    return phys?.[0];
 }
 
 export type SourceKey = 'wise' | 'tdr' | 'geostar' | 'unknown';
@@ -70,31 +80,20 @@ export function getSourceByDeviceId(id: string): SourceKey {
   throw new Error(`[getSourceByDeviceId] 無法判斷 deviceId=${id} 來源（請補規則）`);
 }
 
-/*
- * Helper：由 deviceId 判斷是否為雨量筒
- */
+/** Helper：由 deviceId 判斷是否為雨量筒（支援實體 / 虛擬 ID） */
 export function isDeviceRainGauge(deviceId: string): boolean {
-  let isCurrentDeviceRainGauge = false;
-  for (const area of Object.values(deviceMapping)) {
-    const devCfg = area.devices.find(d => d.id === deviceId);
-    if (devCfg && devCfg.type === DEVICE_TYPES.RAIN) {
-        isCurrentDeviceRainGauge = true;
-        break;
-    }
-  }
-  return isCurrentDeviceRainGauge;
+  return findDevices(deviceId).some(d => d.type === DEVICE_TYPES.RAIN);
 }
 
 /**
- * Helper：由 deviceId 反查 channel 設定
+ * Helper：由 deviceId 反查 sensors 設定
+ * 若傳入實體 ID 且該實體被拆成多個虛擬裝置，會把所有虛擬裝置的 sensors 合起來回傳
+ * （因為 scanner 拿到的是實體 MAC，需要一次處理所有 channel）
  */
 export function getSensorsByDeviceId(id: string): Sensor[] | undefined {
-  for (const area of Object.values(deviceMapping)) {
-    for (const device of area.devices) {
-      if (device.id === id) return device.sensors;
-    }
-  }
-  return undefined;
+  const devs = findDevices(id);
+  if (devs.length === 0) return undefined;
+  return devs.flatMap(d => d.sensors ?? []);
 }
 
 interface sensor {
@@ -147,15 +146,17 @@ function rawToPEgF(ctx: SensorCtx): number {
 
 /**
  * 將 raw EgF / Cnt 轉成 PEgF 與 delta PEgF
- * @param deviceId  例如 'WISE-4010LAN_74FE489299CB'
+ * @param deviceId  例如 'WISE-4010LAN_74FE489299CB'（可為實體或虛擬 ID）
  * @param raw       CSV 解析後的物件
  */
 export function toPEgF(deviceId: string, raw: Record<string, any>) {
-  const devices: Device[] = Object.values(deviceMapping).flatMap(a => a.devices);
-  const device = devices.find(d => d.id === deviceId /* … */);
+  // 使用共用的 sensor 查找（會把拆站虛擬裝置的 sensors 合起來）
+  const sensors = getSensorsByDeviceId(deviceId);
+  const deviceType = getDeviceConfigById(deviceId)?.type;
 
-  if (!device) return {};            // 找不到對應設定
+  if (!sensors || sensors.length === 0) return {};
 
+  const device = { type: deviceType, sensors };
   const result: Record<string, number> = {};
 
   for (const sensor of device.sensors ?? []) {
