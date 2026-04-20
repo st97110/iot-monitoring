@@ -163,6 +163,7 @@ export const deviceMapping: Record<
     routeGroup: 't14',
     devices: [
       { id: 'TDR_T14_T1', name: 'T1 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
+      { id: 'TDR_T14_T2', name: 'T2 TDR', area: '80K區', type: DEVICE_TYPES.TDR },
       {
         id: 'WISE-4010LAN_74FE48ADBD13',
         name: 'T2 電池電壓',
