@@ -90,6 +90,19 @@ export async function getBatteryHistoryJson(req: Request, res: Response, next: N
 }
 
 export function serveBatteryPage(_req: Request, res: Response): void {
+  // 覆寫 helmet 的預設 CSP，允許 Chart.js CDN 和 inline script/style
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline'",
+      "connect-src 'self'",
+      "img-src 'self' data:",
+      "base-uri 'self'",
+      "frame-ancestors 'self'",
+    ].join('; ')
+  );
   res.type('html').send(PAGE_HTML);
 }
 
