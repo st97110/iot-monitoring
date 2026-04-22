@@ -8,15 +8,14 @@ on:
         required: true
         type: choice
         options:
-        - T8-WISE   # 台8線 WISE 儀器
-        - T8-TDR    # 台8線 TDR 儀器
-        # - OTHER-WISE # 未來可以擴展
+          - T8-WISE   # 台8線 WISE 儀器
+          - T8-TDR    # 台8線 TDR 儀器
+          # - OTHER-WISE # 未來可以擴展
         default: 'T8-WISE'
 
 jobs:
   download-and-package:
-    runs-on: self-hosted # 指定在您的自建 Runner 上運行
-
+    runs-on: self-hosted
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,15 +26,14 @@ jobs:
           python-version: '3.x'
 
       - name: Install Python dependencies
-        run: pip install python-dateutil influxdb-client
+        run: pip install python-dateutil influxdb-client pandas
 
-      # --- 新增的關鍵步驟 ---
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          name: id_ed25519 # 或者 id_rsa，取決於你的金鑰類型
-          known_hosts: 'just-a-placeholder-so-we-dont-run-ssh-keyscan' # 我們已經手動信任了，所以這裡隨便填
+          name: id_ed25519
+          known_hosts: 'just-a-placeholder-so-we-dont-run-ssh-keyscan'
 
       - name: Run download script
         id: download_script
@@ -48,9 +46,15 @@ jobs:
         run: |
           python scripts/download_data.py ${{ github.event.inputs.instrument_group }}
 
+      # Upload the per-device CSVs directly. `actions/upload-artifact@v4`
+      # always zips the upload once, so passing the directory (not a .zip)
+      # avoids the double-zip problem the previous version produced.
       - name: Upload backup as artifact
-        if: steps.download_script.outputs.zip_filename
+        if: steps.download_script.outputs.output_dir
         uses: actions/upload-artifact@v4
         with:
-          name: backup-data-${{ github.event.inputs.instrument_group }}
-          path: ${{ steps.download_script.outputs.zip_filename }}
+          name: ${{ steps.download_script.outputs.artifact_name }}
+          path: ${{ steps.download_script.outputs.output_dir }}
+          # Keep it for 30 days. Bump / lower to taste.
+          retention-days: 30
+          if-no-files-found: error
