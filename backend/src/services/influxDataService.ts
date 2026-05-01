@@ -79,13 +79,9 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
         const pegfFields = toPEgF(deviceId, record.raw);
         for (const [pegfKey, pegfValue] of Object.entries(pegfFields)) {
             if (typeof pegfValue === 'number' && !isNaN(pegfValue)) {
-              // Sanity gate：raw EgF 髒值會經 toPEgF 算出更大的 PEgF 髒值，這裡也擋一道
-              if (isLikelyGarbageEgF(pegfValue)) {
-                logger.warn(`[InfluxData] 設備 ${deviceId} 的 PEgF 欄位 ${pegfKey} 值 ${pegfValue} 疑似感測器髒值，不寫入 Influx。`);
-              } else {
-                point.floatField(pegfKey, pegfValue);
-                hasValidDataField = true;
-              }
+              // PEgF 不被 API / 網頁使用，照常寫入即可（即使是 raw EgF 髒值算出的極大負值）
+              point.floatField(pegfKey, pegfValue);
+              hasValidDataField = true;
             } else if (pegfValue !== undefined) {
               logger.warn(`[InfluxData] 設備 ${deviceId} (非雨量筒) 的 PEgF 欄位 ${pegfKey} 值無效: ${pegfValue}`);
             }
