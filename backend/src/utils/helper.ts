@@ -199,3 +199,45 @@ export function toPEgF(deviceId: string, raw: Record<string, any>) {
   }
   return result;   // 只回傳要寫進 Influx 的欄位
 }
+
+// =============================================================================
+// 感測器髒值（sanity）防呆
+// =============================================================================
+//
+// WISE-4060 雨量筒會偶發吐出 DI_0 Cnt = 65535 (uint16 max) 之類的髒值，導致
+// 計算出的 rainfall_10m = 32767.5 mm，污染下游所有 1h/3h/24h 聚合。
+// WISE-4010 類比通道（AI_0~AI_3 EgF）也會偶爾跳到極值（例如韌體/網路傳輸抽風）。
+//
+// 在 ingest 層擋下這些值，所有下游（InfluxDB 寫入、API /latest、前端報表、alertBot）
+// 都不會看到，是治本作法。
+
+/**
+ * 雨量筒 10 分鐘內合理的最大翻斗數（每翻斗 0.5 mm）。
+ * 500 翻斗 = 250 mm/10min，已遠超台灣極端豪雨速率，超過視為髒值。
+ */
+export const MAX_RAIN_COUNT_DIFF_PER_INTERVAL = 500;
+
+/**
+ * 類比 EgF / PEgF 值的合理上限（絕對值）。
+ * 真實工程值（mA、mm、度、秒等）幾乎不會超過幾千，用 50000 寬鬆但能擋掉
+ * 所有已知的 int16 / uint16 overflow 訊號（32767, 65535, …）。
+ */
+export const MAX_REASONABLE_EGF_ABS = 50000;
+
+/** 已知的感測器 overflow 訊號值，碰到直接判定為髒值。 */
+const KNOWN_GARBAGE_EGF_VALUES: ReadonlySet<number> = new Set([
+  32767, 32767.5, -32767, -32767.5,
+  65535, 65535.5, -65535, -65535.5,
+  -32768, -32768.5,
+]);
+
+/**
+ * 判斷一個 EgF / PEgF 值是否疑似感測器髒值（int16 / uint16 overflow 之類）。
+ * 遇到 NaN / Infinity / 已知 overflow 訊號 / 絕對值過大都回傳 true。
+ */
+export function isLikelyGarbageEgF(value: number): boolean {
+  if (!Number.isFinite(value)) return true;
+  if (KNOWN_GARBAGE_EGF_VALUES.has(value)) return true;
+  if (Math.abs(value) > MAX_REASONABLE_EGF_ABS) return true;
+  return false;
+}

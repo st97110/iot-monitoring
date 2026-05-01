@@ -4,7 +4,7 @@ import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataF
 import { parseWiseCSVFile } from '../utils/parser';
 import { config } from '../config/config';
 import { logger } from '../utils/logger';
-import { isDeviceRainGauge } from '../utils/helper';
+import { isDeviceRainGauge, MAX_RAIN_COUNT_DIFF_PER_INTERVAL } from '../utils/helper';
 
 type SourceKey = 'wise' | 'tdr';
 
@@ -92,8 +92,14 @@ function calculateRainfall(currentData: any, previousData: any): void {
     const prevCount = previousData?.raw?.['DI_0 Cnt'] !== undefined
       ? parseFloat(previousData.raw['DI_0 Cnt'].trim())
       : 0;
-    
+
     const delta = currentCount >= prevCount ? (currentCount - prevCount) : currentCount;
+    // Sanity gate：擋掉 uint16 overflow 髒值
+    if (delta > MAX_RAIN_COUNT_DIFF_PER_INTERVAL) {
+      logger.warn(`[雨量計算-API] countDiff ${delta} (cur=${currentCount}, prev=${prevCount}) 異常超過 ${MAX_RAIN_COUNT_DIFF_PER_INTERVAL}，視為感測器髒值，本次雨量設為 0。`);
+      currentData.rainfall10Min = 0;
+      return;
+    }
     currentData.rainfall10Min = delta / 2;
   }
 }

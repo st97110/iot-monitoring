@@ -5,7 +5,7 @@ import { format, subDays } from 'date-fns';
 import { config } from '../config/config';
 import { parseWiseCSVFile, parseTdrJSONFile  } from '../utils/parser';
 // import { updateLatestDataCache } from './dataService';
-import { isDeviceRainGauge } from '../utils/helper';
+import { isDeviceRainGauge, MAX_RAIN_COUNT_DIFF_PER_INTERVAL } from '../utils/helper';
 import { logger } from '../utils/logger';
 import { Point } from './influxClientService';
 import { convertWiseToInfluxPoints, convertTdrToInfluxPoints, writeWiseDataToInflux, writeTdrDataToInflux } from './influxDataService';
@@ -405,6 +405,15 @@ async function processFilesBatch(
                                         const countDiff = currentCount >= prevState.lastCount
                                                         ? (currentCount - prevState.lastCount)
                                                         : currentCount;
+                                        // Sanity gate：擋掉韌體/傳輸抽風吐出的 uint16 overflow（典型 65535 → 32767.5 mm）
+                                        if (countDiff > MAX_RAIN_COUNT_DIFF_PER_INTERVAL) {
+                                            logger.warn(`[雨量計算] 設備 ${deviceId} countDiff ${countDiff} (raw Cnt=${currentCount}, prev=${prevState.lastCount}) 異常超過 ${MAX_RAIN_COUNT_DIFF_PER_INTERVAL}，視為感測器髒值，本次雨量設為 0。`);
+                                            calculatedRain10m = 0;
+                                            // 不更新 prevState，下一筆比對仍用 prev 的 lastCount，避免髒值汙染基準
+                                            recordForInflux.rain_10m_scanner = calculatedRain10m;
+                                            validRecordsForInflux.push(recordForInflux);
+                                            continue;
+                                        }
                                         calculatedRain10m = countDiff / 2.0;
                                         logger.debug(`[雨量計算] 設備 ${deviceId} (時間間隔: ${timeDiffMinutes.toFixed(1)} 分鐘): Cnt差 ${countDiff}, 計算雨量 ${calculatedRain10m} mm`);
                                     } else {

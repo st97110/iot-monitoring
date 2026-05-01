@@ -1,7 +1,7 @@
 // services/dataToInfluxService.ts
 import { Point, writePoints } from './influxClientService';
 import { DEVICE_TYPES } from '../config/config';
-import { toPEgF, getSensorsByDeviceId, getDeviceConfigById } from '../utils/helper';
+import { toPEgF, getSensorsByDeviceId, getDeviceConfigById, isLikelyGarbageEgF } from '../utils/helper';
 import { logger } from '../utils/logger';
 
 /**
@@ -61,8 +61,13 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
         if (isConfiguredChannelField) {
             const floatVal = parseFloat(fieldValue as string);
             if (!isNaN(floatVal)) {
-                point.floatField(fieldKey, floatVal);
-                hasValidDataField = true;
+                // Sanity gate：擋掉 WISE-4010 偶發吐出的 int16/uint16 overflow（如 32767.5、65535）
+                if (isLikelyGarbageEgF(floatVal)) {
+                    logger.warn(`[InfluxData] 設備 ${deviceId} 欄位 ${fieldKey} 值 ${floatVal} 疑似感測器髒值，不寫入 Influx。`);
+                } else {
+                    point.floatField(fieldKey, floatVal);
+                    hasValidDataField = true;
+                }
             } else {
                 // logger.debug(`[InfluxData] 設備 ${deviceId} 欄位 ${fieldKey} 值 "${fieldValue}" 不是有效數字，跳過此欄位。`);
             }
@@ -74,8 +79,13 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
         const pegfFields = toPEgF(deviceId, record.raw);
         for (const [pegfKey, pegfValue] of Object.entries(pegfFields)) {
             if (typeof pegfValue === 'number' && !isNaN(pegfValue)) {
-              point.floatField(pegfKey, pegfValue);
-              hasValidDataField = true;
+              // Sanity gate：raw EgF 髒值會經 toPEgF 算出更大的 PEgF 髒值，這裡也擋一道
+              if (isLikelyGarbageEgF(pegfValue)) {
+                logger.warn(`[InfluxData] 設備 ${deviceId} 的 PEgF 欄位 ${pegfKey} 值 ${pegfValue} 疑似感測器髒值，不寫入 Influx。`);
+              } else {
+                point.floatField(pegfKey, pegfValue);
+                hasValidDataField = true;
+              }
             } else if (pegfValue !== undefined) {
               logger.warn(`[InfluxData] 設備 ${deviceId} (非雨量筒) 的 PEgF 欄位 ${pegfKey} 值無效: ${pegfValue}`);
             }
