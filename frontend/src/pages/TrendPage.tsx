@@ -335,6 +335,17 @@ function TrendPage() {
 
   const chartSensorType = currentDevice?.sensors?.[sensorIndex]?.type || currentDevice?.type;
 
+  // 依日期範圍動態決定 X 軸時間格式（範圍越大顯示越粗）
+  const xAxisTimeFormat = useMemo<string>(() => {
+    if (!startDate || !endDate) return 'MM/dd HH:mm';
+    const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
+    if (days > 365) return 'yyyy/MM';        // 超過一年
+    if (days > 90)  return 'yyyy/MM/dd';     // 超過三個月
+    if (days > 14)  return 'MM/dd';          // 兩週到三個月
+    if (days > 2)   return 'MM/dd HH:mm';    // 兩天到兩週
+    return 'HH:mm';                          // 兩天內
+  }, [startDate, endDate]);
+
   // ============ 疊圖：可比較的裝置清單（相同 sensor.type，且不含自己或已選過的） ============
   const availableCompareDevices = useMemo<Device[]>(() => {
     if (!currentDevice || !routeGroup) return [];
@@ -633,7 +644,9 @@ function TrendPage() {
                   type={chartSensorType === DEVICE_TYPES.TDR ? 'number' : 'category'}
                   domain={chartSensorType === DEVICE_TYPES.TDR ? ['dataMin', 'dataMax'] : undefined}
                   tickFormatter={(tick: any) =>
-                    chartSensorType === DEVICE_TYPES.TDR ? tick : format(new Date(tick), 'MM/dd HH:mm')}
+                    chartSensorType === DEVICE_TYPES.TDR ? tick : format(new Date(tick), xAxisTimeFormat)}
+                  minTickGap={80}                       /* 標籤至少間隔 80px，避免互疊 */
+                  tick={{ fontSize: 11, fill: '#64748b' }}
                   label={chartSensorType === DEVICE_TYPES.TDR ? { value: '距離 (m)', position: 'insideBottomRight', offset: -5 } : undefined}
                 />
                 <YAxis
@@ -719,7 +732,7 @@ function TrendPage() {
                 {/* 時間軸縮放（非 TDR 適用） */}
                 {chartSensorType !== DEVICE_TYPES.TDR && data.length > 5 && (
                   <Brush dataKey="time" height={28} stroke="#6366F1" travellerWidth={10}
-                    tickFormatter={(tick: any) => { try { return format(new Date(tick), 'MM/dd HH:mm'); } catch { return ''; } }} />
+                    tickFormatter={(tick: any) => { try { return format(new Date(tick), xAxisTimeFormat); } catch { return ''; } }} />
                 )}
               </ComposedChart>
             </ResponsiveContainer>
