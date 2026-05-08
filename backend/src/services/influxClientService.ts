@@ -351,7 +351,9 @@ export async function queryHistoryDataFromInflux(
   deviceId: string,
   startDate: string,
   endDate: string,
-  rainInterval?: string
+  rainInterval?: string,
+  /** 時間窗聚合（例：'1h', '15m', '6h', '1d'）。長範圍查詢用，降採樣減少回傳筆數與前端渲染負擔 */
+  aggregate?: string,
 ): Promise<any[]> {
   const client = getClient(key);
   const queryApi = client.getQueryApi(config.influx.org);
@@ -407,14 +409,19 @@ export async function queryHistoryDataFromInflux(
     // logger.debug(`[InfluxQuery] Rain Gauge History (Aggregated by ${rainInterval}) for ${deviceId}:\n${fluxQuery}`);
 
   } else { // TDR 或非雨量筒的 WISE，或雨量筒但未指定 rainInterval (預設查明細)
+    // 只有 wise（非 TDR）才支援聚合；TDR 是 distance_m 為 X 軸不適用時間聚合
+    const aggLine = (aggregate && key === 'wise' && /^\d+[smhd]$/.test(aggregate))
+      ? `|> aggregateWindow(every: ${aggregate}, fn: mean, createEmpty: false)`
+      : '';
     fluxQuery = `
       from(bucket: "${bucket}")
         |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
         |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
         |> filter(fn: (r) => r._field == "rho" or r._measurement != "tdr_raw")
+        ${aggLine}
         |> sort(columns: ["_time", "distance_m"], desc: false)
     `;
-    // logger.debug(`[InfluxQuery] Default History Query for ${deviceId} (Source: ${key}):\n${fluxQuery}`);
+    // logger.debug(`[InfluxQuery] Default History Query for ${deviceId} (Source: ${key}, aggregate: ${aggregate || 'none'}):\n${fluxQuery}`);
   }
 
   /* 1️⃣ 先把所有 row 收進 history 陣列 */

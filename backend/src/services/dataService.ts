@@ -331,7 +331,8 @@ export async function getHistoryDataFromDB(
   deviceId?: string,
   startDate?: string,
   endDate?: string,
-  rainInterval?: string
+  rainInterval?: string,
+  aggregate?: string,
 ): Promise<Record<string, any>> {
   try {
     const result: Record<string, any> = {};
@@ -341,7 +342,7 @@ export async function getHistoryDataFromDB(
     }
 
     if (deviceId) {
-      const data = await queryHistoryDataFromInflux(source, deviceId, startDate, endDate, rainInterval);
+      const data = await queryHistoryDataFromInflux(source, deviceId, startDate, endDate, rainInterval, aggregate);
       result[deviceId] = data;
       return result;
     }
@@ -349,7 +350,7 @@ export async function getHistoryDataFromDB(
     const deviceIds = await queryDeviceListFromInflux(source);
     for (const id of deviceIds) {
       try {
-        result[id] = await queryHistoryDataFromInflux(source, id, startDate, endDate, rainInterval);
+        result[id] = await queryHistoryDataFromInflux(source, id, startDate, endDate, rainInterval, aggregate);
       } catch (err: any) {
         logger.warn(`[InfluxDB] 裝置 ${id} 查詢歷史資料錯誤: ${err.message}`);
         result[id] = { error: err.message };

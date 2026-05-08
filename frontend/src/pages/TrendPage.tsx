@@ -65,6 +65,28 @@ function TrendPage() {
   // 疊圖模式時的統一調色盤（主裝置用 [0]、比較用 [1..]，避免跟 type 色撞色）
   const OVERLAY_PALETTE = ['#2563EB', '#DC2626', '#D97706', '#7C3AED', '#DB2777', '#0891B2'];
 
+  // 依日期範圍動態決定 X 軸時間格式（範圍越大顯示越粗）
+  const xAxisTimeFormat = useMemo<string>(() => {
+    if (!startDate || !endDate) return 'MM/dd HH:mm';
+    const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
+    if (days > 365) return 'yyyy/MM';
+    if (days > 90)  return 'yyyy/MM/dd';
+    if (days > 14)  return 'MM/dd';
+    if (days > 2)   return 'MM/dd HH:mm';
+    return 'HH:mm';
+  }, [startDate, endDate]);
+
+  // 依日期範圍自動選聚合窗口（降採樣減少回傳筆數，避免幾萬點 SVG 渲染卡）
+  const autoAggregate = useMemo<string | undefined>(() => {
+    if (!startDate || !endDate) return undefined;
+    const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
+    if (days > 180) return '6h';   // 半年以上 → 每 6 小時平均
+    if (days > 60)  return '1h';   // 兩個月以上 → 每小時
+    if (days > 14)  return '30m';  // 兩週以上 → 每 30 分鐘
+    if (days > 3)   return '15m';  // 三天以上 → 每 15 分鐘
+    return undefined;              // 三天內 → 原始（10 分鐘級）
+  }, [startDate, endDate]);
+
   const findCurrentDevice = useCallback((idToFind: string): Device | null => {
     if (!idToFind) return null;
     for (const area of Object.values(deviceMapping)) {
@@ -105,6 +127,8 @@ function TrendPage() {
           startDate,
           endDate,
           rainInterval: activeSensorType === DEVICE_TYPES.RAIN ? selectedRainInterval : undefined,
+          // RAIN 與 TDR 不適用通用聚合（RAIN 已用 rainInterval 自己聚合）
+          aggregate: activeSensorType !== DEVICE_TYPES.RAIN && activeSensorType !== DEVICE_TYPES.TDR ? autoAggregate : undefined,
         },
       });
       const historyRecords = (res.data || []).sort(
@@ -198,7 +222,11 @@ function TrendPage() {
             if (!cmpSensor) return;
             try {
               const cmpRes = await axios.get<HistoryResponse>(`${API_BASE}/api/history`, {
-                params: { deviceId: cmpDevice.originalDeviceId || cmpDevice.id, startDate, endDate },
+                params: {
+                  deviceId: cmpDevice.originalDeviceId || cmpDevice.id,
+                  startDate, endDate,
+                  aggregate: autoAggregate,
+                },
               });
               (cmpRes.data || []).forEach((entry: WiseLatestRecord) => {
                 if (!entry.timestamp) return;
@@ -232,7 +260,7 @@ function TrendPage() {
     } finally {
       setLoading(false);
     }
-  }, [deviceId, currentDevice, startDate, endDate, sensorIndex, selectedRainInterval, searchParams, compareDeviceIds, findCurrentDevice]);
+  }, [deviceId, currentDevice, startDate, endDate, sensorIndex, selectedRainInterval, searchParams, compareDeviceIds, findCurrentDevice, autoAggregate]);
 
   useEffect(() => { handleSearch(); }, [handleSearch]);
 
@@ -334,17 +362,6 @@ function TrendPage() {
   };
 
   const chartSensorType = currentDevice?.sensors?.[sensorIndex]?.type || currentDevice?.type;
-
-  // 依日期範圍動態決定 X 軸時間格式（範圍越大顯示越粗）
-  const xAxisTimeFormat = useMemo<string>(() => {
-    if (!startDate || !endDate) return 'MM/dd HH:mm';
-    const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
-    if (days > 365) return 'yyyy/MM';        // 超過一年
-    if (days > 90)  return 'yyyy/MM/dd';     // 超過三個月
-    if (days > 14)  return 'MM/dd';          // 兩週到三個月
-    if (days > 2)   return 'MM/dd HH:mm';    // 兩天到兩週
-    return 'HH:mm';                          // 兩天內
-  }, [startDate, endDate]);
 
   // ============ 疊圖：可比較的裝置清單（相同 sensor.type，且不含自己或已選過的） ============
   const availableCompareDevices = useMemo<Device[]>(() => {
@@ -700,17 +717,20 @@ function TrendPage() {
                   </>
                 ) : (
                   <>
-                    {/* 主裝置的線（疊圖模式時用統一調色盤 [0]、加粗以強調；單裝置模式沿用 type 色） */}
+                    {/* 主裝置的線（疊圖模式時用統一調色盤 [0]；單裝置模式沿用 type 色） */}
                     {currentDevice.sensors?.[sensorIndex]?.channels.map((ch: string, index: number) => {
                       const primaryColor = compareDeviceIds.length > 0
                         ? OVERLAY_PALETTE[0]
                         : getChartLineColor(chartSensorType, index > 0);
+                      // 多 channel 時第二、三條稍微透明區隔（不再用 dashed，dense 資料下虛線看起來像噪訊）
+                      const opacity = index === 0 ? 1 : 0.7;
                       return (
                         <Line yAxisId="left" key={ch} type="monotone" dataKey={ch}
-                          stroke={primaryColor}
-                          strokeWidth={compareDeviceIds.length > 0 ? 2.5 : 2}
-                          strokeDasharray={index > 0 ? '4 2' : '0'}
-                          dot={false} isAnimationActive={false}
+                          stroke={primaryColor} strokeOpacity={opacity}
+                          strokeWidth={2}
+                          strokeLinecap="round" strokeLinejoin="round"
+                          dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
+                          isAnimationActive={false}
                           name={`${currentDevice.name} ${ch}`} connectNulls />
                       );
                     })}
@@ -722,9 +742,12 @@ function TrendPage() {
                       const color = OVERLAY_PALETTE[(i + 1) % OVERLAY_PALETTE.length];
                       return (cmpSensor?.channels || []).map((ch: string, chIdx: number) => (
                         <Line yAxisId="left" key={`${cid}__${ch}`} type="monotone" dataKey={`${cid}__${ch}`}
-                          stroke={color} strokeWidth={1.75}
-                          strokeDasharray={chIdx === 0 ? '0' : '4 2'}
-                          dot={false} isAnimationActive={false} name={`${cmp.name} ${ch}`} connectNulls />
+                          stroke={color} strokeOpacity={chIdx === 0 ? 0.95 : 0.65}
+                          strokeWidth={1.75}
+                          strokeLinecap="round" strokeLinejoin="round"
+                          dot={false} activeDot={{ r: 3, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                          name={`${cmp.name} ${ch}`} connectNulls />
                       ));
                     })}
                   </>

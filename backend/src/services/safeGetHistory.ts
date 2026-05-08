@@ -18,18 +18,19 @@ export async function safeGetHistoryData(
   deviceId: string,
   startDate: string,
   endDate: string,
-  rainInterval: string
+  rainInterval: string,
+  aggregate?: string,
 ): Promise<any[]> {
   const rainfallDurationsForEnrich: RainDuration[] = [rainInterval as RainDuration];
 
   if (source === 'both') {
     const [wise, tdr] = await Promise.all([
-      safeGetHistoryData('wise', deviceId, startDate, endDate, rainInterval),
-      safeGetHistoryData('tdr', deviceId, startDate, endDate, rainInterval)
+      safeGetHistoryData('wise', deviceId, startDate, endDate, rainInterval, aggregate),
+      safeGetHistoryData('tdr', deviceId, startDate, endDate, rainInterval, aggregate)
     ]);
 
     const result = [...wise, ...tdr];
-    
+
     if (isDeviceRainGauge(deviceId)) {
       await enrichRainfall(result.filter(r => r.deviceId === deviceId && r.source === 'wise'), rainfallDurationsForEnrich);
     }
@@ -37,8 +38,7 @@ export async function safeGetHistoryData(
   }
 
   try {
-    // ✨ 將 rainInterval 傳遞給 getHistoryDataFromDB
-    const historyDataMap = await getHistoryDataFromDB(source, deviceId, startDate, endDate, rainInterval);
+    const historyDataMap = await getHistoryDataFromDB(source, deviceId, startDate, endDate, rainInterval, aggregate);
     let resultDataArray: any[] = [];
 
     if (historyDataMap && historyDataMap[deviceId] && Array.isArray(historyDataMap[deviceId])) {

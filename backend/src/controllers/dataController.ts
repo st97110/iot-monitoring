@@ -89,7 +89,7 @@ export async function getHistoryData(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { deviceId, startDate, endDate, rainInterval = '10m' } = req.query;
+    const { deviceId, startDate, endDate, rainInterval = '10m', aggregate } = req.query;
     if (!startDate || !endDate) {
       res.status(400).json({ error: '缺少 startDate 或 endDate' });
       return;
@@ -102,8 +102,11 @@ export async function getHistoryData(
 
     const src = resolveSource(req.query.source as string | undefined, deviceId as string | undefined);   // ← 共用解析
 
+    // aggregate: 只接受 ^\d+[smhd]$ 格式（10m / 1h / 1d 等），其他忽略
+    const aggregateStr = typeof aggregate === 'string' && /^\d+[smhd]$/.test(aggregate) ? aggregate : undefined;
+
     const data = deviceId
-      ? await safeGetHistoryData(src, deviceId as string, sDate, eDate, rainInterval as string)
+      ? await safeGetHistoryData(src, deviceId as string, sDate, eDate, rainInterval as string, aggregateStr)
       : await safeGetAllHistoryData(src, sDate, eDate, rainInterval as string);
 
     res.json(data);
