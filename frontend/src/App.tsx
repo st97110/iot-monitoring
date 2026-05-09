@@ -118,7 +118,7 @@ const SiteLayout = () => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-slate-100 flex flex-col">
         <div className="flex-1">
           <Routes>
             <Route path="/:routeGroup" element={<SiteLayout />}>
