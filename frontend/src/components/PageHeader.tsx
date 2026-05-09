@@ -12,10 +12,10 @@ interface Props {
  */
 export default function PageHeader({ title, subtitle, action }: Props) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+    <div className="flex flex-wrap items-end justify-between gap-2">
       <div className="min-w-0">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">{title}</h1>
-        {subtitle && <div className="text-slate-500 text-sm mt-1">{subtitle}</div>}
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight">{title}</h1>
+        {subtitle && <div className="text-slate-500 text-xs sm:text-sm mt-0.5">{subtitle}</div>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>

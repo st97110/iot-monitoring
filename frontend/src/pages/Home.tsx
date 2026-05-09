@@ -193,8 +193,8 @@ function DeviceCard({ device, data, routeGroup }: DeviceCardProps) {
       </div>
 
       {/* 右側內容 */}
-      <div className="flex-1 p-3 sm:p-4 min-w-0 flex flex-col">
-        <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex-1 p-3 min-w-0 flex flex-col">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="min-w-0">
             <h3 className="text-base sm:text-lg font-bold text-slate-800 break-all line-clamp-2" title={device.name}>
               {device.name}
@@ -367,7 +367,7 @@ function Home() {
       <StatsStrip total={stats.total} ok={stats.ok} stale={stats.stale} offline={stats.offline} />
 
       {/* 搜尋 + 篩選 */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 space-y-3 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-2 shadow-sm">
           {/* 搜尋列 */}
           <div className="relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -433,7 +433,7 @@ function Home() {
 
         {/* 載入中 */}
         {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {[0, 1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} />)}
           </div>
         )}
@@ -458,17 +458,17 @@ function Home() {
 
         {/* 各區域分組 */}
         {!loading && !hasNoResults && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {relevantAreas.map(([areaKey, areaConfig]) => {
               const visibleDevices = areaConfig.devices.filter(d => filterDevice(d, areaConfig.name));
               if (visibleDevices.length === 0) return null;
               return (
                 <section key={areaKey}>
-                  <div className="flex items-baseline gap-3 mb-3">
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-800">{areaConfig.name}</h2>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-800">{areaConfig.name}</h2>
                     <span className="text-xs text-slate-400">{visibleDevices.length} 個站點</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                     {visibleDevices.map(device => {
                       const phys = device.originalDeviceId || device.id;
                       return (
