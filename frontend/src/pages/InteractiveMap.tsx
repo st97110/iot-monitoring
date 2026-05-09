@@ -10,6 +10,8 @@ import MarkerClusterGroup from 'react-leaflet-markercluster';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES, Device } from '../config/config';
 import { isNormalData, formatValue } from '../utils/sensor';
 import type { LatestResponse, WiseLatestRecord } from '../types/api';
+import PageContainer from '../components/PageContainer';
+import PageHeader from '../components/PageHeader';
 
 interface StationShape {
   id: string;
@@ -36,25 +38,28 @@ const stations: StationShape[] = Object.values(deviceMapping).flatMap(area =>
 );
 
 function getIconByType(type: DEVICE_TYPES | string | undefined, abnormal: boolean): L.DivIcon {
+  // 跟 Home 卡片用同一組色票（type 色），異常時加紅色 ring
   let text = '';
-  let baseColor = '';
+  let bg = '';
   switch (type) {
-    case 'TI': text = 'TI'; baseColor = 'bg-blue-500'; break;
-    case 'RAIN': text = 'R'; baseColor = 'bg-purple-500'; break;
-    case 'GE': text = 'GE'; baseColor = 'bg-green-500'; break;
-    case 'WATER': text = 'W'; baseColor = 'bg-cyan-500'; break;
-    case 'TDR': text = 'TDR'; baseColor = 'bg-indigo-500'; break;
-    case 'FLOW': text = 'FL'; baseColor = 'bg-pink-500'; break;
-    case 'BATTERY': text = 'B'; baseColor = 'bg-amber-500'; break;
-    default: text = '?'; baseColor = 'bg-gray-500'; break;
+    case 'TI':      text = 'TI';  bg = '#3B82F6'; break;  // blue-500
+    case 'WATER':   text = 'W';   bg = '#06B6D4'; break;  // cyan-500
+    case 'RAIN':    text = 'R';   bg = '#6366F1'; break;  // indigo-500
+    case 'GE':      text = 'GE';  bg = '#22C55E'; break;  // green-500
+    case 'TDR':     text = 'TDR'; bg = '#8B5CF6'; break;  // violet-500
+    case 'FLOW':    text = 'FL';  bg = '#EC4899'; break;  // pink-500
+    case 'BATTERY': text = 'B';   bg = '#F59E0B'; break;  // amber-500
+    default:        text = '?';   bg = '#94A3B8'; break;  // slate-400
   }
-  const border = abnormal ? 'border-2 border-red-500' : '';
+  const ring = abnormal
+    ? 'box-shadow: 0 0 0 3px #ef4444, 0 2px 6px rgba(0,0,0,0.25);'
+    : 'box-shadow: 0 2px 6px rgba(0,0,0,0.18), 0 0 0 2px white;';
   return L.divIcon({
-    html: `<div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${baseColor} ${border}">${text}</div>`,
+    html: `<div style="width:30px;height:30px;border-radius:50%;background:${bg};color:white;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;${ring}font-family:system-ui,sans-serif;">${text}</div>`,
     className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
   });
 }
 
@@ -64,7 +69,7 @@ function ZoomToAreaButton({ label, center, zoom }: ZoomButtonProps) {
   return (
     <button
       onClick={() => map.flyTo(center, zoom)}
-      className="px-3 py-1.5 text-xs sm:text-sm rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow hover:from-blue-600 hover:to-indigo-700 transition-colors mr-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+      className="px-2.5 py-1 text-xs rounded-md bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
     >
       {label}
     </button>
@@ -180,7 +185,12 @@ function InteractiveMap() {
   }, [routeGroup]);
 
   return (
-    <div className="map-container-wrapper relative h-[calc(100vh-var(--navbar-height,64px)-2rem)] w-full">
+    <PageContainer>
+      <PageHeader
+        title={`互動地圖${routeGroup === 't14' ? ' · 台14線及甲線' : routeGroup === 't8' ? ' · 台8線' : ''}`}
+        subtitle="點擊標記查看即時數據"
+      />
+      <div className="map-container-wrapper relative h-[calc(100vh-220px)] min-h-[480px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm">
       <MapContainer
         center={initialCenter}
         zoom={initialZoom}
@@ -188,13 +198,15 @@ function InteractiveMap() {
         className="h-full w-full rounded-xl shadow-lg overflow-hidden"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={19}
         />
 
         <MapController />
 
-        <div className="absolute top-3 left-3 z-[1000] bg-white bg-opacity-80 p-2 sm:p-3 rounded-xl shadow-md flex flex-wrap gap-1 sm:gap-2">
+        <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur p-2 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-1.5 max-w-[60%]">
           {Object.values(deviceMapping)
             .filter(area => !routeGroup || area.routeGroup === routeGroup)
             .map(area =>
@@ -209,15 +221,14 @@ function InteractiveMap() {
             )}
         </div>
 
-        <div className={`
+        <div className="
             absolute z-[1000]
-            bg-white bg-opacity-90 p-3 sm:p-4 rounded-xl shadow-md
-            w-[120px] sm:w-auto md:w-auto md:max-w-xs
+            bg-white/95 backdrop-blur p-3 rounded-xl shadow-sm border border-slate-200
+            w-[140px] sm:w-auto md:max-w-xs
             flex flex-col space-y-3
             transition-all duration-300 ease-in-out
-            bottom-4 right-0
-            md:bottom-5 md:right-0
-          `}>
+            bottom-4 right-3
+          ">
           <div>
             <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">顯示儀器</h3>
             {Object.entries(visibleLayers).map(([type, visible]) => (
@@ -329,7 +340,8 @@ function InteractiveMap() {
           })}
         </MarkerClusterGroup>
       </MapContainer>
-    </div>
+      </div>
+    </PageContainer>
   );
 }
 

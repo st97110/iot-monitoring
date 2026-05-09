@@ -110,9 +110,7 @@ const SiteLayout = () => {
   return (
     <>
       <Navigation />
-      <div className="container mx-auto p-4 sm:p-6">
-        <Outlet />
-      </div>
+      <Outlet />
     </>
   );
 };
@@ -120,35 +118,22 @@ const SiteLayout = () => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50">
-        <Routes>
-          <Route path="/:routeGroup" element={<SiteLayout />}>
-            <Route index element={<Home />} />
-            <Route path="history" element={<History />} />
-            <Route path="trend" element={<TrendPage />} />
-            <Route path="map" element={<InteractiveMap />} />
-          </Route>
-          <Route path="*" element={<NotFoundPage />} />
-          <Route path="/" element={<Navigate to="/t14" replace />} />
-        </Routes>
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="flex-1">
+          <Routes>
+            <Route path="/:routeGroup" element={<SiteLayout />}>
+              <Route index element={<Home />} />
+              <Route path="history" element={<History />} />
+              <Route path="trend" element={<TrendPage />} />
+              <Route path="map" element={<InteractiveMap />} />
+            </Route>
+            <Route path="*" element={<NotFoundPage />} />
+            <Route path="/" element={<Navigate to="/t14" replace />} />
+          </Routes>
+        </div>
 
-        <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-8 py-6">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="mb-4 md:mb-0">
-                <h3 className="text-lg font-bold">監測系統儀表板</h3>
-                <p className="text-gray-400 text-sm mt-1">即時監控各類感測器數據</p>
-              </div>
-              <div className="flex space-x-4">
-                <Link to="/" className="text-gray-300 hover:text-white">首頁</Link>
-                <Link to="/history" className="text-gray-300 hover:text-white">歷史資料</Link>
-                <Link to="/map" className="text-gray-300 hover:text-white">互動地圖</Link>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-700 text-center text-gray-400 text-sm">
-              © {new Date().getFullYear()} 監測系統. 保留所有權利.
-            </div>
-          </div>
+        <footer className="text-center text-xs text-slate-400 py-4 border-t border-slate-200 bg-white/50">
+          © {new Date().getFullYear()} 監測系統 · 連鈾工程
         </footer>
       </div>
     </Router>

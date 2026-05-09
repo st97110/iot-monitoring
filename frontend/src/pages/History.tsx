@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPES, DEVICE_TYPE_NAMES, Device, Sensor } from '../config/config';
 import { getDeviceTypeBorderColor, formatValue } from '../utils/sensor';
 import type { HistoryResponse, WiseLatestRecord } from '../types/api';
+import PageContainer from '../components/PageContainer';
+import PageHeader from '../components/PageHeader';
 
 // 可排序的欄位
 type SortKey = 'time' | 'station' | 'channel' | 'value';
@@ -309,25 +311,42 @@ function History() {
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-4 space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          歷史資料查詢 {routeGroup === 't14' ? '- 台14線及甲線' : routeGroup === 't8' ? '- 台8線' : ''}
-        </h1>
-        <p className="text-gray-600 mt-2">查詢各監測設備的歷史數據記錄</p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title={`歷史資料查詢${routeGroup === 't14' ? ' · 台14線及甲線' : routeGroup === 't8' ? ' · 台8線' : ''}`}
+        subtitle="查詢各監測設備的歷史數據記錄"
+        action={
+          <div className="flex gap-2">
+            <button
+              onClick={savePreset}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+              </svg>
+              儲存篩選
+            </button>
+            <button
+              onClick={exportCSV}
+              disabled={sortedRows.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              匯出 CSV
+            </button>
+          </div>
+        }
+      />
 
       {/* 篩選區 */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm font-semibold text-gray-600">快速範圍：</span>
-          <button onClick={() => applyRange(1)} className="px-3 py-1.5 rounded-full text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors">一天</button>
-          <button onClick={() => applyRange(7)} className="px-3 py-1.5 rounded-full text-xs font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">一週</button>
-          <button onClick={() => applyRange(30)} className="px-3 py-1.5 rounded-full text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 transition-colors">一個月</button>
-          <span className="ml-auto flex gap-2">
-            <button onClick={savePreset} className="px-3 py-1.5 rounded-full text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-colors">💾 儲存篩選</button>
-            <button onClick={exportCSV} disabled={sortedRows.length === 0} className="px-3 py-1.5 rounded-full text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 transition-colors disabled:opacity-40">⬇ CSV</button>
-          </span>
+          <span className="text-sm font-semibold text-slate-600">快速範圍：</span>
+          <button onClick={() => applyRange(1)} className="px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">一天</button>
+          <button onClick={() => applyRange(7)} className="px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">一週</button>
+          <button onClick={() => applyRange(30)} className="px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">一個月</button>
         </div>
 
         {presets.length > 0 && (
@@ -460,10 +479,7 @@ function History() {
         </div>
       </div>
 
-      <div className="mt-8 py-4 border-t text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} 監測系統儀表板
-      </div>
-    </div>
+    </PageContainer>
   );
 }
 

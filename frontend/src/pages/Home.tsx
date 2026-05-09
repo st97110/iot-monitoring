@@ -4,6 +4,9 @@ import { Link, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES, Device, AreaConfig } from '../config/config';
 import { getDeviceTypeColor, isNormalData, formatValue } from '../utils/sensor';
 import type { LatestResponse, WiseLatestRecord } from '../types/api';
+import PageContainer from '../components/PageContainer';
+import PageHeader from '../components/PageHeader';
+import SkeletonCard from '../components/SkeletonCard';
 
 // ============ Helpers ============
 
@@ -115,21 +118,6 @@ function StatsStrip({ total, ok, stale, offline }: { total: number; ok: number; 
       <Item dot="bg-amber-500" label="延遲" value={stale} />
       <span className="text-slate-200">·</span>
       <Item dot="bg-red-500" label="離線 / 無資料" value={offline} />
-    </div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="flex">
-        <div className="w-24 h-24 bg-slate-200 animate-pulse" />
-        <div className="flex-1 p-4 space-y-2">
-          <div className="h-4 bg-slate-200 animate-pulse rounded w-2/3" />
-          <div className="h-3 bg-slate-100 animate-pulse rounded w-1/3" />
-          <div className="h-6 bg-slate-200 animate-pulse rounded w-1/2 mt-3" />
-        </div>
-      </div>
     </div>
   );
 }
@@ -352,19 +340,16 @@ function Home() {
   [relevantAreas, filterDevice, loading]);
 
   return (
-    <div className="min-h-[calc(100vh-200px)]">
-      <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
-        {/* Header */}
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-              即時監測儀表板 {routeGroup === 't14' ? '· 台14線及甲線' : routeGroup === 't8' ? '· 台8線' : ''}
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">
-              最後更新：{new Date(refreshedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-              <span className="ml-2 text-xs text-slate-400">（每 60 秒自動重載）</span>
-            </p>
-          </div>
+    <PageContainer>
+      <PageHeader
+        title={`即時監測儀表板${routeGroup === 't14' ? ' · 台14線及甲線' : routeGroup === 't8' ? ' · 台8線' : ''}`}
+        subtitle={
+          <>
+            最後更新：{new Date(refreshedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+            <span className="ml-2 text-xs text-slate-400">（每 60 秒自動重載）</span>
+          </>
+        }
+        action={
           <button
             onClick={fetchLatest}
             disabled={loading}
@@ -375,13 +360,14 @@ function Home() {
             </svg>
             重新整理
           </button>
-        </div>
+        }
+      />
 
-        {/* 統計條（精簡 inline） */}
-        <StatsStrip total={stats.total} ok={stats.ok} stale={stats.stale} offline={stats.offline} />
+      {/* 統計條 */}
+      <StatsStrip total={stats.total} ok={stats.ok} stale={stats.stale} offline={stats.offline} />
 
-        {/* 搜尋 + 篩選 */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 space-y-3 shadow-sm">
+      {/* 搜尋 + 篩選 */}
+      <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 space-y-3 shadow-sm">
           {/* 搜尋列 */}
           <div className="relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -498,10 +484,9 @@ function Home() {
                 </section>
               );
             })}
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </PageContainer>
   );
 }
 
