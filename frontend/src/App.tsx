@@ -38,7 +38,6 @@ const Navigation = () => {
 
   const getSiteName = (): string => {
     if (routeGroup === 't14') return '(台14線及甲線)';
-    if (routeGroup === 't8') return '(台8線)';
     return '';
   };
 
@@ -104,9 +103,9 @@ const NotFoundPage = () => (
 
 const SiteLayout = () => {
   const { routeGroup } = useParams<{ routeGroup?: string }>();
-  if (routeGroup !== 't14' && routeGroup !== 't8') {
-    return <NotFoundPage />;
-  }
+  // T8 由其他系統管理，不在這個前端顯示；任何 /t8/* 路徑都導回 /t14
+  if (routeGroup === 't8') return <Navigate to="/t14" replace />;
+  if (routeGroup !== 't14') return <NotFoundPage />;
   return (
     <>
       <Navigation />
@@ -133,7 +132,7 @@ function App() {
         </div>
 
         <footer className="text-center text-xs text-slate-400 py-4 border-t border-slate-200 bg-white/50">
-          © {new Date().getFullYear()} 監測系統 · 連鈾工程
+          © {new Date().getFullYear()} 監測系統 · 聯友地質技師事務所
         </footer>
       </div>
     </Router>

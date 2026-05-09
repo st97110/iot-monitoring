@@ -9,12 +9,17 @@ export type { Sensor, Device, AreaConfig } from '../../../shared/deviceTypes';
 import { DEVICE_TYPES, AreaConfig } from '../../../shared/deviceTypes';
 import { deviceMapping as rawDeviceMapping } from '../../../shared/deviceMapping';
 
-// 過濾掉內部裝置後的版本
+// 過濾條件：
+//   1. 只保留 routeGroup === 't14' 的區域（T8 由其他系統管理，不在這個前端顯示）
+//   2. 過濾掉 internal: true 的裝置（例如 T2 電池由 /view/... 私人頁面看，主站不顯示）
+// backend 不過濾這些，scanner 跟 /api/* 仍能處理 T8 與 internal 裝置
 export const deviceMapping: Record<string, AreaConfig> = Object.fromEntries(
-  Object.entries(rawDeviceMapping).map(([key, area]) => [
-    key,
-    { ...area, devices: area.devices.filter(d => !d.internal) },
-  ]),
+  Object.entries(rawDeviceMapping)
+    .filter(([, area]) => area.routeGroup === 't14')
+    .map(([key, area]) => [
+      key,
+      { ...area, devices: area.devices.filter(d => !d.internal) },
+    ]),
 );
 
 // API base URL (Vite 會在 build 時替換 import.meta.env)
