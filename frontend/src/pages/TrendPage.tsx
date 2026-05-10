@@ -10,6 +10,7 @@ import { formatValue } from '../utils/sensor';
 import type { HistoryResponse, WiseLatestRecord } from '../types/api';
 import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
+import { toTaipeiDateString, todayInTaipei } from '../utils/date';
 
 type ChartRow = Record<string, any>;
 
@@ -47,8 +48,8 @@ function TrendPage() {
 
   const [deviceId, setDeviceId] = useState<string>(searchParams.get('deviceId') || '');
   const [sensorIndex, setSensorIndex] = useState<number>(parseInt(searchParams.get('sensorIndex') || '0', 10));
-  const [startDate, setStartDate] = useState<string>(searchParams.get('startDate') || new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState<string>(searchParams.get('endDate') || new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>(searchParams.get('startDate') || todayInTaipei());
+  const [endDate, setEndDate] = useState<string>(searchParams.get('endDate') || todayInTaipei());
 
   const [currentDevice, setCurrentDevice] = useState<Device | null>(null);
   const [data, setData] = useState<ChartRow[]>([]);
@@ -316,7 +317,7 @@ function TrendPage() {
   const applyRange = (days: number) => {
     const end = new Date();
     const start = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
-    const fmt = (d: Date) => d.toISOString().split('T')[0];
+    const fmt = toTaipeiDateString;
     const newStart = fmt(start); const newEnd = fmt(end);
     setStartDate(newStart); setEndDate(newEnd);
     updateUrlParams({ startDate: newStart, endDate: newEnd });

@@ -6,6 +6,7 @@ import { getDeviceTypeBorderColor, formatValue } from '../utils/sensor';
 import type { HistoryResponse, WiseLatestRecord } from '../types/api';
 import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
+import { toTaipeiDateString, todayInTaipei } from '../utils/date';
 
 // 可排序的欄位
 type SortKey = 'time' | 'station' | 'channel' | 'value';
@@ -53,7 +54,7 @@ function History() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [presets, setPresets] = useState<FilterPreset[]>([]);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayInTaipei();
 
   useEffect(() => {
     setStartDate(today);
@@ -127,7 +128,7 @@ function History() {
   const applyRange = (days: number) => {
     const end = new Date();
     const start = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
-    const format = (d: Date) => d.toISOString().split('T')[0];
+    const format = toTaipeiDateString;
     setStartDate(format(start));
     setEndDate(format(end));
   };
