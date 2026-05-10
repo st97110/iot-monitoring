@@ -6,6 +6,7 @@ import { getDeviceTypeBorderColor, formatValue } from '../utils/sensor';
 import type { HistoryResponse, WiseLatestRecord } from '../types/api';
 import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
+import RangeIcon from '../components/RangeIcon';
 import { toTaipeiDateString, todayInTaipei } from '../utils/date';
 
 // 可排序的欄位
@@ -345,9 +346,18 @@ function History() {
       <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-sm font-semibold text-slate-600">快速範圍：</span>
-          <button onClick={() => applyRange(1)} className="px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">一天</button>
-          <button onClick={() => applyRange(7)} className="px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">一週</button>
-          <button onClick={() => applyRange(30)} className="px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">一個月</button>
+          <button onClick={() => applyRange(1)} title="最近一天" aria-label="最近一天"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
+            <RangeIcon days={1} />
+          </button>
+          <button onClick={() => applyRange(7)} title="最近一週" aria-label="最近一週"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
+            <RangeIcon days={7} />
+          </button>
+          <button onClick={() => applyRange(30)} title="最近一個月" aria-label="最近一個月"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
+            <RangeIcon days={30} />
+          </button>
         </div>
 
         {presets.length > 0 && (

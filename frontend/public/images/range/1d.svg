@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- calendar 外框 -->
+  <rect x="3" y="5" width="18" height="16" rx="2"/>
+  <!-- 上方環扣 -->
+  <line x1="8" y1="3" x2="8" y2="7"/>
+  <line x1="16" y1="3" x2="16" y2="7"/>
+  <!-- 月份標題分隔線 -->
+  <line x1="3" y1="9" x2="21" y2="9"/>
+  <!-- 大字「1」 -->
+  <text x="12" y="18.2" text-anchor="middle"
+        font-family="system-ui, sans-serif" font-weight="800" font-size="8.5"
+        stroke="none" fill="currentColor">1</text>
+</svg>
