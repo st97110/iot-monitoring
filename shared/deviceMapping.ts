@@ -239,7 +239,8 @@ export const deviceMapping: Record<string, AreaConfig> = {
         area: '梅峰區',
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 18.155 }, geRange: 500 },
+          // 2026-05-11 重裝後歸零：當下 EgF = 7.86 mA 設為新 initial
+          { name: '伸縮量', channels: ['AI_0'], type: DEVICE_TYPES.GE, initialValues: { AI_0: 7.86 }, geRange: 500 },
         ],
       },
       {
