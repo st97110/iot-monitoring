@@ -529,17 +529,17 @@ function TrendPage() {
       <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-sm font-semibold text-slate-600">快速範圍：</span>
-          <button onClick={() => applyRange(1)} title="最近一天" aria-label="最近一天"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
-            <RangeIcon days={1} />
+          <button onClick={() => applyRange(1)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
+            <RangeIcon days={1} className="w-4 h-4" /> 一天
           </button>
-          <button onClick={() => applyRange(7)} title="最近一週" aria-label="最近一週"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
-            <RangeIcon days={7} />
+          <button onClick={() => applyRange(7)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
+            <RangeIcon days={7} className="w-4 h-4" /> 一週
           </button>
-          <button onClick={() => applyRange(30)} title="最近一個月" aria-label="最近一個月"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
-            <RangeIcon days={30} />
+          <button onClick={() => applyRange(30)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-blue-600 transition-colors">
+            <RangeIcon days={30} className="w-4 h-4" /> 一個月
           </button>
         </div>
 
