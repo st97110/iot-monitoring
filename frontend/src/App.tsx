@@ -95,14 +95,13 @@ const Navigation = () => {
 };
 
 // 依目前路徑顯示對應客戶名稱
-// /t14 → 聯友地質技師事務所；/t8 → 聯友地工（暫用通用名，知道 T8 客戶後可加分支）
+// /t14 → 顯示 聯友地質技師事務所；其他 (含 /t8) → 不顯示客戶名
 const TenantFooter = () => {
   const { pathname } = useLocation();
-  let owner = '聯友地工';
-  if (pathname.startsWith('/t14')) owner = '聯友地質技師事務所';
+  const owner = pathname.startsWith('/t14') ? '聯友地質技師事務所' : null;
   return (
     <footer className="text-center text-xs text-slate-400 py-4 border-t border-slate-200 bg-white/50">
-      © {new Date().getFullYear()} 監測系統 · {owner}
+      © {new Date().getFullYear()} 監測系統{owner ? ` · ${owner}` : ''}
     </footer>
   );
 };
