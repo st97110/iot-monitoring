@@ -38,6 +38,7 @@ const Navigation = () => {
 
   const getSiteName = (): string => {
     if (routeGroup === 't14') return '(台14線及甲線)';
+    if (routeGroup === 't8') return '(台8線)';
     return '';
   };
 
@@ -93,6 +94,19 @@ const Navigation = () => {
   );
 };
 
+// 依目前路徑顯示對應客戶名稱
+// /t14 → 聯友地質技師事務所；/t8 → 聯友地工（暫用通用名，知道 T8 客戶後可加分支）
+const TenantFooter = () => {
+  const { pathname } = useLocation();
+  let owner = '聯友地工';
+  if (pathname.startsWith('/t14')) owner = '聯友地質技師事務所';
+  return (
+    <footer className="text-center text-xs text-slate-400 py-4 border-t border-slate-200 bg-white/50">
+      © {new Date().getFullYear()} 監測系統 · {owner}
+    </footer>
+  );
+};
+
 const NotFoundPage = () => (
   <div className="text-center py-10">
     <h1 className="text-4xl font-bold text-red-500">404 - 頁面未找到</h1>
@@ -103,9 +117,9 @@ const NotFoundPage = () => (
 
 const SiteLayout = () => {
   const { routeGroup } = useParams<{ routeGroup?: string }>();
-  // T8 由其他系統管理，不在這個前端顯示；任何 /t8/* 路徑都導回 /t14
-  if (routeGroup === 't8') return <Navigate to="/t14" replace />;
-  if (routeGroup !== 't14') return <NotFoundPage />;
+  // /t14 與 /t8 都接受（各客戶用各自的 URL bookmark）
+  // 預設 / 仍然 redirect 到 /t14（見 Routes 設定）
+  if (routeGroup !== 't14' && routeGroup !== 't8') return <NotFoundPage />;
   return (
     <>
       <Navigation />
@@ -131,9 +145,7 @@ function App() {
           </Routes>
         </div>
 
-        <footer className="text-center text-xs text-slate-400 py-4 border-t border-slate-200 bg-white/50">
-          © {new Date().getFullYear()} 監測系統 · 聯友地質技師事務所
-        </footer>
+        <TenantFooter />
       </div>
     </Router>
   );
