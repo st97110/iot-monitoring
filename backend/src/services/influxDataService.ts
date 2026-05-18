@@ -43,22 +43,31 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
 
       let hasValidDataField = false;
 
+      // 是否有對應 config — 沒 config 也照寫，但只寫 AI_X / DI_X 開頭的 channel 欄位
+      const configuredSensors = getSensorsByDeviceId(deviceId);
+      const hasConfig = !!(configuredSensors && configuredSensors.length > 0);
+
       // 處理原始的 AI/DI 欄位 (來自 record.raw)
       for (const [fieldKey, fieldValue] of Object.entries(record.raw)) {
-        // 確保只處理 config 中定義的 sensor channel 相關的原始數據
-        // 或者您可以選擇寫入所有 raw 中的數值型數據
-        let isConfiguredChannelField = false;
-        for (const sensor of getSensorsByDeviceId(deviceId) ?? []) {
-          for (const ch of sensor.channels) {
-            if (fieldKey.startsWith(`${ch} `)) { // 例如 "AI_0 EgF"
-              isConfiguredChannelField = true;
-              break;
+        let shouldWrite = false;
+        if (hasConfig) {
+          // 有 config：只寫被列在 config 中的 channel（沿用既有行為）
+          for (const sensor of configuredSensors!) {
+            for (const ch of sensor.channels) {
+              if (fieldKey.startsWith(`${ch} `)) { // 例如 "AI_0 EgF"
+                shouldWrite = true;
+                break;
+              }
             }
+            if (shouldWrite) break;
           }
-          if (isConfiguredChannelField) break;
+        } else {
+          // 沒 config：寫所有 AI_X / DI_X 開頭的欄位（best-effort fallback）
+          // 之後若補 config，原始資料還在 DB 裡可查
+          shouldWrite = /^[AD]I_\d+ /.test(fieldKey);
         }
 
-        if (isConfiguredChannelField) {
+        if (shouldWrite) {
             const floatVal = parseFloat(fieldValue as string);
             if (!isNaN(floatVal)) {
                 // Sanity gate：擋掉 WISE-4010 偶發吐出的 int16/uint16 overflow（如 32767.5、65535）
@@ -68,8 +77,6 @@ export function convertWiseToInfluxPoints(deviceId: string, records: any[]): Poi
                     point.floatField(fieldKey, floatVal);
                     hasValidDataField = true;
                 }
-            } else {
-                // logger.debug(`[InfluxData] 設備 ${deviceId} 欄位 ${fieldKey} 值 "${fieldValue}" 不是有效數字，跳過此欄位。`);
             }
         }
       }
