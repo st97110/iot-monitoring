@@ -11,7 +11,7 @@ jobs:
     steps:
       # 1. 先把原始碼拉下來
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       # 2. 用 repo 根目錄當 build context，才能把 shared/ 也包進 image
       - name: Build Docker image
