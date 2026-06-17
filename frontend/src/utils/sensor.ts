@@ -1,4 +1,4 @@
-import { DEVICE_TYPES, Device, Sensor } from '../config/config';
+import { DEVICE_TYPES, Device, Sensor, DEFAULT_GE_DAILY_THRESHOLDS } from '../config/config';
 
 // ======== 設備類型對應顏色漸層 ========
 const typeColors: Record<string, string> = {
@@ -52,99 +52,122 @@ export interface EntryData {
   [key: string]: any;
 }
 
-export function isNormalData(
+/** 警示等級：正常 / 預警(黃) / 警戒(橙) / 行動(紅) */
+export type AlertLevel = 'normal' | 'warn' | 'alert' | 'action';
+
+const ALERT_SEVERITY: Record<AlertLevel, number> = { normal: 0, warn: 1, alert: 2, action: 3 };
+
+/** 取兩個等級中較嚴重者（給整張卡片彙總多個 channel 用） */
+export function worseLevel(a: AlertLevel, b: AlertLevel): AlertLevel {
+  return ALERT_SEVERITY[a] >= ALERT_SEVERITY[b] ? a : b;
+}
+
+export interface AlertOpts {
+  /** RAIN 用：目前比對的雨量區間 key（rainfall_1h 等） */
+  rainfallIntervalKey?: string;
+  /** GE 每日累積用：今日 00:00 的 EgF (mA)，由後端 dayStart 提供；無則 fallback 安裝初始值 */
+  dayStartEgF?: number;
+}
+
+/**
+ * 取得單一 channel 的警示等級。
+ * - GE（地中伸縮計）：四級，依「每日累積變化量 = 目前值 − 今日00:00值」的絕對值比對管理基準
+ * - 其他儀器：維持二級（normal / action），語意同舊版 isNormalData
+ */
+export function getAlertLevel(
   deviceConfig: Device | undefined,
   sensor: Sensor | undefined,
   chData: ChannelData | number | null | undefined,
-  rainfallIntervalKey?: string,
-): boolean {
-  if (!deviceConfig || chData == null) return true;
+  opts: AlertOpts = {},
+): AlertLevel {
+  if (!deviceConfig || chData == null) return 'normal';
 
   const isGeoStarSource = deviceConfig.sourceType === 'geostar';
   const typeToUse = deviceConfig.type;
+  const bool = (normal: boolean): AlertLevel => (normal ? 'normal' : 'action');
 
   if (typeToUse === DEVICE_TYPES.RAIN) {
-    // RAIN 時 chData 可能是數字（interval 雨量）
     const rainValue = typeof chData === 'number' ? chData : undefined;
-    if (rainValue === undefined || rainValue === null) return true;
-
+    if (rainValue == null) return 'normal';
+    const key = opts.rainfallIntervalKey;
     if (deviceConfig.area === '台8線107K區') {
-      const alertRedThresholds: Record<string, number> = {
-        rainfall_1h: 25,
-        rainfall_3h: 45,
-        rainfall_24h: 145,
-      };
-      return rainValue < ((rainfallIntervalKey && alertRedThresholds[rainfallIntervalKey]) || Infinity);
+      const t: Record<string, number> = { rainfall_1h: 25, rainfall_3h: 45, rainfall_24h: 145 };
+      return bool(rainValue < ((key && t[key]) || Infinity));
     }
     if (deviceConfig.area === '90K區') {
-      const alertYellowThresholds: Record<string, number> = {
-        rainfall_10m: 15,
-        rainfall_1h: 40,
-        rainfall_3h: 110,
-        rainfall_24h: 200,
-      };
-      return rainValue < ((rainfallIntervalKey && alertYellowThresholds[rainfallIntervalKey]) || Infinity);
+      const t: Record<string, number> = { rainfall_10m: 15, rainfall_1h: 40, rainfall_3h: 110, rainfall_24h: 200 };
+      return bool(rainValue < ((key && t[key]) || Infinity));
     }
-    return true;
+    return 'normal';
   }
 
-  if (!sensor) return true;
+  if (!sensor) return 'normal';
   const ch = chData as ChannelData;
 
   switch (typeToUse) {
     case DEVICE_TYPES.WATER: {
       if (ch?.EgF != null && !isNaN(ch.EgF)) {
         const waterLevel = rawToPEgF(ch.EgF, typeToUse, sensor?.wellDepth);
-        if (waterLevel < -17) return true;
+        return bool(waterLevel < -17);
       }
-      return false;
+      return 'action';
     }
     case DEVICE_TYPES.GE: {
-      const raw = ch?.EgF;
-      if (raw == null) return false;
-      const pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
-      const initRaw = sensor.initialValues?.[sensor.channels[0]];
-      if (initRaw == null) return false;
-      const initPe = rawToPEgF(initRaw, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
-      if (!isNaN(pe) && !isNaN(initPe)) {
-        const delta = pe - initPe;
-        if (delta < 10) return true;
-      }
-      return false;
+      const cur = ch?.EgF;
+      // 每日累積基準：優先用今日 00:00 的值；後端沒附 dayStart 時 fallback 安裝初始值
+      const baseEgF = opts.dayStartEgF ?? sensor.initialValues?.[sensor.channels[0]];
+      if (cur == null || isNaN(cur) || baseEgF == null) return 'normal';
+      const curMm = rawToPEgF(cur, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
+      const baseMm = rawToPEgF(baseEgF, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
+      if (isNaN(curMm) || isNaN(baseMm)) return 'normal';
+      const dailyAbs = Math.abs(curMm - baseMm); // 表是看 |變化量|（伸/縮都算）
+      const t = sensor.dailyThresholds ?? DEFAULT_GE_DAILY_THRESHOLDS;
+      if (dailyAbs >= t.action) return 'action';
+      if (dailyAbs >= t.alert) return 'alert';
+      if (dailyAbs >= t.warn) return 'warn';
+      return 'normal';
     }
     case DEVICE_TYPES.TI: {
       if (isGeoStarSource) {
         const delta = ch?.PEgF;
-        return delta != null && delta < 1800;
+        return bool(delta != null && delta < 1800);
       }
       const raw = ch?.EgF;
-      if (raw == null) return false;
+      if (raw == null) return 'action';
       const pe = rawToPEgF(raw, typeToUse, sensor?.wellDepth, sensor?.fsDeg);
       const initRaw = sensor.initialValues?.[sensor.channels[0]];
-      if (initRaw == null) return false;
+      if (initRaw == null) return 'action';
       const initPe = rawToPEgF(initRaw, typeToUse, sensor?.wellDepth, sensor?.fsDeg);
       if (!isNaN(pe) && !isNaN(initPe)) {
-        const delta = pe - initPe;
-        if (delta < 1800) return true;
+        return bool(pe - initPe < 1800);
       }
-      return false;
+      return 'action';
     }
     case DEVICE_TYPES.FLOW:
       // TODO：補流量計判定閾值
-      return true;
+      return 'normal';
     case DEVICE_TYPES.BATTERY: {
-      // 電量換算後若 < scaleMin + 30% 範圍 → 偏低
       const pe = ch?.PEgF;
-      if (pe == null || isNaN(pe)) return true;
+      if (pe == null || isNaN(pe)) return 'normal';
       if (sensor.scaleMin != null && sensor.scaleMax != null) {
         const pct = ((pe - sensor.scaleMin) / (sensor.scaleMax - sensor.scaleMin)) * 100;
-        return pct >= 30;
+        return bool(pct >= 30);
       }
-      return true;
+      return 'normal';
     }
     default:
-      return true;
+      return 'normal';
   }
+}
+
+/** 向後相容：是否正常（= 警示等級為 normal）。舊呼叫端不用改。 */
+export function isNormalData(
+  deviceConfig: Device | undefined,
+  sensor: Sensor | undefined,
+  chData: ChannelData | number | null | undefined,
+  rainfallIntervalKey?: string,
+): boolean {
+  return getAlertLevel(deviceConfig, sensor, chData, { rainfallIntervalKey }) === 'normal';
 }
 
 /**

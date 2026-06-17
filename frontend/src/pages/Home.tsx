@@ -2,8 +2,27 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES, Device, AreaConfig } from '../config/config';
-import { getDeviceTypeColor, isNormalData, formatValue } from '../utils/sensor';
+import { getDeviceTypeColor, getAlertLevel, worseLevel, formatValue, type AlertLevel } from '../utils/sensor';
 import type { LatestResponse, WiseLatestRecord } from '../types/api';
+
+// 警示等級 → 卡片 / pill / 數值 樣式（預警黃 / 警戒橙 / 行動紅）
+const LEVEL_CARD: Record<AlertLevel, string> = {
+  normal: 'bg-white border-l-4 border-slate-200',
+  warn:   'bg-amber-50 border-l-[6px] border-amber-400 ring-1 ring-amber-200',
+  alert:  'bg-orange-50 border-l-[6px] border-orange-500 ring-1 ring-orange-200',
+  action: 'bg-red-50 border-l-[6px] border-red-500 ring-1 ring-red-200',
+};
+const LEVEL_PILL: Record<Exclude<AlertLevel, 'normal'>, { cls: string; label: string }> = {
+  warn:   { cls: 'bg-amber-500',  label: '預警' },
+  alert:  { cls: 'bg-orange-500', label: '警戒' },
+  action: { cls: 'bg-red-600',    label: '行動' },
+};
+const LEVEL_VALUE: Record<AlertLevel, string> = {
+  normal: 'font-semibold text-slate-700',
+  warn:   'font-bold text-amber-600',
+  alert:  'font-bold text-orange-600',
+  action: 'font-bold text-red-600 text-lg leading-none',
+};
 import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
 import SkeletonCard from '../components/SkeletonCard';
@@ -144,27 +163,25 @@ function DeviceCard({ device, data, routeGroup }: DeviceCardProps) {
   const deviceLinkId = device.originalDeviceId || device.id;
   const trendLink = `/${routeGroup}/trend?deviceId=${deviceLinkId}${(isRainGauge || (device.sensors && device.sensors.length > 0)) ? '&sensorIndex=0' : ''}`;
 
-  // 判斷整張卡片是否有異常值 → 邊框變紅
-  let hasAbnormal = false;
+  // 彙總整張卡片最嚴重的警示等級（取所有 channel 中最高）
+  let worst: AlertLevel = 'normal';
   if (!noData && data && device.sensors) {
     if (isRainGauge) {
       const r24 = (data as any).rainfall_24h;
-      if (r24 != null && !isNormalData(device, undefined, r24, 'rainfall_24h')) hasAbnormal = true;
+      if (r24 != null) worst = worseLevel(worst, getAlertLevel(device, undefined, r24, { rainfallIntervalKey: 'rainfall_24h' }));
     } else if (!isTdr) {
       for (const sensor of device.sensors) {
         for (const ch of sensor.channels) {
-          const chData = data.channels?.[ch];
-          if (!isNormalData(device, sensor, chData)) { hasAbnormal = true; break; }
+          const lvl = getAlertLevel(device, sensor, data.channels?.[ch], { dayStartEgF: data.dayStart?.[ch] });
+          worst = worseLevel(worst, lvl);
         }
-        if (hasAbnormal) break;
       }
     }
   }
 
-  // 卡片整體樣式：異常時整片紅、粗邊；正常時中性底
-  const cardBase = hasAbnormal
-    ? 'bg-red-50 border-l-[6px] border-red-500 ring-1 ring-red-200'
-    : 'bg-white border-l-4 border-slate-200';
+  // 卡片整體樣式依最嚴重等級上色
+  const cardBase = LEVEL_CARD[worst];
+  const pill = worst !== 'normal' ? LEVEL_PILL[worst] : null;
 
   const statusToneInfo = statusTone[statusTier];
 
@@ -202,13 +219,13 @@ function DeviceCard({ device, data, routeGroup }: DeviceCardProps) {
             <p className="text-xs text-slate-500 mt-0.5">{DEVICE_TYPE_NAMES[typeKey] || '設備'}</p>
           </div>
           <div className="shrink-0 flex flex-col items-end gap-1">
-            {hasAbnormal && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-600 text-white shadow-sm">
+            {pill && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white shadow-sm ${pill.cls}`}>
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                   <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
-                異常
+                {pill.label}
               </span>
             )}
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${statusToneInfo.bg} ${statusToneInfo.text}`}>
@@ -234,11 +251,11 @@ function DeviceCard({ device, data, routeGroup }: DeviceCardProps) {
             ].map(item => {
               const value = (data as any)[item.key] as number | undefined | null;
               if (value == null) return null;
-              const normal = isNormalData(device, undefined, value, item.key);
+              const lvl = getAlertLevel(device, undefined, value, { rainfallIntervalKey: item.key });
               return (
                 <div key={item.key} className="flex justify-between items-baseline">
                   <span className="text-xs text-slate-500">{item.label} 累積</span>
-                  <span className={`${normal ? 'font-semibold text-slate-700' : 'font-bold text-red-600 text-lg leading-none'}`}>
+                  <span className={LEVEL_VALUE[lvl]}>
                     {value.toFixed(1)} <span className="text-xs text-slate-400 font-normal">mm</span>
                   </span>
                 </div>
@@ -249,11 +266,11 @@ function DeviceCard({ device, data, routeGroup }: DeviceCardProps) {
               (sensor.channels || []).map((ch) => {
                 const chData = data.channels?.[ch];
                 const displayValue = formatValue(device, sensor, chData, data);
-                const normal = isNormalData(device, sensor, chData);
+                const lvl = getAlertLevel(device, sensor, chData, { dayStartEgF: data.dayStart?.[ch] });
                 return (
                   <div key={`${sIdx}-${ch}`} className="flex justify-between items-baseline gap-2">
                     <span className="text-xs text-slate-500 truncate">{sensor.name}</span>
-                    <span className={`shrink-0 ${normal ? 'font-semibold text-slate-700' : 'font-bold text-red-600 text-lg leading-none'}`}>
+                    <span className={`shrink-0 ${LEVEL_VALUE[lvl]}`}>
                       {displayValue}
                     </span>
                   </div>

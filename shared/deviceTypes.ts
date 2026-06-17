@@ -35,7 +35,32 @@ export interface Sensor {
   scaleMax?: number;
   /** 顯示單位（'V', 'A', 'mm', …） */
   unit?: string;
+  /**
+   * 位移類（GE 伸縮計）每日累積變化量管理基準值 (mm)。
+   * 對應地工管理參考基準：預警(黃)/警戒(橙)/行動(紅)。
+   * 未設則套 DEFAULT_GE_DAILY_THRESHOLDS。
+   * 之後 TI / 水位等要管理基準時，可比照新增對應欄位。
+   */
+  dailyThresholds?: AlertThresholds;
 }
+
+/** 三級管理基準值：預警(黃) / 警戒(橙) / 行動(紅) */
+export interface AlertThresholds {
+  warn: number;   // 預警 黃燈
+  alert: number;  // 警戒 橙燈
+  action: number; // 行動 紅燈
+}
+
+/**
+ * 地中伸縮計 (GE) 每日累積變化量預設管理基準值 (mm)
+ * 來源：地工「地中伸縮計管理參考基準值」表 3-7（每日累積變化量列）
+ *   預警 10 / 警戒 50 / 行動 100
+ */
+export const DEFAULT_GE_DAILY_THRESHOLDS: AlertThresholds = {
+  warn: 10,
+  alert: 50,
+  action: 100,
+};
 
 export interface Device {
   id: string;

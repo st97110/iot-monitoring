@@ -3,8 +3,8 @@
 // 讓一般使用者看不到內部站點（例如 T2 電池），但 backend 和 /view/... 仍正常運作。
 
 // Re-export 共用型別
-export { DEVICE_TYPES, getPhysicalId } from '../../../shared/deviceTypes';
-export type { Sensor, Device, AreaConfig } from '../../../shared/deviceTypes';
+export { DEVICE_TYPES, getPhysicalId, DEFAULT_GE_DAILY_THRESHOLDS } from '../../../shared/deviceTypes';
+export type { Sensor, Device, AreaConfig, AlertThresholds } from '../../../shared/deviceTypes';
 
 import { DEVICE_TYPES, AreaConfig } from '../../../shared/deviceTypes';
 import { deviceMapping as rawDeviceMapping } from '../../../shared/deviceMapping';

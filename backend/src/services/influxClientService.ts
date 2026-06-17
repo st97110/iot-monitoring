@@ -674,4 +674,54 @@ export async function queryRainfall(
   return rain;
 }
 
+/**
+ * 查某 WISE 裝置「今日 00:00 (Asia/Taipei) 之後第一筆」各 AI channel 的 EgF (mA)。
+ * 給 GE 每日累積變化量當基準（目前值 − 今日起始值）。
+ * 回傳例：{ AI_0: 4.98, AI_1: 5.46 }；該裝置今天還沒資料則回 {}。
+ */
+export async function queryDayStartEgFFromInflux(
+  key: SourceKey,
+  deviceId: string,
+): Promise<Record<string, number>> {
+  const client = getClient(key);
+  const queryApi = client.getQueryApi(config.influx.org);
+  const bucket = config.influx.buckets[key];
+  const timeZone = 'Asia/Taipei';
+
+  // 今日台灣日期的 00:00:00，轉成 UTC ISO
+  const todayTaipei = formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd');
+  const utcStart = formatInTimeZone(
+    new Date(`${todayTaipei}T00:00:00`), timeZone, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
+  );
+
+  // first() 依 _field 分組 → 每個 AI_x EgF 取今天最早一筆
+  const flux = `
+    from(bucket: "${bucket}")
+      |> range(start: time(v: "${utcStart}"))
+      |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
+      |> filter(fn: (r) => r._field =~ /^AI_[0-9]+ EgF$/)
+      |> first()
+  `;
+
+  const result: Record<string, number> = {};
+  await new Promise<void>((resolve, reject) => {
+    queryApi.queryRows(flux, {
+      next(row, meta) {
+        const o = meta.toObject(row);
+        const field = o._field as string;       // "AI_0 EgF"
+        const ch = field.split(' ')[0];          // "AI_0"
+        const v = parseFloat(o._value as string);
+        if (ch && !isNaN(v)) result[ch] = v;
+      },
+      error: (e) => {
+        logger.error(`[InfluxQuery] queryDayStartEgF 裝置 ${deviceId} 失敗: ${e.message}`);
+        reject(e);
+      },
+      complete: resolve,
+    });
+  });
+
+  return result;
+}
+
 export { Point };
