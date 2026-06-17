@@ -207,6 +207,27 @@ export function rawToPEgF(
   }
 }
 
+/**
+ * GE 伸縮計「今日變化量」字串（mm，帶正負號）= 目前值 − 今日00:00值。
+ * 嚴格只在有 dayStartEgF（後端有附今日基準）時才回傳；否則回 null，
+ * 讓呼叫端 fallback 顯示累積值、避免把累積值誤標成今日。
+ */
+export function formatGeDailyChange(
+  sensor: Sensor | undefined,
+  chData: ChannelData | null | undefined,
+  dayStartEgF: number | undefined,
+): string | null {
+  if (!sensor || dayStartEgF == null) return null;
+  const cur = chData?.EgF;
+  if (cur == null || isNaN(cur)) return null;
+  const curMm = rawToPEgF(cur, DEVICE_TYPES.GE, sensor.wellDepth, sensor.fsDeg, sensor.geRange);
+  const baseMm = rawToPEgF(dayStartEgF, DEVICE_TYPES.GE, sensor.wellDepth, sensor.fsDeg, sensor.geRange);
+  if (isNaN(curMm) || isNaN(baseMm)) return null;
+  const d = curMm - baseMm;
+  const sign = d > 0 ? '+' : '';
+  return `${sign}${d.toFixed(2)} mm`;
+}
+
 /** 依感測器類型回傳要顯示的文字與單位 */
 export function formatValue(
   deviceConfig: Device | undefined,

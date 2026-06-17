@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
 import { API_BASE, deviceMapping, DEVICE_TYPE_NAMES, DEVICE_TYPES, Device, AreaConfig } from '../config/config';
-import { getDeviceTypeColor, getAlertLevel, worseLevel, formatValue, type AlertLevel } from '../utils/sensor';
+import { getDeviceTypeColor, getAlertLevel, worseLevel, formatValue, formatGeDailyChange, type AlertLevel } from '../utils/sensor';
 import type { LatestResponse, WiseLatestRecord } from '../types/api';
 
 // 警示等級 → 卡片 / pill / 數值 樣式（預警黃 / 警戒橙 / 行動紅）
@@ -265,11 +265,16 @@ function DeviceCard({ device, data, routeGroup }: DeviceCardProps) {
             device.sensors?.flatMap((sensor, sIdx) =>
               (sensor.channels || []).map((ch) => {
                 const chData = data.channels?.[ch];
-                const displayValue = formatValue(device, sensor, chData, data);
-                const lvl = getAlertLevel(device, sensor, chData, { dayStartEgF: data.dayStart?.[ch] });
+                const dayStartEgF = data.dayStart?.[ch];
+                const lvl = getAlertLevel(device, sensor, chData, { dayStartEgF });
+                // GE：卡片顯示「今日變化量」（跟燈號同基準）；無今日基準時 fallback 累積值
+                const isGe = sensor.type === DEVICE_TYPES.GE || device.type === DEVICE_TYPES.GE;
+                const dailyStr = isGe ? formatGeDailyChange(sensor, chData, dayStartEgF) : null;
+                const displayValue = dailyStr ?? formatValue(device, sensor, chData, data);
+                const label = dailyStr ? `${sensor.name} 今日` : sensor.name;
                 return (
                   <div key={`${sIdx}-${ch}`} className="flex justify-between items-baseline gap-2">
-                    <span className="text-xs text-slate-500 truncate">{sensor.name}</span>
+                    <span className="text-xs text-slate-500 truncate">{label}</span>
                     <span className={`shrink-0 ${LEVEL_VALUE[lvl]}`}>
                       {displayValue}
                     </span>
