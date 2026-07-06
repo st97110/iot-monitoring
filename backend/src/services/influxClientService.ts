@@ -136,7 +136,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
         data
           |> filter(fn: (r) => r._time == latest._time)
       else
-        from(bucket: "nonexistent") |> range(start: -1s) // 返回空結果
+        data |> filter(fn: (r) => false) // 返回空結果（用真 bucket 濾掉全部，避免讀不存在的 bucket 在 query 初始化就報錯）
     `;
 
     const deviceConfig = getDeviceConfigById(deviceId);
@@ -215,7 +215,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
         data
           |> filter(fn: (r) => r._time == latest._time)
       else
-        from(bucket: "nonexistent") |> range(start: -1s) // 返回空結果
+        data |> filter(fn: (r) => false) // 返回空結果（用真 bucket 濾掉全部，避免讀不存在的 bucket 在 query 初始化就報錯）
     `;
 
     await new Promise<void>((resolve, reject) => {
