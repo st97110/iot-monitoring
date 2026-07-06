@@ -65,6 +65,7 @@ const deviceImages: Record<string, string> = {
   'TDR_T14_T4': '/images/stations/t14/TDR_T14_T4.jpg',
   'WISE-4010LAN_00D0C9FAD2C9_SITE1': '/images/stations/t14/WISE_14_25K_BT_TI.jpg',
   'WISE-4010LAN_00D0C9FAD2C9_SITE2': '/images/stations/t14/WISE_14_27K_BT_TI.jpg',
+  'SN_6722': '/images/stations/t14/WISE_14_27K_BT_TI.jpg', // 14.27K 換準星後沿用同站照片
   'SN_6721': '/images/stations/t14/CH1_BT_TI.jpg',
   'WISE-4010LAN_74FE489299F4': '/images/stations/t14/WISE_BE1_GE.jpg',
   'WISE-4010LAN_74FE4890BAFC': '/images/stations/t14/WISE_BE2_GE.jpg',

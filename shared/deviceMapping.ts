@@ -158,16 +158,30 @@ export const deviceMapping: Record<string, AreaConfig> = {
         ],
       },
       {
-        id: 'WISE-4010LAN_00D0C9FAD2C9_SITE2',
-        originalDeviceId: 'WISE-4010LAN_00D0C9FAD2C9',
-        name: '14.27K-BT',
+        // 2026-07 由 WISE(00D0C9FAD2C9 SITE2, AI_2/AI_3) 換成準星 sn=6722。
+        // 原 WISE 盒子的 14.25K-BT (SITE1) 仍維持 WISE 不變。
+        id: 'SN_6722',
+        name: '14.27K-BT', // 準星 sn=6722
         lat: 24.08995,
         lng: 121.17361,
         area: '梅峰區',
         type: DEVICE_TYPES.TI,
+        sourceType: 'geostar',
         sensors: [
-          { name: 'A軸', channels: ['AI_2'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_2: 12.294 } },
-          { name: 'B軸', channels: ['AI_3'], type: DEVICE_TYPES.TI, fsDeg: 15, initialValues: { AI_3: 12.463 } },
+          {
+            name: 'A軸角度',
+            channels: ['AI_0'],
+            sourceChannelMapping: { AI_0: 'TI-2A軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { AI_0: 0 },
+          },
+          {
+            name: 'B軸角度',
+            channels: ['AI_1'],
+            sourceChannelMapping: { AI_1: 'TI-2B軸角度' },
+            type: DEVICE_TYPES.TI,
+            initialValues: { AI_1: 0 },
+          },
         ],
       },
       {
