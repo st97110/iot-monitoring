@@ -42,6 +42,12 @@ export interface Sensor {
    * 之後 TI / 水位等要管理基準時，可比照新增對應欄位。
    */
   dailyThresholds?: AlertThresholds;
+  /**
+   * 暫停告警：true 時此 sensor 一律回 normal（不亮黃/橙/紅）。
+   * 用途：儀器確認故障、待現場維修期間，避免爛資料亂觸發警戒。
+   * 修復後移除此旗標即恢復告警。數值仍照常顯示與入庫。
+   */
+  alertMuted?: boolean;
 }
 
 /** 三級管理基準值：預警(黃) / 警戒(橙) / 行動(紅) */

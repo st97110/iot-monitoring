@@ -102,6 +102,7 @@ export function getAlertLevel(
   }
 
   if (!sensor) return 'normal';
+  if (sensor.alertMuted) return 'normal'; // 儀器維修中，暫停告警（見 deviceTypes.alertMuted）
   const ch = chData as ChannelData;
 
   switch (typeToUse) {

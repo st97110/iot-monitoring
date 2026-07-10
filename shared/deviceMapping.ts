@@ -242,7 +242,9 @@ export const deviceMapping: Record<string, AreaConfig> = {
         area: '梅峰區',
         type: DEVICE_TYPES.GE,
         sensors: [
-          { name: '伸縮量', channels: ['AI_1'], type: DEVICE_TYPES.GE, initialValues: { AI_1: 9.97 }, geRange: 500 },
+          // alertMuted: 2026-07-07 起 AI_1 感測器故障（滿檔 20mA 兩天後劇烈彈跳 ±10~90mm/5min），
+          // 待現場檢修。修復並確認讀值穩定後移除此旗標恢復告警。
+          { name: '伸縮量', channels: ['AI_1'], type: DEVICE_TYPES.GE, initialValues: { AI_1: 9.97 }, geRange: 500, alertMuted: true },
         ],
       },
       {
