@@ -118,7 +118,7 @@ export const deviceMapping: Record<string, AreaConfig> = {
         type: DEVICE_TYPES.WATER,
         sensors: [
           // 公式：前端走特殊邏輯 (I0-4)*2.5-33.45 m；backend 用 wellDepth 線性
-          { name: '地下水位', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -35 },
+          { name: '地下水位', channels: ['AI_0'], type: DEVICE_TYPES.WATER, wellDepth: -35, alertMuted: true },
         ],
       },
       {
