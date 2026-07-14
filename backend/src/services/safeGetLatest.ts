@@ -1,5 +1,5 @@
 // services/safeDataService.ts
-import { RainDuration, enrichRainfall, enrichGeDayStart, getLatestDataFromDB, getLatestDataFromFolder } from './dataService';
+import { RainDuration, enrichRainfall, enrichGeBaseline, getLatestDataFromDB, getLatestDataFromFolder } from './dataService';
 import { logger } from '../utils/logger';
 
 export type SourceKey = 'wise' | 'tdr' | 'both';
@@ -27,7 +27,7 @@ export async function safeGetLatestData(source: SourceKey, deviceId?: string): P
                        : await getLatestDataFromFolder(source, deviceId);
 
     await enrichRainfall(result, rainfallDurationsForLatest);
-    if (source === 'wise') await enrichGeDayStart(result);  // GE 每日累積基準
+    if (source === 'wise') await enrichGeBaseline(result);  // GE 告警基準（昨日 ±1σ 均值）
     return result;
   } catch (error: any) {
     logger.error(`[safeGetLatestData] DB 查詢 ${deviceId}(${source}) 失敗: ${error.message}，改從資料夾讀取`);

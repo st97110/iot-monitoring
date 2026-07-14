@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux, queryRainfall, queryDayStartEgFFromInflux } from './influxClientService';
+import { queryLatestDataFromInflux, queryDeviceListFromInflux, queryHistoryDataFromInflux, queryRainfall, queryYesterdayBaselineEgF } from './influxClientService';
 import { parseWiseCSVFile } from '../utils/parser';
 import { config, DEVICE_TYPES } from '../config/config';
 import { logger } from '../utils/logger';
@@ -320,12 +320,12 @@ export async function getLatestDataFromDB(source: 'wise' | 'tdr', deviceId?: str
 }
 
 /**
- * 替含 GE（伸縮計）的裝置補上 dayStart：今日 00:00 各 channel 的 EgF。
- * 前端用「目前值 − dayStart」算每日累積變化量、判斷預警/警戒/行動。
+ * 替含 GE（伸縮計）的裝置補上 geBaseline：昨日各 channel 的 ±1σ 穩健均值 EgF。
+ * 前端用「目前值 − geBaseline」判斷告警（預警/警戒/行動）。
  * 只對有 GE sensor 的裝置查詢（省成本），其他裝置略過。
  * @param records getLatestDataFromDB 的回傳（{ [deviceId]: record }），就地 mutate
  */
-export async function enrichGeDayStart(records: Record<string, any>): Promise<void> {
+export async function enrichGeBaseline(records: Record<string, any>): Promise<void> {
   await Promise.all(
     Object.entries(records).map(async ([deviceId, rec]) => {
       if (!rec || rec.error) return;
@@ -333,9 +333,9 @@ export async function enrichGeDayStart(records: Record<string, any>): Promise<vo
       const hasGe = sensors?.some(s => s.type === DEVICE_TYPES.GE);
       if (!hasGe) return;
       try {
-        rec.dayStart = await queryDayStartEgFFromInflux('wise', deviceId);
+        rec.geBaseline = await queryYesterdayBaselineEgF('wise', deviceId);
       } catch (err: any) {
-        logger.warn(`[enrichGeDayStart] 裝置 ${deviceId} 取今日基準失敗: ${err.message}`);
+        logger.warn(`[enrichGeBaseline] 裝置 ${deviceId} 取昨日基準失敗: ${err.message}`);
       }
     }),
   );

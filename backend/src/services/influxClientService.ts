@@ -674,12 +674,24 @@ export async function queryRainfall(
   return rain;
 }
 
+/** ±1σ 穩健均值：先算全體 mean/σ，只留 |v−mean|≤σ 的點再取平均（濾掉單點爛值） */
+function trimmedMeanWithin1Sigma(vals: number[]): number | null {
+  if (vals.length === 0) return null;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const variance = vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length;
+  const sd = Math.sqrt(variance);
+  const kept = sd === 0 ? vals : vals.filter(v => Math.abs(v - mean) <= sd);
+  const use = kept.length ? kept : vals;
+  return use.reduce((a, b) => a + b, 0) / use.length;
+}
+
 /**
- * 查某 WISE 裝置「今日 00:00 (Asia/Taipei) 之後第一筆」各 AI channel 的 EgF (mA)。
- * 給 GE 每日累積變化量當基準（目前值 − 今日起始值）。
- * 回傳例：{ AI_0: 4.98, AI_1: 5.46 }；該裝置今天還沒資料則回 {}。
+ * 查某 WISE 裝置「昨日 (Asia/Taipei) 各 AI channel 的 ±1σ 穩健均值」EgF (mA)。
+ * 給 GE 告警當基準：目前觀測值 − 昨日 ±1σ 範圍內平均值。
+ * 以「昨日整天」為參考、且濾掉離群的單點爛值，比「今日首筆」穩定。
+ * 回傳例：{ AI_0: 4.98, AI_1: 5.46 }；昨日沒資料則回 {}。
  */
-export async function queryDayStartEgFFromInflux(
+export async function queryYesterdayBaselineEgF(
   key: SourceKey,
   deviceId: string,
 ): Promise<Record<string, number>> {
@@ -688,22 +700,22 @@ export async function queryDayStartEgFFromInflux(
   const bucket = config.influx.buckets[key];
   const timeZone = 'Asia/Taipei';
 
-  // 今日台灣日期的 00:00:00，轉成 UTC ISO
+  // 昨日 [00:00, 今日00:00) 台灣時間 → UTC
   const todayTaipei = formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd');
-  const utcStart = formatInTimeZone(
-    new Date(`${todayTaipei}T00:00:00`), timeZone, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-  );
+  const yestTaipei = formatInTimeZone(new Date(Date.now() - 86400000), timeZone, 'yyyy-MM-dd');
+  const utcStart = formatInTimeZone(new Date(`${yestTaipei}T00:00:00`), timeZone, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
+  const utcStop = formatInTimeZone(new Date(`${todayTaipei}T00:00:00`), timeZone, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
 
-  // first() 依 _field 分組 → 每個 AI_x EgF 取今天最早一筆
+  // 拉昨日整天各 AI_x EgF 原始點，在 Node 端算 ±1σ 穩健均值
   const flux = `
     from(bucket: "${bucket}")
-      |> range(start: time(v: "${utcStart}"))
+      |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcStop}"))
       |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device == "${deviceId}")
       |> filter(fn: (r) => r._field =~ /^AI_[0-9]+ EgF$/)
-      |> first()
+      |> keep(columns: ["_time", "_field", "_value"])
   `;
 
-  const result: Record<string, number> = {};
+  const buckets: Record<string, number[]> = {};
   await new Promise<void>((resolve, reject) => {
     queryApi.queryRows(flux, {
       next(row, meta) {
@@ -711,16 +723,21 @@ export async function queryDayStartEgFFromInflux(
         const field = o._field as string;       // "AI_0 EgF"
         const ch = field.split(' ')[0];          // "AI_0"
         const v = parseFloat(o._value as string);
-        if (ch && !isNaN(v)) result[ch] = v;
+        if (ch && !isNaN(v)) (buckets[ch] ??= []).push(v);
       },
       error: (e) => {
-        logger.error(`[InfluxQuery] queryDayStartEgF 裝置 ${deviceId} 失敗: ${e.message}`);
+        logger.error(`[InfluxQuery] queryYesterdayBaselineEgF 裝置 ${deviceId} 失敗: ${e.message}`);
         reject(e);
       },
       complete: resolve,
     });
   });
 
+  const result: Record<string, number> = {};
+  for (const [ch, vals] of Object.entries(buckets)) {
+    const m = trimmedMeanWithin1Sigma(vals);
+    if (m != null) result[ch] = m;
+  }
   return result;
 }
 

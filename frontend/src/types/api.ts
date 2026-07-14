@@ -13,8 +13,8 @@ export interface WiseLatestRecord {
   source?: string;
   channels?: Record<string, Record<string, number>>;  // { AI_0: { EgF: 12.3, PEgF: 25.1 } }
   raw?: Record<string, number | string>;               // { 'AI_0 EgF': 12.3, ... }
-  /** GE 每日累積基準：今日 00:00 (Asia/Taipei) 各 channel 的 EgF (mA)，後端附上、給前端算每日變化量 */
-  dayStart?: Record<string, number>;                   // { AI_0: 4.98, AI_1: 5.46 }
+  /** GE 告警基準：昨日 (Asia/Taipei) 各 channel 的 ±1σ 穩健均值 EgF (mA)，後端附上、給前端算變化量 */
+  geBaseline?: Record<string, number>;                 // { AI_0: 4.98, AI_1: 5.46 }
   rainfall_10m?: number | null;
   rainfall_1h?: number | null;
   rainfall_3h?: number | null;

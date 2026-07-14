@@ -65,13 +65,13 @@ export function worseLevel(a: AlertLevel, b: AlertLevel): AlertLevel {
 export interface AlertOpts {
   /** RAIN 用：目前比對的雨量區間 key（rainfall_1h 等） */
   rainfallIntervalKey?: string;
-  /** GE 每日累積用：今日 00:00 的 EgF (mA)，由後端 dayStart 提供；無則 fallback 安裝初始值 */
-  dayStartEgF?: number;
+  /** GE 告警用：昨日 ±1σ 穩健均值 EgF (mA)，由後端 geBaseline 提供；無則 fallback 安裝初始值 */
+  baselineEgF?: number;
 }
 
 /**
  * 取得單一 channel 的警示等級。
- * - GE（地中伸縮計）：四級，依「每日累積變化量 = 目前值 − 今日00:00值」的絕對值比對管理基準
+ * - GE（地中伸縮計）：四級，依「變化量 = 目前值 − 昨日±1σ均值」的絕對值比對管理基準
  * - 其他儀器：維持二級（normal / action），語意同舊版 isNormalData
  */
 export function getAlertLevel(
@@ -115,8 +115,8 @@ export function getAlertLevel(
     }
     case DEVICE_TYPES.GE: {
       const cur = ch?.EgF;
-      // 每日累積基準：優先用今日 00:00 的值；後端沒附 dayStart 時 fallback 安裝初始值
-      const baseEgF = opts.dayStartEgF ?? sensor.initialValues?.[sensor.channels[0]];
+      // 告警基準：優先用昨日 ±1σ 穩健均值(geBaseline)；後端沒附時 fallback 安裝初始值
+      const baseEgF = opts.baselineEgF ?? sensor.initialValues?.[sensor.channels[0]];
       if (cur == null || isNaN(cur) || baseEgF == null) return 'normal';
       const curMm = rawToPEgF(cur, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
       const baseMm = rawToPEgF(baseEgF, typeToUse, sensor?.wellDepth, sensor?.fsDeg, sensor?.geRange);
@@ -209,20 +209,20 @@ export function rawToPEgF(
 }
 
 /**
- * GE 伸縮計「今日變化量」字串（mm，帶正負號）= 目前值 − 今日00:00值。
- * 嚴格只在有 dayStartEgF（後端有附今日基準）時才回傳；否則回 null，
- * 讓呼叫端 fallback 顯示累積值、避免把累積值誤標成今日。
+ * GE 伸縮計「變化量」字串（mm，帶正負號）= 目前值 − 昨日±1σ均值(baselineEgF)。
+ * 嚴格只在有 baselineEgF（後端有附昨日基準）時才回傳；否則回 null，
+ * 讓呼叫端 fallback 顯示累積值、避免把累積值誤標成日變化。
  */
 export function formatGeDailyChange(
   sensor: Sensor | undefined,
   chData: ChannelData | null | undefined,
-  dayStartEgF: number | undefined,
+  baselineEgF: number | undefined,
 ): string | null {
-  if (!sensor || dayStartEgF == null) return null;
+  if (!sensor || baselineEgF == null) return null;
   const cur = chData?.EgF;
   if (cur == null || isNaN(cur)) return null;
   const curMm = rawToPEgF(cur, DEVICE_TYPES.GE, sensor.wellDepth, sensor.fsDeg, sensor.geRange);
-  const baseMm = rawToPEgF(dayStartEgF, DEVICE_TYPES.GE, sensor.wellDepth, sensor.fsDeg, sensor.geRange);
+  const baseMm = rawToPEgF(baselineEgF, DEVICE_TYPES.GE, sensor.wellDepth, sensor.fsDeg, sensor.geRange);
   if (isNaN(curMm) || isNaN(baseMm)) return null;
   const d = curMm - baseMm;
   const sign = d > 0 ? '+' : '';
