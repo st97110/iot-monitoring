@@ -52,6 +52,15 @@ export interface EntryData {
   [key: string]: any;
 }
 
+/**
+ * EgF 是否卡在 4–20mA 迴路的滿檔（到頂/到底）。
+ * 這代表訊號超量程或感測器無讀值（水位計常見：井中無水 → 20mA），
+ * 不是有效量測值，因此不參與告警判斷。
+ */
+export function isRailedEgF(egf: number | null | undefined): boolean {
+  return egf === 4 || egf === 20;
+}
+
 /** 警示等級：正常 / 預警(黃) / 警戒(橙) / 行動(紅) */
 export type AlertLevel = 'normal' | 'warn' | 'alert' | 'action';
 
@@ -107,11 +116,13 @@ export function getAlertLevel(
 
   switch (typeToUse) {
     case DEVICE_TYPES.WATER: {
+      // 4/20mA 滿檔 = 訊號到頂（井中無水或感測器超量程），非危險狀態，不告警
+      if (isRailedEgF(ch?.EgF)) return 'normal';
       if (ch?.EgF != null && !isNaN(ch.EgF)) {
         const waterLevel = rawToPEgF(ch.EgF, typeToUse, sensor?.wellDepth);
         return bool(waterLevel < -17);
       }
-      return 'action';
+      return 'normal';
     }
     case DEVICE_TYPES.GE: {
       const cur = ch?.EgF;
@@ -240,8 +251,11 @@ export function formatValue(
   const isGeoStarSource = deviceConfig.sourceType === 'geostar';
   const typeToUse = sensor.type || deviceConfig.type;
 
-  // EgF 卡在極端值 (4 / 20 mA) 時顯示 N/A
-  if (!isGeoStarSource && (chData?.EgF === 20 || chData?.EgF === 4)) return 'N/A';
+  // EgF 卡在極端值 (4 / 20 mA)：訊號到頂/到底，非有效量測值
+  // 水位計此狀態代表井中無水，明確寫「無水位」比 N/A 好懂
+  if (!isGeoStarSource && isRailedEgF(chData?.EgF)) {
+    return typeToUse === DEVICE_TYPES.WATER ? '無水位' : 'N/A';
+  }
 
   switch (typeToUse) {
     case DEVICE_TYPES.WATER: {
