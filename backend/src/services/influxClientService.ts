@@ -56,7 +56,7 @@ export async function queryDeviceListFromInflux(key: SourceKey): Promise<string[
       eti_devices = schema.tagValues(
         bucket: "${bucket}",
         tag: "device_sn",
-        predicate: (r) => r._measurement == "wise_raw" and r._field == "value", // ✨ ETI 的特徵
+        predicate: (r) => r._measurement == "sensor_raw" and r._field == "value", // ✨ ETI 的特徵
         start: -30d
       )
       // ✨ 將 ETI 的 device_sn 加上 "SN_" 前綴，以匹配前端的邏輯 ID
@@ -122,7 +122,7 @@ export async function queryLatestDataFromInflux(key: SourceKey, deviceId: string
     const fluxQuery = `
       data = from(bucket: "${bucket}")
         |> range(start: -30d) // 依需求可調整，例如 -7d
-        |> filter(fn: (r) => r._measurement == "${key}_raw" and r.device_sn == "${physicalSn}")
+        |> filter(fn: (r) => r._measurement == "sensor_raw" and r.device_sn == "${physicalSn}")
 
       // 找到最新時間戳
       latest = data
@@ -385,7 +385,7 @@ export async function queryHistoryDataFromInflux(
     fluxQuery = `
       from(bucket: "${bucket}")
         |> range(start: time(v: "${utcStart}"), stop: time(v: "${utcEnd}"))
-        |> filter(fn: (r) => r._measurement == "wise_raw" and 
+        |> filter(fn: (r) => r._measurement == "sensor_raw" and 
                               r.device_sn == "${physicalSn}" and 
                               r._field == "value") // ✨ 過濾 field 為 "value"
         |> sort(columns: ["_time"], desc: false)
